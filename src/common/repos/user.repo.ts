@@ -113,7 +113,7 @@ export class UserRepo {
 
     async groupBy(params: Prisma.UserGroupByArgs) {
         try {
-            return await this.prisma.user.groupBy(params);
+            return await this.prisma.user.groupBy(params as any);
         } catch (error) {
             throw new RepoError('Failed to group users', error);
         }
