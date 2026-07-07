@@ -250,9 +250,6 @@ export interface MetricDataShape extends Record<string, unknown> {
     [key: string]: unknown;
 }
 
-/**
- * Email message structure for SendGrid service
- */
 export interface SendGridEmailMessage {
     to: string | string[];
     from: string;
@@ -261,7 +258,7 @@ export interface SendGridEmailMessage {
     text?: string;
     attachments?: Array<{
         filename: string;
-        content: string | Buffer;
+        content: string;
         type?: string;
         disposition?: string;
     }>;

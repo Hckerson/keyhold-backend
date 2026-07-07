@@ -1,7 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as sgMail from '@sendgrid/mail';
-import { SendGridEmailMessage } from '@common/interfaces/responses';
+import { ConfigService } from '@nestjs/config';
+import { Injectable, BadRequestException } from '@nestjs/common';
 
 interface EmailOptions {
     to: string | string[];
@@ -40,22 +39,18 @@ export class SendGridEmailService {
                     'SendGrid from email is not configured',
                 );
             }
-
-            const msg: SendGridEmailMessage = {
+            await sgMail.send({
                 to: options.to,
                 from: fromEmail,
                 subject: options.subject,
-                html: options.html,
-                text: options.text,
+                html: options.html || options.text || options.subject,
                 attachments: options.attachments?.map((att) => ({
                     filename: att.filename,
                     content: att.content,
                     type: att.type,
                     disposition: 'attachment',
                 })),
-            };
-
-            await sgMail.send(msg);
+            });
             return { success: true };
         } catch (error: unknown) {
             throw new BadRequestException(

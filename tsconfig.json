@@ -26,6 +26,9 @@
         "forceConsistentCasingInFileNames": true,
         "noImplicitAny": false,
         "strictBindCallApply": false,
-        "noFallthroughCasesInSwitch": false
-    }
+        "noFallthroughCasesInSwitch": false,
+        "types": ["node"]
+    },
+    "files": ["src/common/types/express.d.ts"],
+    "include": ["src/**/*"]
 }

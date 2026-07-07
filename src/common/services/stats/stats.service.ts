@@ -41,12 +41,12 @@ export class StatsService {
                 _count: {
                     _all: true,
                 },
-            } as any),
+            }),
         ]);
 
-        const userData = userStats.map((stat: any) => ({
+        const userData = userStats.map((stat) => ({
             name: actualFilter === TimeFilter.DAY ? stat.day : stat.month,
-            value: stat._count._all,
+            value: stat?._count || 0,
         }));
 
         const dataKey =
