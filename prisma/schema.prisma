@@ -453,6 +453,7 @@ model Property {
   viewings     Viewing[]
   offers       Offer[]
   transactions Transaction[]
+  savedBy      SavedProperty[]
 
   // Timestamps
   updatedAt DateTime @updatedAt
@@ -504,6 +505,26 @@ model Review {
   @@index([transactionId])
   @@index([reviewerId])
   @@index([revieweeId])
+}
+
+model SavedProperty {
+  // Scalars
+  id String @id @default(uuid())
+
+  // Foreign Keys
+  buyerId    String
+  buyer      User     @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@unique([buyerId, propertyId])
+  @@index([buyerId])
+  @@index([propertyId])
 }
 
 model Transaction {
@@ -602,6 +623,7 @@ model User {
   flagsCreated       Flag[]              @relation("FlagCreator")
   disputesInitiated  Dispute[]           @relation("DisputeInitiator")
   auditLogs          AuditLog[]          @relation("AuditActor")
+  savedProperties    SavedProperty[]
 
   // Constraints
   @@index([email])

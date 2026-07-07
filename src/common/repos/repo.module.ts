@@ -15,6 +15,7 @@ import { DisputeEvidenceRepo } from './dispute-evidence.repo';
 import { FlagRepo } from './flag.repo';
 import { UserSuspensionRepo } from './user-suspension.repo';
 import { AuditLogRepo } from './audit-log.repo';
+import { SavedPropertyRepo } from './saved-property.repo';
 import { Global, Module } from '@nestjs/common';
 
 const repos = [
@@ -37,6 +38,8 @@ const repos = [
     FlagRepo,
     UserSuspensionRepo,
     AuditLogRepo,
+    // Wishlist repositories
+    SavedPropertyRepo,
 ];
 
 @Global()
