@@ -1,0 +1,708 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS - USER DOMAIN
+// ============================================================================
+// Used by the metric-builder / stats aggregation pattern to group records by period.
+enum Day {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum Month {
+  JAN
+  FEB
+  MAR
+  APR
+  MAY
+  JUN
+  JUL
+  AUG
+  SEP
+  OCT
+  NOV
+  DEC
+}
+
+enum UserRole {
+  ADMIN
+  BUYER
+  SELLER
+}
+
+enum UserAccountStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+}
+
+// ============================================================================
+// ENUMS - REAL ESTATE DOMAIN
+// ============================================================================
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  CONDO
+  TOWNHOUSE
+  LAND
+  OTHER
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  PENDING
+  SOLD
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum ViewingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum OfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COUNTERED
+  EXPIRED
+}
+
+enum TransactionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationType {
+  EMAIL
+  PHONE
+  KYC
+}
+
+enum FlagType {
+  USER
+  PROPERTY
+  MESSAGE
+}
+
+enum FlagStatus {
+  ACTIVE
+  RESOLVED
+  DISMISSED
+}
+
+enum DisputeStatus {
+  OPEN
+  PENDING_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum DisputeEvidenceType {
+  MESSAGE
+  PHOTO
+  DOCUMENT
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+enum AuditActionType {
+  USER_CREATED
+  USER_UPDATED
+  USER_DELETED
+  USER_SUSPENDED
+  PROPERTY_CREATED
+  PROPERTY_UPDATED
+  PROPERTY_DELETED
+  PROPERTY_FLAGGED
+  TRANSACTION_CREATED
+  TRANSACTION_UPDATED
+  TRANSACTION_COMPLETED
+  OFFER_CREATED
+  OFFER_ACCEPTED
+  DISPUTE_CREATED
+  DISPUTE_RESOLVED
+  LOGIN
+  LOGOUT
+}
+
+// ============================================================================
+// MODELS - DEPENDENCY ORDER
+// ============================================================================
+// Order: User → Property → PropertyImage → Connection → Message → Viewing → Offer → Transaction → Review
+
+// ============================================================================
+// USER DOMAIN
+// ============================================================================
+
+model User {
+  // Scalars
+  id String @id @default(uuid())
+
+  fullName     String
+  email        String            @unique
+  passwordHash String
+  phoneNumber  String?
+  avatar       String?
+  bio          String?
+  year         Int
+  role         UserRole
+  status       UserAccountStatus @default(ACTIVE)
+
+  // Enums - period columns powering the stats grouping pattern
+  day   Day
+  month Month
+
+  // Verification fields
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+  kycVerified   Boolean @default(false)
+  kycRejected   Boolean @default(false)
+
+  // Timestamps
+  lastActive DateTime? @default(now())
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  propertiesOwned    Property[]          @relation("SellerProperties")
+  connections        Connection[]        @relation("BuyerConnections")
+  sellerConnections  Connection[]        @relation("SellerConnections")
+  sentMessages       Message[]           @relation("SenderMessages")
+  receivedMessages   Message[]           @relation("ReceiverMessages")
+  viewingsRequested  Viewing[]           @relation("BuyerViewings")
+  viewingsProposed   Viewing[]           @relation("SellerViewings")
+  offers             Offer[]             @relation("BuyerOffers")
+  receivedOffers     Offer[]             @relation("SellerOffers")
+  buyerTransactions  Transaction[]       @relation("BuyerTransactions")
+  sellerTransactions Transaction[]       @relation("SellerTransactions")
+  givenReviews       Review[]            @relation("ReviewerReviews")
+  receivedReviews    Review[]            @relation("RevieweeReviews")
+  verificationTokens VerificationToken[]
+  phoneVerifications PhoneVerification[]
+  identityDocuments  IdentityDocument[]
+  flagsCreated       Flag[]              @relation("FlagCreator")
+  disputesInitiated  Dispute[]           @relation("DisputeInitiator")
+  auditLogs          AuditLog[]          @relation("AuditActor")
+
+  // Constraints
+  @@index([email])
+  @@index([status])
+  @@index([role])
+  @@index([emailVerified])
+}
+
+// ============================================================================
+// REAL ESTATE DOMAIN
+// ============================================================================
+
+model Property {
+  // Scalars
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  address     String
+  price       Float
+  bedrooms    Int
+  bathrooms   Int
+  sqFt        Float?
+  amenities   String[] // JSON array
+  features    String[] // JSON array
+
+  // Enums
+  type   PropertyType
+  status PropertyStatus @default(AVAILABLE)
+
+  // Foreign Keys
+  sellerId String
+  seller   User   @relation("SellerProperties", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Relations
+  images       PropertyImage[]
+  connections  Connection[]
+  viewings     Viewing[]
+  offers       Offer[]
+  transactions Transaction[]
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@index([sellerId])
+  @@index([status])
+}
+
+model PropertyImage {
+  // Scalars
+  id    String @id @default(uuid())
+  url   String
+  order Int
+
+  // Foreign Keys
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@index([propertyId])
+}
+
+model Connection {
+  // Scalars
+  id String @id @default(uuid())
+
+  // Enums
+  status ConnectionStatus @default(PENDING)
+
+  // Foreign Keys
+  buyerId    String
+  buyer      User     @relation("BuyerConnections", fields: [buyerId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  sellerId   String
+  seller     User     @relation("SellerConnections", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Relations
+  messages     Message[]
+  viewings     Viewing[]
+  offers       Offer[]
+  transactions Transaction[]
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@unique([buyerId, propertyId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+}
+
+model Message {
+  // Scalars
+  id      String  @id @default(uuid())
+  content String
+  isRead  Boolean @default(false)
+
+  // Foreign Keys
+  connectionId String
+  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  senderId     String
+  sender       User       @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId   String
+  receiver     User       @relation("ReceiverMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  readAt    DateTime?
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  // Constraints
+  @@index([connectionId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+model Viewing {
+  // Scalars
+  id            String   @id @default(uuid())
+  proposedTimes String[] // JSON array of ISO timestamps
+  notes         String?
+
+  // Enums
+  status ViewingStatus @default(PENDING)
+
+  // Foreign Keys
+  connectionId  String
+  connection    Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  propertyId    String
+  property      Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  requestedById String
+  requestedBy   User       @relation("BuyerViewings", fields: [requestedById], references: [id], onDelete: Cascade)
+  proposedByid  String
+  proposedBy    User       @relation("SellerViewings", fields: [proposedByid], references: [id], onDelete: Cascade)
+  confirmedById String?
+
+  // Timestamps
+  confirmedTime DateTime?
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
+  // Constraints
+  @@index([connectionId])
+  @@index([propertyId])
+  @@index([requestedById])
+  @@index([proposedByid])
+}
+
+model Offer {
+  // Scalars
+  id               String  @id @default(uuid())
+  offeredPrice     Float
+  offeredTerms     String
+  responsePrice    Float?
+  responseFeedback String?
+
+  // Enums
+  status OfferStatus @default(PENDING)
+
+  // Foreign Keys
+  connectionId   String
+  connection     Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  propertyId     String
+  property       Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  offererId      String
+  offerer        User       @relation("BuyerOffers", fields: [offererId], references: [id], onDelete: Cascade)
+  responseFromId String?
+  responseFrom   User?      @relation("SellerOffers", fields: [responseFromId], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  expiresAt   DateTime
+  respondedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+
+  // Constraints
+  @@index([connectionId])
+  @@index([propertyId])
+  @@index([offererId])
+  @@index([responseFromId])
+  @@index([status])
+}
+
+model Transaction {
+  // Scalars
+  id                    String  @id @default(uuid())
+  finalPrice            Float
+  terms                 String
+  agreementDocUrl       String?
+  stripePaymentIntentId String?
+
+  // Enums
+  status TransactionStatus @default(PENDING)
+
+  // Foreign Keys
+  connectionId String
+  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  buyerId      String
+  buyer        User       @relation("BuyerTransactions", fields: [buyerId], references: [id], onDelete: Cascade)
+  sellerId     String
+  seller       User       @relation("SellerTransactions", fields: [sellerId], references: [id], onDelete: Cascade)
+  propertyId   String
+  property     Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Escrow fields (optional)
+  escrowHoldId String? @unique
+  escrowHold   Escrow? @relation(fields: [escrowHoldId], references: [id], onDelete: SetNull)
+
+  // Dispute fields (optional)
+  disputeId String?
+  dispute   Dispute? @relation(fields: [disputeId], references: [id], onDelete: SetNull)
+
+  // Relations
+  reviews Review[]
+
+  // Timestamps
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+
+  // Constraints
+  @@index([connectionId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([escrowHoldId])
+  @@index([disputeId])
+}
+
+model Review {
+  // Scalars
+  id      String  @id @default(uuid())
+  rating  Int // 1-5
+  comment String?
+
+  // Foreign Keys
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  reviewerId    String
+  reviewer      User        @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  revieweeId    String
+  reviewee      User        @relation("RevieweeReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@unique([transactionId, reviewerId])
+  @@index([transactionId])
+  @@index([reviewerId])
+  @@index([revieweeId])
+}
+
+// ============================================================================
+// MVP 1.5 - USER VERIFICATION DOMAIN
+// ============================================================================
+
+model VerificationToken {
+  // Scalars
+  id     String             @id @default(uuid())
+  token  String             @unique
+  type   VerificationType
+  status VerificationStatus @default(PENDING)
+
+  // Foreign Keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Constraints
+  @@index([userId])
+  @@index([token])
+  @@index([status])
+}
+
+model PhoneVerification {
+  // Scalars
+  id       String             @id @default(uuid())
+  phone    String
+  code     String
+  attempts Int                @default(0)
+  status   VerificationStatus @default(PENDING)
+
+  // Foreign Keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  verifiedAt DateTime?
+  expiresAt  DateTime
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Constraints
+  @@index([userId])
+  @@index([phone])
+  @@index([status])
+}
+
+model IdentityDocument {
+  // Scalars
+  id               String             @id @default(uuid())
+  documentType     String // PASSPORT, DRIVERS_LICENSE, ID_CARD
+  documentNumber   String
+  issuerCountry    String
+  documentImageUrl String
+  faceImageUrl     String?
+  status           VerificationStatus @default(PENDING)
+  rejectionReason  String?
+
+  // Foreign Keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  verifiedAt DateTime?
+  expiresAt  DateTime?
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Constraints
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================================================
+// MVP 1.5 - ESCROW DOMAIN
+// ============================================================================
+
+model Escrow {
+  // Scalars
+  id                String       @id @default(uuid())
+  amount            Float
+  inspectionEndDate DateTime
+  stripeTransferId  String?
+  stripeAccountId   String?
+  status            EscrowStatus @default(HELD)
+
+  // Relations
+  transaction Transaction?
+
+  // Timestamps
+  releasedAt DateTime?
+  refundedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Constraints
+  @@index([status])
+}
+
+// ============================================================================
+// MVP 1.5 - DISPUTE DOMAIN
+// ============================================================================
+
+model Dispute {
+  // Scalars
+  id              String        @id @default(uuid())
+  title           String
+  description     String
+  status          DisputeStatus @default(OPEN)
+  resolutionNotes String?
+
+  // Foreign Keys
+  initiatorId String
+  initiator   User   @relation("DisputeInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+
+  // Relations
+  evidence     DisputeEvidence[]
+  transactions Transaction[]
+
+  // Timestamps
+  resolvedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Constraints
+  @@index([initiatorId])
+  @@index([status])
+}
+
+model DisputeEvidence {
+  // Scalars
+  id      String              @id @default(uuid())
+  type    DisputeEvidenceType
+  content String // URL or text content
+  label   String?
+
+  // Foreign Keys
+  disputeId String
+  dispute   Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@index([disputeId])
+}
+
+// ============================================================================
+// MVP 1.5 - FLAG & MODERATION DOMAIN
+// ============================================================================
+
+model Flag {
+  // Scalars
+  id      String     @id @default(uuid())
+  type    FlagType
+  reason  String
+  details String?
+  status  FlagStatus @default(ACTIVE)
+
+  // Foreign Keys
+  targetId  String // Could be userId, propertyId, or messageId depending on type
+  creatorId String
+  creator   User   @relation("FlagCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  resolvedAt DateTime?
+  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime  @default(now())
+
+  // Constraints
+  @@index([targetId])
+  @@index([creatorId])
+  @@index([status])
+  @@index([type])
+}
+
+model UserSuspension {
+  // Scalars
+  id       String  @id @default(uuid())
+  reason   String
+  duration Int? // Duration in days, null for indefinite
+  notes    String?
+
+  // Timestamps
+  liftedAt  DateTime?
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+}
+
+// ============================================================================
+// MVP 1.5 - AUDIT LOGGING DOMAIN
+// ============================================================================
+
+model AuditLog {
+  // Scalars
+  id         String          @id @default(uuid())
+  action     AuditActionType
+  entityType String // User, Property, Transaction, etc.
+  entityId   String
+  changes    String? // JSON diff of changes
+  ipAddress  String?
+  userAgent  String?
+
+  // Foreign Keys
+  actorId String
+  actor   User   @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}

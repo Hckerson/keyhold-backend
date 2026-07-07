@@ -1,0 +1,7 @@
+generated/
+dist/
+build/
+coverage/
+node_modules/
+.next/
+out/

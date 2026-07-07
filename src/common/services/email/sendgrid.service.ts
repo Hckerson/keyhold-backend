@@ -1,0 +1,153 @@
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SendGridEmailMessage } from '@common/interfaces/responses';
+
+// Import SendGrid mail client (install @sendgrid/mail if not present)
+let sgMail: any;
+try {
+    sgMail = require('@sendgrid/mail');
+} catch {
+    // Fallback for development without SendGrid package
+    // In production, ensure @sendgrid/mail is installed
+    sgMail = {
+        setApiKey: (key: string) => {},
+        send: async (msg: SendGridEmailMessage) => {
+            console.warn(
+                'SendGrid not configured. Message would be sent to:',
+                msg.to,
+            );
+        },
+    };
+}
+
+interface EmailOptions {
+    to: string | string[];
+    subject: string;
+    html?: string;
+    text?: string;
+    attachments?: Array<{
+        filename: string;
+        content: Buffer | string;
+        type?: string;
+    }>;
+}
+
+interface EmailResponse {
+    success: boolean;
+}
+
+@Injectable()
+export class SendGridEmailService {
+    constructor(private configService: ConfigService) {
+        const apiKey = this.configService.get<string>(
+            'externalServices.sendgrid.apiKey',
+        );
+        if (!apiKey) throw new Error('SENDGRID_API_KEY not configured');
+        sgMail.setApiKey(apiKey);
+    }
+
+    async sendEmail(options: EmailOptions): Promise<EmailResponse> {
+        try {
+            const fromEmail = this.configService.get<string>(
+                'externalServices.sendgrid.fromEmail',
+            );
+
+            if (!fromEmail) {
+                throw new BadRequestException(
+                    'SendGrid from email is not configured',
+                );
+            }
+
+            const msg: SendGridEmailMessage = {
+                to: options.to,
+                from: fromEmail,
+                subject: options.subject,
+                html: options.html,
+                text: options.text,
+                attachments: options.attachments?.map((att) => ({
+                    filename: att.filename,
+                    content:
+                        typeof att.content === 'string'
+                            ? att.content
+                            : att.content.toString('base64'),
+                    type: att.type,
+                    disposition: 'attachment',
+                })),
+            };
+
+            await sgMail.send(msg);
+            return { success: true };
+        } catch (error: unknown) {
+            throw new BadRequestException(
+                `Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }
+
+    async sendConnectionNotification(
+        buyerEmail: string,
+        propertyTitle: string,
+        sellerName: string,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: buyerEmail,
+            subject: `New Connection: ${propertyTitle}`,
+            html: `
+        <h2>Connection Accepted!</h2>
+        <p>Great news! ${sellerName} has accepted your interest in ${propertyTitle}.</p>
+        <p>You can now message them to schedule a viewing or ask questions.</p>
+      `,
+        });
+    }
+
+    async sendViewingRequestNotification(
+        sellerEmail: string,
+        buyerName: string,
+        propertyTitle: string,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: sellerEmail,
+            subject: `Viewing Request: ${propertyTitle}`,
+            html: `
+        <h2>New Viewing Request</h2>
+        <p>${buyerName} is interested in viewing ${propertyTitle}.</p>
+        <p>Check your messages to propose viewing times.</p>
+      `,
+        });
+    }
+
+    async sendOfferNotification(
+        sellerEmail: string,
+        buyerName: string,
+        propertyTitle: string,
+        offeredPrice: number,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: sellerEmail,
+            subject: `New Offer: ${propertyTitle}`,
+            html: `
+        <h2>New Purchase Offer</h2>
+        <p>${buyerName} has made an offer on ${propertyTitle}.</p>
+        <p><strong>Offered Price: $${offeredPrice.toLocaleString()}</strong></p>
+        <p>Review and respond to the offer in your dashboard.</p>
+      `,
+        });
+    }
+
+    async sendTransactionCompletedEmail(
+        buyerEmail: string,
+        propertyTitle: string,
+        finalPrice: number,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: buyerEmail,
+            subject: `Purchase Completed: ${propertyTitle}`,
+            html: `
+        <h2>Congratulations!</h2>
+        <p>Your purchase of ${propertyTitle} is complete.</p>
+        <p><strong>Final Price: $${finalPrice.toLocaleString()}</strong></p>
+        <p>Thank you for using our platform. Please rate the seller.</p>
+      `,
+        });
+    }
+}
