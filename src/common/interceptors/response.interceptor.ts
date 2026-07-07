@@ -23,11 +23,12 @@ export class ResponseInterceptor<T> implements NestInterceptor<
         context: ExecutionContext,
         next: CallHandler,
     ): Observable<ApiResponse<T>> {
-        const statusCode = context.switchToHttp().getResponse().statusCode;
+        const response = context.switchToHttp().getResponse();
+        const statusCode = (response as Record<string, unknown>).statusCode || 200;
 
         return next.handle().pipe(
             map((data) => ({
-                statusCode,
+                statusCode: typeof statusCode === 'number' ? statusCode : 200,
                 message: 'Success',
                 data,
                 timestamp: new Date().toISOString(),

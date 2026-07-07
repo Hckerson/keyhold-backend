@@ -28,7 +28,6 @@ export class AuditLogInterceptor implements NestInterceptor {
     ): Observable<unknown> {
         const httpContext = context.switchToHttp();
         const request = httpContext.getRequest<RequestWithUser>();
-        const response = httpContext.getResponse();
 
         // Only log state-changing requests
         const method = request.method.toUpperCase();
@@ -50,12 +49,11 @@ export class AuditLogInterceptor implements NestInterceptor {
         }
 
         const resourceType = this.extractResourceType(path);
-        const startTime = Date.now();
 
         return next.handle().pipe(
-            tap(
-                (response: any) => {
-                    this.logAuditEvent(
+            tap({
+                next: (response: unknown) => {
+                    void this.logAuditEvent(
                         {
                             path,
                             method,
@@ -67,9 +65,8 @@ export class AuditLogInterceptor implements NestInterceptor {
                         null,
                     );
                 },
-                (error: unknown) => {
-                    // Also log failed requests for security audit purposes
-                    this.logAuditEvent(
+                error: (error: unknown) => {
+                    void this.logAuditEvent(
                         {
                             path,
                             method,
@@ -81,7 +78,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                         error,
                     );
                 },
-            ),
+            }),
         );
     }
 
@@ -208,7 +205,10 @@ export class AuditLogInterceptor implements NestInterceptor {
     /**
      * Extract resource ID from response or path
      */
-    private extractResourceId(path: string, response?: any): string | null {
+    private extractResourceId(
+        path: string,
+        response?: unknown,
+    ): string | null {
         // Try to extract from path first (e.g., /properties/123)
         const pathSegments = path.split('/').filter((s) => s.length > 0);
         if (pathSegments.length >= 2) {
@@ -220,12 +220,20 @@ export class AuditLogInterceptor implements NestInterceptor {
         }
 
         // Try to extract from response
-        if (response) {
-            if (response.id && typeof response.id === 'string') {
-                return response.id;
+        if (response && typeof response === 'object') {
+            const obj = response as Record<string, unknown>;
+            if (obj.id && typeof obj.id === 'string') {
+                return obj.id;
             }
-            if (response.data?.id && typeof response.data.id === 'string') {
-                return response.data.id;
+            if (
+                obj.data &&
+                typeof obj.data === 'object' &&
+                obj.data !== null
+            ) {
+                const dataObj = obj.data as Record<string, unknown>;
+                if (dataObj.id && typeof dataObj.id === 'string') {
+                    return dataObj.id;
+                }
             }
         }
 
@@ -269,12 +277,17 @@ export class AuditLogInterceptor implements NestInterceptor {
             auditAction: AuditActionType;
             request: RequestWithUser;
         },
-        response: any,
-        error: unknown,
+        response: unknown,
+        logError: unknown,
     ): Promise<void> {
         try {
             const resourceId =
                 this.extractResourceId(context.path, response) || 'unknown';
+
+            const statusCode =
+                response && typeof response === 'object'
+                    ? (response as Record<string, unknown>).statusCode
+                    : undefined;
 
             await this.auditLogService.log({
                 resourceType: context.resourceType,
@@ -288,15 +301,14 @@ export class AuditLogInterceptor implements NestInterceptor {
                 actionDetails: {
                     method: context.method,
                     path: context.path,
-                    statusCode: response?.statusCode,
-                    success: !error,
+                    statusCode: typeof statusCode === 'number' ? statusCode : undefined,
+                    success: !logError,
                 },
                 afterValue: response,
             });
-        } catch (logError: unknown) {
-            // Silently fail - audit logging should never block the request
+        } catch (catchError: unknown) {
             this.logger.debug(
-                `Failed to log audit event: ${logError instanceof Error ? logError.message : 'Unknown error'}`,
+                `Failed to log audit event: ${catchError instanceof Error ? catchError.message : 'Unknown error'}`,
             );
         }
     }

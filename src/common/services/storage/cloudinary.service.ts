@@ -130,7 +130,7 @@ export class CloudinaryService {
         });
     }
 
-    async getUploadSignature(): Promise<UploadSignatureResponse> {
+    getUploadSignature(): UploadSignatureResponse {
         const timestamp = Math.floor(Date.now() / 1000);
         const apiSecret = this.configService.get<string>(
             'externalServices.cloudinary.apiSecret',
