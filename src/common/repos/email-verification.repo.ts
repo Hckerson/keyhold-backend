@@ -7,93 +7,93 @@ import { RepoError } from '@common/errors/repo.error';
 export class EmailVerificationRepo {
     constructor(private prisma: PrismaService) {}
 
-    async findUnique<T extends Prisma.EmailVerificationFindUniqueArgs>(
+    async findUnique<T extends Prisma.VerificationTokenFindUniqueArgs>(
         params: T,
-    ): Promise<Prisma.EmailVerificationGetPayload<T> | null> {
+    ): Promise<Prisma.VerificationTokenGetPayload<T> | null> {
         try {
-            return (await this.prisma.emailVerification.findUnique(params));
+            return (await this.prisma.verificationToken.findUnique(params)) as Prisma.VerificationTokenGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique email verification', error);
         }
     }
 
-    async findFirst<T extends Prisma.EmailVerificationFindFirstArgs>(
+    async findFirst<T extends Prisma.VerificationTokenFindFirstArgs>(
         params: T,
-    ): Promise<Prisma.EmailVerificationGetPayload<T> | null> {
+    ): Promise<Prisma.VerificationTokenGetPayload<T> | null> {
         try {
-            return (await this.prisma.emailVerification.findFirst(params));
+            return (await this.prisma.verificationToken.findFirst(params)) as Prisma.VerificationTokenGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first email verification', error);
         }
     }
 
-    async findMany<T extends Prisma.EmailVerificationFindManyArgs>(
+    async findMany<T extends Prisma.VerificationTokenFindManyArgs>(
         params: T,
-    ): Promise<Prisma.EmailVerificationGetPayload<T>[]> {
+    ): Promise<Prisma.VerificationTokenGetPayload<T>[]> {
         try {
-            return (await this.prisma.emailVerification.findMany(params)) as Prisma.EmailVerificationGetPayload<T>[];
+            return (await this.prisma.verificationToken.findMany(params)) as Prisma.VerificationTokenGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find email verifications', error);
         }
     }
 
-    async create<T extends Prisma.EmailVerificationCreateArgs>(
+    async create<T extends Prisma.VerificationTokenCreateArgs>(
         params: T,
-    ): Promise<Prisma.EmailVerificationGetPayload<T>> {
+    ): Promise<Prisma.VerificationTokenGetPayload<T>> {
         try {
-            return (await this.prisma.emailVerification.create(params)) as Prisma.EmailVerificationGetPayload<T>;
+            return (await this.prisma.verificationToken.create(params)) as Prisma.VerificationTokenGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create email verification', error);
         }
     }
 
-    async createMany(params: Prisma.EmailVerificationCreateManyArgs) {
+    async createMany(params: Prisma.VerificationTokenCreateManyArgs) {
         try {
-            return await this.prisma.emailVerification.createMany(params);
+            return await this.prisma.verificationToken.createMany(params);
         } catch (error) {
             throw new RepoError('Failed to create email verifications', error);
         }
     }
 
-    async update<T extends Prisma.EmailVerificationUpdateArgs>(
+    async update<T extends Prisma.VerificationTokenUpdateArgs>(
         params: T,
-    ): Promise<Prisma.EmailVerificationGetPayload<T>> {
+    ): Promise<Prisma.VerificationTokenGetPayload<T>> {
         try {
-            return (await this.prisma.emailVerification.update(params)) as Prisma.EmailVerificationGetPayload<T>;
+            return (await this.prisma.verificationToken.update(params)) as Prisma.VerificationTokenGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update email verification', error);
         }
     }
 
-    async updateMany(params: Prisma.EmailVerificationUpdateManyArgs) {
+    async updateMany(params: Prisma.VerificationTokenUpdateManyArgs) {
         try {
-            return await this.prisma.emailVerification.updateMany(params);
+            return await this.prisma.verificationToken.updateMany(params);
         } catch (error) {
             throw new RepoError('Failed to update email verifications', error);
         }
     }
 
-    async delete<T extends Prisma.EmailVerificationDeleteArgs>(
+    async delete<T extends Prisma.VerificationTokenDeleteArgs>(
         params: T,
-    ): Promise<Prisma.EmailVerificationGetPayload<T>> {
+    ): Promise<Prisma.VerificationTokenGetPayload<T>> {
         try {
-            return (await this.prisma.emailVerification.delete(params)) as Prisma.EmailVerificationGetPayload<T>;
+            return (await this.prisma.verificationToken.delete(params)) as Prisma.VerificationTokenGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete email verification', error);
         }
     }
 
-    async deleteMany(params: Prisma.EmailVerificationDeleteManyArgs) {
+    async deleteMany(params: Prisma.VerificationTokenDeleteManyArgs) {
         try {
-            return await this.prisma.emailVerification.deleteMany(params);
+            return await this.prisma.verificationToken.deleteMany(params);
         } catch (error) {
             throw new RepoError('Failed to delete email verifications', error);
         }
     }
 
-    async count(params?: Prisma.EmailVerificationCountArgs): Promise<number> {
+    async count(params?: Prisma.VerificationTokenCountArgs): Promise<number> {
         try {
-            return await this.prisma.emailVerification.count(params);
+            return await this.prisma.verificationToken.count(params);
         } catch (error) {
             throw new RepoError('Failed to count email verifications', error);
         }

@@ -8,7 +8,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditLogService } from '@common/services/audit-log.service';
-import { AuditAction } from 'generated/prisma/client';
+import { AuditActionType } from 'generated/prisma/client';
 import { RequestWithUser } from '@common/interfaces/req';
 
 /**
@@ -86,41 +86,64 @@ export class AuditLogInterceptor implements NestInterceptor {
     }
 
     /**
-     * Map endpoint path and HTTP method to AuditAction enum
+     * Map endpoint path and HTTP method to AuditActionType enum
      * Returns null if the endpoint doesn't map to a recognized action
      */
-    private mapEndpointToAction(path: string, method: string): AuditAction | null {
-        // Normalize path
+    private mapEndpointToAction(path: string, method: string): AuditActionType | null {
         const normalizedPath = path.toLowerCase();
 
-        // User actions
-        if (normalizedPath.includes('/users') && normalizedPath.includes('/suspend')) {
-            return 'SUSPEND_USER' as AuditAction;
-        }
-        if (
-            normalizedPath.includes('/users') &&
-            normalizedPath.includes('/unsuspend')
-        ) {
-            return 'UNSUSPEND_USER' as AuditAction;
-        }
-
-        // Dispute actions
-        if (normalizedPath.includes('/disputes') && method === 'POST') {
-            return 'CREATE_DISPUTE' as AuditAction;
-        }
-        if (normalizedPath.includes('/disputes') && method === 'PATCH') {
-            return 'RESOLVE_DISPUTE' as AuditAction;
+        if (normalizedPath.includes('/users')) {
+            if (normalizedPath.includes('/suspend')) {
+                return 'USER_SUSPENDED' as AuditActionType;
+            }
+            if (method === 'POST') {
+                return 'USER_CREATED' as AuditActionType;
+            }
+            if (method === 'PATCH' || method === 'PUT') {
+                return 'USER_UPDATED' as AuditActionType;
+            }
+            if (method === 'DELETE') {
+                return 'USER_DELETED' as AuditActionType;
+            }
         }
 
-        // Generic CRUD mapping
-        if (method === 'POST') {
-            return 'CREATE' as AuditAction;
+        if (normalizedPath.includes('/properties')) {
+            if (method === 'POST') {
+                return 'PROPERTY_CREATED' as AuditActionType;
+            }
+            if (method === 'PATCH' || method === 'PUT') {
+                return 'PROPERTY_UPDATED' as AuditActionType;
+            }
+            if (method === 'DELETE') {
+                return 'PROPERTY_DELETED' as AuditActionType;
+            }
         }
-        if (method === 'PATCH' || method === 'PUT') {
-            return 'UPDATE' as AuditAction;
+
+        if (normalizedPath.includes('/disputes')) {
+            if (method === 'POST') {
+                return 'DISPUTE_CREATED' as AuditActionType;
+            }
+            if (method === 'PATCH' || method === 'PUT') {
+                return 'DISPUTE_RESOLVED' as AuditActionType;
+            }
         }
-        if (method === 'DELETE') {
-            return 'DELETE' as AuditAction;
+
+        if (normalizedPath.includes('/offers')) {
+            if (method === 'POST') {
+                return 'OFFER_CREATED' as AuditActionType;
+            }
+            if (method === 'PATCH' || method === 'PUT') {
+                return 'OFFER_ACCEPTED' as AuditActionType;
+            }
+        }
+
+        if (normalizedPath.includes('/transactions')) {
+            if (method === 'POST') {
+                return 'TRANSACTION_CREATED' as AuditActionType;
+            }
+            if (method === 'PATCH' || method === 'PUT') {
+                return 'TRANSACTION_UPDATED' as AuditActionType;
+            }
         }
 
         return null;
@@ -243,7 +266,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             path: string;
             method: string;
             resourceType: string;
-            auditAction: AuditAction;
+            auditAction: AuditActionType;
             request: RequestWithUser;
         },
         response: any,

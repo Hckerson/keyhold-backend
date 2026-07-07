@@ -1,0 +1,186 @@
+
+> nest-setup@0.0.1 lint C:\Users\emman\Downloads\Personal\js\web\real-estate\backend
+> eslint "{src,apps,libs,test}/**/*.ts" --fix
+
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\interceptors\audit-log.interceptor.ts
+   31:15  warning  'response' is assigned a value but never used                                                                                                                       @typescript-eslint/no-unused-vars
+   45:54  error    Unsafe argument of type error typed assigned to a parameter of type `string`                                                                                        @typescript-eslint/no-unsafe-argument
+   52:55  error    Unsafe argument of type error typed assigned to a parameter of type `string`                                                                                        @typescript-eslint/no-unsafe-argument
+   53:15  warning  'startTime' is assigned a value but never used                                                                                                                      @typescript-eslint/no-unused-vars
+   58:21  error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   72:21  error    Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  224:26  error    Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  224:48  error    Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  225:17  error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  225:33  error    Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  227:26  error    Unsafe member access .data on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  227:54  error    Unsafe member access .data on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  228:17  error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  228:33  error    Unsafe member access .data on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  291:43  error    Unsafe member access .statusCode on an `any` value                                                                                                                  @typescript-eslint/no-unsafe-member-access
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\interceptors\response.interceptor.ts
+  26:65  error  Unsafe member access .statusCode on an `any` value  @typescript-eslint/no-unsafe-member-access
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\repositories\base.repository.ts
+  2:10  warning  'Prisma' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\repositories\dispute-evidence.repository.ts
+  172:57  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  181:50  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  245:57  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  253:50  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  268:57  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  276:50  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  360:57  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  364:15  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  387:57  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  400:50  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  415:57  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+  428:50  error  The `{}` ("empty object") type allows any non-nullish value, including literals like `0` and `""`.
+- If that's what you want, disable this lint rule with an inline comment or configure the 'allowObjectTypes' rule option.
+- If you want a type meaning "any object", you probably want `object` instead.
+- If you want a type meaning "any value", you probably want `unknown` instead  @typescript-eslint/no-empty-object-type
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\services\audit-log.service.ts
+    9:5   warning  'IsNotEmpty' is defined but never used                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+   13:5   warning  'ValidateNested' is defined but never used                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   15:10  warning  'Type' is defined but never used                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+  228:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  239:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  239:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  239:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  239:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  282:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  293:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  293:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  293:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  293:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  383:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  392:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  392:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  392:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  392:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  423:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  424:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  424:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  424:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  424:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  453:38  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  454:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  483:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  484:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  484:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  484:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  485:18  error    Unsafe member access .slice on a type that cannot be resolved                                                                                                                                                                                                      @typescript-eslint/no-unsafe-member-access
+  486:18  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  486:53  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  527:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  532:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  532:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  532:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  532:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  559:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  560:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  560:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  560:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  560:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  589:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  590:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  590:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  590:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  590:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  623:37  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  627:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  627:20  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  627:30  error    Unsafe member access .map on a type that cannot be resolved                                                                                                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  627:65  error    Unsafe argument of type `any` assigned to a parameter of type `{} & { id: string; action: AuditActionType; entityType: string; entityId: string; changes: string | null; ipAddress: string | null; userAgent: string | null; actorId: string; createdAt: Date; }`  @typescript-eslint/no-unsafe-argument
+  666:27  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  672:24  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  682:13  error    Unsafe return of a value of type error                                                                                                                                                                                                                             @typescript-eslint/no-unsafe-return
+  702:27  error    Unsafe call of a type that could not be resolved                                                                                                                                                                                                                   @typescript-eslint/no-unsafe-call
+  763:22  warning  'error' is defined but never used                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  775:22  warning  'error' is defined but never used                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\services\email\sendgrid.service.ts
+   8:14  error    A `require()` style import is forbidden            @typescript-eslint/no-require-imports
+  13:21  warning  'key' is defined but never used                    @typescript-eslint/no-unused-vars
+  14:9   error    Async method 'send' has no 'await' expression      @typescript-eslint/require-await
+  46:9   error    Unsafe call of an `any` typed value                @typescript-eslint/no-unsafe-call
+  46:16  error    Unsafe member access .setApiKey on an `any` value  @typescript-eslint/no-unsafe-member-access
+  78:19  error    Unsafe call of an `any` typed value                @typescript-eslint/no-unsafe-call
+  78:26  error    Unsafe member access .send on an `any` value       @typescript-eslint/no-unsafe-member-access
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\services\stats\stats.service.ts
+  34:35  error  Unsafe argument of type `any` assigned to a parameter of type `UserGroupByArgs<DefaultArgs>`  @typescript-eslint/no-unsafe-argument
+  48:58  error  Unsafe member access .day on an `any` value                                                   @typescript-eslint/no-unsafe-member-access
+  48:69  error  Unsafe member access .month on an `any` value                                                 @typescript-eslint/no-unsafe-member-access
+  49:25  error  Unsafe member access ._count on an `any` value                                                @typescript-eslint/no-unsafe-member-access
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\common\services\storage\cloudinary.service.ts
+  133:5  error  Async method 'getUploadSignature' has no 'await' expression  @typescript-eslint/require-await
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\main.ts
+  44:1  error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\modules\core\admin\admin.controller.ts
+  17:9   error  Unsafe return of a value of type error            @typescript-eslint/no-unsafe-return
+  17:16  error  Unsafe call of a type that could not be resolved  @typescript-eslint/no-unsafe-call
+  48:9   error  Unsafe return of a value of type error            @typescript-eslint/no-unsafe-return
+  48:16  error  Unsafe call of a type that could not be resolved  @typescript-eslint/no-unsafe-call
+  61:9   error  Unsafe return of a value of type error            @typescript-eslint/no-unsafe-return
+  61:16  error  Unsafe call of a type that could not be resolved  @typescript-eslint/no-unsafe-call
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\modules\core\admin\admin.service.ts
+  51:9   error  Unsafe return of a value of type `any`              @typescript-eslint/no-unsafe-return
+  55:5   error  Async method 'getAll' has no 'await' expression     @typescript-eslint/require-await
+  57:25  error  Unsafe member access .findMany on an `any` value    @typescript-eslint/no-unsafe-member-access
+  62:9   error  Unsafe return of a value of type `any`              @typescript-eslint/no-unsafe-return
+  62:16  error  Unsafe call of an `any` typed value                 @typescript-eslint/no-unsafe-call
+  62:21  error  Unsafe member access .findMany on an `any` value    @typescript-eslint/no-unsafe-member-access
+  66:5   error  Async method 'getDetail' has no 'await' expression  @typescript-eslint/require-await
+  68:25  error  Unsafe member access .findUnique on an `any` value  @typescript-eslint/no-unsafe-member-access
+  73:9   error  Unsafe return of a value of type `any`              @typescript-eslint/no-unsafe-return
+  73:16  error  Unsafe call of an `any` typed value                 @typescript-eslint/no-unsafe-call
+  73:21  error  Unsafe member access .findUnique on an `any` value  @typescript-eslint/no-unsafe-member-access
+
+C:\Users\emman\Downloads\Personal\js\web\real-estate\backend\src\modules\offers\offers.service.ts
+  12:10  warning  'UserBasicInfo' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 118 problems (108 errors, 10 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.

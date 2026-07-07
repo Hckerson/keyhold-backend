@@ -8,7 +8,7 @@ import { TransactionRepo } from './transaction.repo';
 import { ReviewRepo } from './review.repo';
 import { EmailVerificationRepo } from './email-verification.repo';
 import { PhoneVerificationRepo } from './phone-verification.repo';
-import { KycDocumentRepo } from './kyc-document.repo';
+import { IdentityDocumentRepo } from './kyc-document.repo';
 import { EscrowRepo } from './escrow.repo';
 import { DisputeRepo } from './dispute.repo';
 import { DisputeEvidenceRepo } from './dispute-evidence.repo';
@@ -30,7 +30,7 @@ const repos = [
     // MVP 1.5 repositories (Phase 1)
     EmailVerificationRepo,
     PhoneVerificationRepo,
-    KycDocumentRepo,
+    IdentityDocumentRepo,
     EscrowRepo,
     DisputeRepo,
     DisputeEvidenceRepo,
