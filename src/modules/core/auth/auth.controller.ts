@@ -1,3 +1,4 @@
+import { type Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from './guards';
 import { AuthService } from './auth.service';
 
@@ -23,7 +24,6 @@ import {
     ApiOperation,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import type { RequestWithUser } from '@common/interfaces/req';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -80,8 +80,8 @@ export class AuthController {
     @ApiOperation({ summary: 'Complete profile onboarding' })
     async onboarding(
         @Body() dto: OnboardingDto,
-        @Request() req: RequestWithUser,
+        @Request() req: ExpressRequest,
     ) {
-        return this.authService.onboarding(req.user.id, dto);
+        return this.authService.onboarding(req.user?.id, dto);
     }
 }

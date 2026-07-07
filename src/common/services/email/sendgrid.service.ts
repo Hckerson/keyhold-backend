@@ -1,24 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as sgMail from '@sendgrid/mail';
 import { SendGridEmailMessage } from '@common/interfaces/responses';
-
-// Import SendGrid mail client (install @sendgrid/mail if not present)
-let sgMail: any;
-try {
-    sgMail = require('@sendgrid/mail');
-} catch {
-    // Fallback for development without SendGrid package
-    // In production, ensure @sendgrid/mail is installed
-    sgMail = {
-        setApiKey: (key: string) => {},
-        send: async (msg: SendGridEmailMessage) => {
-            console.warn(
-                'SendGrid not configured. Message would be sent to:',
-                msg.to,
-            );
-        },
-    };
-}
 
 interface EmailOptions {
     to: string | string[];
@@ -27,7 +10,7 @@ interface EmailOptions {
     text?: string;
     attachments?: Array<{
         filename: string;
-        content: Buffer | string;
+        content: string;
         type?: string;
     }>;
 }
@@ -66,10 +49,7 @@ export class SendGridEmailService {
                 text: options.text,
                 attachments: options.attachments?.map((att) => ({
                     filename: att.filename,
-                    content:
-                        typeof att.content === 'string'
-                            ? att.content
-                            : att.content.toString('base64'),
+                    content: att.content,
                     type: att.type,
                     disposition: 'attachment',
                 })),

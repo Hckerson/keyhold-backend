@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import {
     Injectable,
     NestInterceptor,
@@ -9,7 +10,6 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditLogService } from '@common/services/audit-log.service';
 import { AuditActionType } from 'generated/prisma/client';
-import { RequestWithUser } from '@common/interfaces/req';
 
 /**
  * Audit Log Interceptor
@@ -27,7 +27,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         next: CallHandler,
     ): Observable<unknown> {
         const httpContext = context.switchToHttp();
-        const request = httpContext.getRequest<RequestWithUser>();
+        const request = httpContext.getRequest<Request>();
 
         // Only log state-changing requests
         const method = request.method.toUpperCase();
@@ -275,7 +275,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             method: string;
             resourceType: string;
             auditAction: AuditActionType;
-            request: RequestWithUser;
+            request: Request;
         },
         response: unknown,
         logError: unknown,

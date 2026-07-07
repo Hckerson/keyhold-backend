@@ -71,9 +71,10 @@ export class AuthService {
     }
 
     async onboarding(
-        userId: string,
+        userId: string | undefined,
         dto: OnboardingDto,
     ): Promise<{ message: string }> {
+        if (!userId) throw new UnauthorizedException('User not authenticated');
         const user = await this.usersService.findOne(userId);
         if (!user) throw new NotFoundException('User not found');
 
