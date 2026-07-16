@@ -9,7 +9,7 @@ import { PropertyRepo } from '@common/repos/property.repo';
 import { UserRepo } from '@common/repos/user.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import { ConnectionStatus } from '../../../generated/prisma';
+import { ConnectionStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
 import { CreateConnectionDto } from './dto';
 

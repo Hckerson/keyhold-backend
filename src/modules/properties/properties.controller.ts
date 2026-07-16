@@ -18,7 +18,7 @@ import { CreatePropertyDto, UpdatePropertyDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth-user';
-import { PropertyStatus, PropertyType } from '../../../generated/prisma';
+import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
 
 @ApiTags('properties')
 @Controller('properties')

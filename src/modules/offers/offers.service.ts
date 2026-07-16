@@ -8,7 +8,7 @@ import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import { OfferStatus } from '../../../generated/prisma';
+import { OfferStatus } from '@generated/prisma/enums';
 import { CreateOfferDto, RespondOfferDto } from './dto';
 
 @Injectable()

@@ -12,7 +12,7 @@ import { StripeService } from '@common/services/payment/stripe.service';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { PDFService } from '@common/services/document/pdf.service';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
-import { PropertyStatus } from '../../../generated/prisma';
+import { PropertyStatus } from '@generated/prisma/enums';
 import { CreateTransactionDto } from './dto';
 
 @Injectable()

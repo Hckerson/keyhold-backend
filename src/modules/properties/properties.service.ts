@@ -8,7 +8,7 @@ import { PropertyRepo } from '@common/repos/property.repo';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import { PrismaService } from '@common/database/prisma.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './dto';
-import { PropertyStatus, PropertyType } from '../../../generated/prisma';
+import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
 
 @Injectable()
 export class PropertiesService {

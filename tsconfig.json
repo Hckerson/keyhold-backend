@@ -4,7 +4,8 @@
             "@core/*": ["src/modules/core/*"],
             "@modules/*": ["src/modules/*"],
             "@common/*": ["src/common/*"],
-            "@prisma-db/*": ["src/common/database/*"]
+            "@prisma-db/*": ["src/common/database/*"],
+            "@generated/*": ["generated/*"]
         },
         "module": "nodenext",
         "moduleResolution": "nodenext",
@@ -27,8 +28,8 @@
         "noImplicitAny": false,
         "strictBindCallApply": false,
         "noFallthroughCasesInSwitch": false,
-        "types": ["node"]
+        "types": ["node", "jest"]
     },
     "files": ["src/common/types/express.d.ts"],
-    "include": ["src/**/*"]
+    "include": ["src/**/*", "generated/**/*", "test/**/*"]
 }

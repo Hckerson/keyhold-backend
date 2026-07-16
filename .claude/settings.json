@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git restore *)",
+      "Skill(deep-research)",
+      "Skill(deep-research:*)",
+      "Workflow(deep-research)",
+      "WebSearch",
+      "WebFetch(domain:www.builder.io)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:strapi.io)",
+      "WebFetch(domain:www.untitledui.com)",
+      "WebFetch(domain:cssauthor.com)",
+      "WebFetch(domain:www.42coffeecups.com)",
+      "WebFetch(domain:certificates.dev)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\real-estate\\frontend\\.husky"
+    ]
+  }
+}

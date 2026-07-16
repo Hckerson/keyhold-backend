@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { TimeFilter } from '@common/enums/filter';
 import { UserRepo } from '@common/repos/user.repo';
-import { UserAccountStatus } from '../../../../generated/prisma';
+import { UserAccountStatus } from '@generated/prisma/enums';
 
 @Injectable()
 export class StatsService {

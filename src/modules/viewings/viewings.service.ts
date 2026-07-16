@@ -8,7 +8,7 @@ import { ViewingRepo } from '@common/repos/viewing.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import { ViewingStatus } from '../../../generated/prisma';
+import { ViewingStatus } from '@generated/prisma/enums';
 import { CreateViewingDto } from './dto';
 
 @Injectable()

@@ -7,7 +7,7 @@ import {
     Min,
     IsEnum,
 } from 'class-validator';
-import { PropertyType } from '../../../../generated/prisma';
+import { PropertyType } from '@generated/prisma/enums';
 
 export class CreatePropertyDto {
     @IsString()
