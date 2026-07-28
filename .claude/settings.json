@@ -90,7 +90,15 @@
       "Bash(echo \"=== TSC EXIT: $? ===\")",
       "Bash(echo \"=== EXIT: $? ===\")",
       "Bash(echo \"=== LINT EXIT: $? ===\")",
-      "Bash(grep -rn \"from ['\\\\\"]@/\\\\|from ['\\\\\"]\\\\.\\\\./\\\\|from ['\\\\\"]\\\\./\" --include=*.ts --include=*.tsx app components lib hooks middleware.ts)"
+      "Bash(grep -rn \"from ['\\\\\"]@/\\\\|from ['\\\\\"]\\\\.\\\\./\\\\|from ['\\\\\"]\\\\./\" --include=*.ts --include=*.tsx app components lib hooks middleware.ts)",
+      "Bash(rmdir hooks *)",
+      "Bash(python \"C:/Users/emman/AppData/Local/Temp/claude/c--Users-emman-Downloads-Personal-js-web-real-estate-backend/5e02d35b-eeb4-4c4b-b892-3c4181d65ca1/scratchpad/rewrite_type_imports.py\")",
+      "Bash(git show *)",
+      "Bash(node twmerge-audit.mjs)",
+      "Read(//c/Users/emman/Downloads/Personal/js/web/real-estate/**)",
+      "Bash(git commit -q -m 'chore: add tailwind-merge and disable the husky pre-commit hook *)",
+      "Bash(git commit -q -m 'docs: refresh design-os phases, setup guide and elegant-ui references *)",
+      "Bash(git commit -q -m 'style\\(tokens\\): update global token layer and font config *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\real-estate\\frontend\\.husky",
