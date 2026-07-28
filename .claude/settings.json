@@ -75,13 +75,30 @@
       "Bash(echo \"OWN_ERRORS=$?\")",
       "Bash(npx next *)",
       "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./package.json'\\).scripts,null,2\\)\\)\")",
-      "Bash(grep -E '^[-+].*\\(interface|Props|export|=>.*\\\\{$\\)')"
+      "Bash(grep -E '^[-+].*\\(interface|Props|export|=>.*\\\\{$\\)')",
+      "Bash(cd \"c:/Users/emman/Downloads/Personal/js/web/real-estate/frontend\" && find app/agent/property-analytics -type f 2>/dev/null | head && rmdir -p app/agent/property-analytics/\\\\[propertyId\\\\] 2>/dev/null; find app/agent -type d)",
+      "Bash(node -e \"const l=require\\('lucide-react'\\);['Instagram','Linkedin','Facebook','Youtube','Twitter','Share2','Expand','ChevronLeft','ChevronRight','Maximize2','Star','SearchX','LayoutGrid','List','ShieldCheck','BadgeCheck','Lock','Quote','Send','FileSignature','Handshake','X'].forEach\\(n=>console.log\\(n, !!l[n]\\)\\)\")",
+      "Bash(node -e \"const l=require\\('lucide-react'\\);['LandPlot','FileSignature','TriangleAlert','RotateCcw','SlidersHorizontal','Quote','Maximize2'].forEach\\(n=>console.log\\(n,!!l[n]\\)\\)\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:3000/search\")",
+      "Bash(curl -s \"http://localhost:3000/search?q=&type=villa&min=1000000\")",
+      "Bash(curl -s \"http://localhost:3000/search?type=villa&min=1000000\")",
+      "Bash(curl -s \"http://localhost:3000/search\")",
+      "Bash(curl -s -o /dev/null -w \"admin:%{http_code}\\\\n\" \"http://localhost:3000/admin/transactions\")",
+      "Bash(curl -s \"http://localhost:3000/admin/transactions\")",
+      "Bash(grep -o 'Commission \\([0-9.]*%\\)\\\\|$NaNK\\\\|$[0-9]*K')",
+      "Bash(echo \"=== TSC EXIT: $? ===\")",
+      "Bash(echo \"=== EXIT: $? ===\")",
+      "Bash(echo \"=== LINT EXIT: $? ===\")",
+      "Bash(grep -rn \"from ['\\\\\"]@/\\\\|from ['\\\\\"]\\\\.\\\\./\\\\|from ['\\\\\"]\\\\./\" --include=*.ts --include=*.tsx app components lib hooks middleware.ts)"
     ],
     "additionalDirectories": [
       "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\real-estate\\frontend\\.husky",
       "C:\\Users\\emman\\.claude",
       "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\travel\\frontend\\.claude\\skills\\elegant-ui",
-      "c:\\Users\\emman\\Downloads\\Personal\\js\\setup\\next-setup\\.claude\\skills\\elegant-ui"
+      "c:\\Users\\emman\\Downloads\\Personal\\js\\setup\\next-setup\\.claude\\skills\\elegant-ui",
+      "C:\\Users\\emman\\Downloads\\Personal\\js\\web\\real-estate\\frontend\\app\\agent\\property-analytics\\[propertyId]",
+      "c:\\Users\\emman\\.claude\\projects\\c--Users-emman-Downloads-Personal-js-web-real-estate-backend\\memory"
     ]
   }
 }
