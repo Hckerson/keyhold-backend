@@ -20,7 +20,10 @@
       "Bash(npx tsc:*)",
       "Bash(npx next:*)",
       "Skill(artifact-design:*)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(node scripts/validate_palette.js \"#1f4e3d,#3e5c76,#b08d57,#9a9288,#2f855a,#b7791f,#b4443a\" --mode light --surface \"#faf8f4\")",
+      "Bash(pnpm build *)",
+      "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('lib/data/listings.ts','utf8'\\);const m=s.match\\(/id:\\\\s*[\\\\\"'\\\\`]/g\\);console.log\\('listing seed entries:', m?m.length:0\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\emman\\.claude",
