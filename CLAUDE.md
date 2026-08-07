@@ -1,6 +1,6 @@
-﻿# Project Instructions
+# Project Instructions
 
-This is a reusable **NestJS + Prisma backend starter** with a strict, layered, type-safe architecture designed for scale and maintainability.
+This is the **API for a luxury real-estate marketplace** — public listings plus buyer, agent, and admin portals. It serves the Next.js frontend in `../frontend`, and follows the NestJS + Prisma starter's strict, layered, type-safe architecture.
 
 ## Non-negotiable rules
 
@@ -13,16 +13,17 @@ This is a reusable **NestJS + Prisma backend starter** with a strict, layered, t
 7. **No `any` in services.** Strict types everywhere. DTOs are the type source. Prisma generates the rest.
 8. **No hardcoding.** Config, secrets, base URLs, magic numbers, role names, repeated literals — all live in env (`@nestjs/config`), `common/enums/`, or a constants file. Never inline.
 9. **No dead code, stubs, or placeholders.** Delete unused code.
-10. **No comments in code. Ever.** If you need a comment to explain what the code does, the abstraction is wrong. The only exception: explain WHY the code exists when it contradicts normal patterns or implements a specific workaround—and include a ticket/issue reference. Comments that describe WHAT the code does are dead weight.
+10. **No comments in code.** Ever. Code reads clearly on its own — when it doesn't, the abstraction is wrong. Fix the abstraction. Machine-read directives that change behavior (pragmas, codegen markers) are not comments; suppressions are governed by rule 11.
 11. **No inline type/lint rule suppression without explicit approval.** Never use `// @ts-expect-error`, `// @ts-ignore`, `// eslint-disable`, `as any`, `as unknown`, or similar. Each suppression masks a design problem or framework limitation that must be visible. **If a rule conflicts with your implementation:**
-    - Document it in a code comment block explaining the exact reason and framework/constraint involved
-    - Flag it explicitly to the user for approval before committing
-    - This violation will fail the pre-merge checklist
+    - State the exact reason and the framework constraint involved in your response — not in a code comment
+    - Get explicit approval before committing it
+    - This violation fails the pre-merge checklist
     - **Examples of suppressions that need approval:** require imports for non-ESM packages, type assertions when Prisma inference fails, unsafe member access on third-party `any` types
+12. **No `console.log` or debug statements** in committed code. Use the Nest logger.
 
 **Absolute imports via `@common/*` and `@lib/*`.** Never deep-relative (`../../../common/...`).
 
-**This is the only architecture.** Follow it precisely. If you're unsure where something goes, the design is broken—re-read this instead of inventing new locations.
+**This is the only architecture.** Follow it precisely. If you're unsure where something goes, the design is broken — re-read this instead of inventing new locations.
 
 ---
 
@@ -32,7 +33,7 @@ If a library or framework generates a type, schema, validation result, or query 
 
 Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or hand-written parallel types. If you need a smaller shape, derive it via framework helpers or standard TypeScript utilities (`Pick`, `Omit`), not ad hoc object literals.
 
-**When you encounter a new framework tool:** First check whether it produces a derived type, schema, result shape, or validation outcome. If it does, use that output directly and avoid manual reconstruction with `any`, `Record<>`, `as` assertions, or parallel hand-written types.
+**When you encounter a new framework tool:** First check whether it produces a derived type, schema, result shape, or validation outcome. If it does, use that output directly and avoid manual reconstruction.
 
 | Derived artifact        | Source → Use                                               | ✅ Do                                                            | ❌ Don't                                   |
 | ----------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------ |
@@ -74,7 +75,6 @@ Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or han
 - `findSensitiveActions()`, `findByDateRange()`, `findChanges()` — filtering & composition belong in Service
 - Any method that applies domain logic, filtering beyond the params, or aggregation
 
-
 ---
 
 ## Folder Structure
@@ -112,16 +112,25 @@ Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or han
 - `common/interceptors/response.interceptor.ts` standardizes every success response: `{ status, data, message }`.
 - Never build ad-hoc response wrappers or swallow errors without the filter.
 
+## Before you commit or push
+
+These commands run at the commit or push boundary only — not after every edit.
+
+1. `pnpm format` — Prettier owns formatting. Never override it by hand.
+2. `pnpm lint` — zero warnings. Fix every violation; never suppress one.
+3. `pnpm type-check` — strict, zero errors.
+4. `pnpm build` — must succeed.
+
 ## Pre-merge checklist
 
-1. `pnpm type-check` clean (`tsc --noEmit` — no type errors).
-2. `pnpm lint` clean.
-3. `pnpm build` succeeds.
-4. No `any` in services, no `console.log`, no dead code or stubs.
-5. No comments in code (except WHY comments with ticket references). No inline type/lint rule suppressions (`// @ts-ignore`, `// eslint-disable`, `as any`, etc.).
-6. No hardcoded config, secrets, or magic values (all in env, enums, or constants).
-7. Reused existing repos, guards, filters, and the global interceptor. Nothing reinvented.
-8. Followed the layer contracts. Matched the `users` module pattern exactly.
+1. Type check, lint, and build all clean.
+2. No `any` in services, no `console.log`, no dead code or stubs.
+3. No comments in code. No inline type/lint rule suppressions (`// @ts-ignore`, `// eslint-disable`, `as any`, etc.).
+4. No hardcoded config, secrets, or magic values (all in env, enums, or constants).
+5. Reused existing repos, guards, filters, and the global interceptor. Nothing reinvented.
+6. Followed the layer contracts. Repos stayed thin. Matched the `users` module pattern exactly.
+
+**Do not merge if any check fails.**
 
 **Tech stack:** NestJS · Prisma + PostgreSQL · class-validator / class-transformer · @nestjs/jwt + passport · @nestjs/swagger · Jest. Auth logic is in `modules/core/auth/` — extend it, never reinvent.
 
