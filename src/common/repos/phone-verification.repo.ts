@@ -11,9 +11,14 @@ export class PhoneVerificationRepo {
         params: T,
     ): Promise<Prisma.PhoneVerificationGetPayload<T> | null> {
         try {
-            return (await this.prisma.phoneVerification.findUnique(params)) as Prisma.PhoneVerificationGetPayload<T> | null;
+            return (await this.prisma.phoneVerification.findUnique(
+                params,
+            )) as Prisma.PhoneVerificationGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find unique phone verification', error);
+            throw new RepoError(
+                'Failed to find unique phone verification',
+                error,
+            );
         }
     }
 
@@ -21,9 +26,14 @@ export class PhoneVerificationRepo {
         params: T,
     ): Promise<Prisma.PhoneVerificationGetPayload<T> | null> {
         try {
-            return (await this.prisma.phoneVerification.findFirst(params)) as Prisma.PhoneVerificationGetPayload<T> | null;
+            return (await this.prisma.phoneVerification.findFirst(
+                params,
+            )) as Prisma.PhoneVerificationGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find first phone verification', error);
+            throw new RepoError(
+                'Failed to find first phone verification',
+                error,
+            );
         }
     }
 
@@ -31,7 +41,9 @@ export class PhoneVerificationRepo {
         params: T,
     ): Promise<Prisma.PhoneVerificationGetPayload<T>[]> {
         try {
-            return (await this.prisma.phoneVerification.findMany(params)) as Prisma.PhoneVerificationGetPayload<T>[];
+            return (await this.prisma.phoneVerification.findMany(
+                params,
+            )) as Prisma.PhoneVerificationGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find phone verifications', error);
         }
@@ -41,7 +53,9 @@ export class PhoneVerificationRepo {
         params: T,
     ): Promise<Prisma.PhoneVerificationGetPayload<T>> {
         try {
-            return (await this.prisma.phoneVerification.create(params)) as Prisma.PhoneVerificationGetPayload<T>;
+            return (await this.prisma.phoneVerification.create(
+                params,
+            )) as Prisma.PhoneVerificationGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create phone verification', error);
         }
@@ -59,7 +73,9 @@ export class PhoneVerificationRepo {
         params: T,
     ): Promise<Prisma.PhoneVerificationGetPayload<T>> {
         try {
-            return (await this.prisma.phoneVerification.update(params)) as Prisma.PhoneVerificationGetPayload<T>;
+            return (await this.prisma.phoneVerification.update(
+                params,
+            )) as Prisma.PhoneVerificationGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update phone verification', error);
         }
@@ -77,7 +93,9 @@ export class PhoneVerificationRepo {
         params: T,
     ): Promise<Prisma.PhoneVerificationGetPayload<T>> {
         try {
-            return (await this.prisma.phoneVerification.delete(params)) as Prisma.PhoneVerificationGetPayload<T>;
+            return (await this.prisma.phoneVerification.delete(
+                params,
+            )) as Prisma.PhoneVerificationGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete phone verification', error);
         }

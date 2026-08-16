@@ -11,9 +11,14 @@ export class DisputeEvidenceRepo {
         params: T,
     ): Promise<Prisma.DisputeEvidenceGetPayload<T> | null> {
         try {
-            return (await this.prisma.disputeEvidence.findUnique(params)) as Prisma.DisputeEvidenceGetPayload<T> | null;
+            return (await this.prisma.disputeEvidence.findUnique(
+                params,
+            )) as Prisma.DisputeEvidenceGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find unique dispute evidence', error);
+            throw new RepoError(
+                'Failed to find unique dispute evidence',
+                error,
+            );
         }
     }
 
@@ -21,7 +26,9 @@ export class DisputeEvidenceRepo {
         params: T,
     ): Promise<Prisma.DisputeEvidenceGetPayload<T> | null> {
         try {
-            return (await this.prisma.disputeEvidence.findFirst(params)) as Prisma.DisputeEvidenceGetPayload<T> | null;
+            return (await this.prisma.disputeEvidence.findFirst(
+                params,
+            )) as Prisma.DisputeEvidenceGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first dispute evidence', error);
         }
@@ -31,7 +38,9 @@ export class DisputeEvidenceRepo {
         params: T,
     ): Promise<Prisma.DisputeEvidenceGetPayload<T>[]> {
         try {
-            return (await this.prisma.disputeEvidence.findMany(params)) as Prisma.DisputeEvidenceGetPayload<T>[];
+            return (await this.prisma.disputeEvidence.findMany(
+                params,
+            )) as Prisma.DisputeEvidenceGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find dispute evidences', error);
         }
@@ -41,7 +50,9 @@ export class DisputeEvidenceRepo {
         params: T,
     ): Promise<Prisma.DisputeEvidenceGetPayload<T>> {
         try {
-            return (await this.prisma.disputeEvidence.create(params)) as Prisma.DisputeEvidenceGetPayload<T>;
+            return (await this.prisma.disputeEvidence.create(
+                params,
+            )) as Prisma.DisputeEvidenceGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create dispute evidence', error);
         }
@@ -59,7 +70,9 @@ export class DisputeEvidenceRepo {
         params: T,
     ): Promise<Prisma.DisputeEvidenceGetPayload<T>> {
         try {
-            return (await this.prisma.disputeEvidence.update(params)) as Prisma.DisputeEvidenceGetPayload<T>;
+            return (await this.prisma.disputeEvidence.update(
+                params,
+            )) as Prisma.DisputeEvidenceGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update dispute evidence', error);
         }
@@ -77,7 +90,9 @@ export class DisputeEvidenceRepo {
         params: T,
     ): Promise<Prisma.DisputeEvidenceGetPayload<T>> {
         try {
-            return (await this.prisma.disputeEvidence.delete(params)) as Prisma.DisputeEvidenceGetPayload<T>;
+            return (await this.prisma.disputeEvidence.delete(
+                params,
+            )) as Prisma.DisputeEvidenceGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete dispute evidence', error);
         }

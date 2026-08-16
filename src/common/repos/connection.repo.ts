@@ -11,7 +11,9 @@ export class ConnectionRepo {
         params: T,
     ): Promise<Prisma.ConnectionGetPayload<T> | null> {
         try {
-            return (await this.prisma.connection.findUnique(params)) as Prisma.ConnectionGetPayload<T> | null;
+            return (await this.prisma.connection.findUnique(
+                params,
+            )) as Prisma.ConnectionGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique connection', error);
         }
@@ -21,7 +23,9 @@ export class ConnectionRepo {
         params: T,
     ): Promise<Prisma.ConnectionGetPayload<T> | null> {
         try {
-            return (await this.prisma.connection.findFirst(params)) as Prisma.ConnectionGetPayload<T> | null;
+            return (await this.prisma.connection.findFirst(
+                params,
+            )) as Prisma.ConnectionGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first connection', error);
         }
@@ -31,7 +35,9 @@ export class ConnectionRepo {
         params: T,
     ): Promise<Prisma.ConnectionGetPayload<T>[]> {
         try {
-            return (await this.prisma.connection.findMany(params)) as Prisma.ConnectionGetPayload<T>[];
+            return (await this.prisma.connection.findMany(
+                params,
+            )) as Prisma.ConnectionGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find connections', error);
         }
@@ -41,7 +47,9 @@ export class ConnectionRepo {
         params: T,
     ): Promise<Prisma.ConnectionGetPayload<T>> {
         try {
-            return (await this.prisma.connection.create(params)) as Prisma.ConnectionGetPayload<T>;
+            return (await this.prisma.connection.create(
+                params,
+            )) as Prisma.ConnectionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create connection', error);
         }
@@ -59,7 +67,9 @@ export class ConnectionRepo {
         params: T,
     ): Promise<Prisma.ConnectionGetPayload<T>> {
         try {
-            return (await this.prisma.connection.update(params)) as Prisma.ConnectionGetPayload<T>;
+            return (await this.prisma.connection.update(
+                params,
+            )) as Prisma.ConnectionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update connection', error);
         }
@@ -77,7 +87,9 @@ export class ConnectionRepo {
         params: T,
     ): Promise<Prisma.ConnectionGetPayload<T>> {
         try {
-            return (await this.prisma.connection.delete(params)) as Prisma.ConnectionGetPayload<T>;
+            return (await this.prisma.connection.delete(
+                params,
+            )) as Prisma.ConnectionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete connection', error);
         }

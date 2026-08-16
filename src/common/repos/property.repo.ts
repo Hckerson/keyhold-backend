@@ -11,7 +11,9 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T> | null> {
         try {
-            return (await this.prisma.property.findUnique(params)) as Prisma.PropertyGetPayload<T> | null;
+            return (await this.prisma.property.findUnique(
+                params,
+            )) as Prisma.PropertyGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique property', error);
         }
@@ -21,7 +23,9 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T> | null> {
         try {
-            return (await this.prisma.property.findFirst(params)) as Prisma.PropertyGetPayload<T> | null;
+            return (await this.prisma.property.findFirst(
+                params,
+            )) as Prisma.PropertyGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first property', error);
         }
@@ -31,7 +35,9 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>[]> {
         try {
-            return (await this.prisma.property.findMany(params)) as Prisma.PropertyGetPayload<T>[];
+            return (await this.prisma.property.findMany(
+                params,
+            )) as Prisma.PropertyGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find properties', error);
         }
@@ -41,7 +47,9 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>> {
         try {
-            return (await this.prisma.property.create(params)) as Prisma.PropertyGetPayload<T>;
+            return (await this.prisma.property.create(
+                params,
+            )) as Prisma.PropertyGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create property', error);
         }
@@ -59,7 +67,9 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>> {
         try {
-            return (await this.prisma.property.update(params)) as Prisma.PropertyGetPayload<T>;
+            return (await this.prisma.property.update(
+                params,
+            )) as Prisma.PropertyGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update property', error);
         }
@@ -77,7 +87,9 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>> {
         try {
-            return (await this.prisma.property.delete(params)) as Prisma.PropertyGetPayload<T>;
+            return (await this.prisma.property.delete(
+                params,
+            )) as Prisma.PropertyGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete property', error);
         }

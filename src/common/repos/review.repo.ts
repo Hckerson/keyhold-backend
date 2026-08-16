@@ -11,7 +11,9 @@ export class ReviewRepo {
         params: T,
     ): Promise<Prisma.ReviewGetPayload<T> | null> {
         try {
-            return (await this.prisma.review.findUnique(params)) as Prisma.ReviewGetPayload<T> | null;
+            return (await this.prisma.review.findUnique(
+                params,
+            )) as Prisma.ReviewGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique review', error);
         }
@@ -21,7 +23,9 @@ export class ReviewRepo {
         params: T,
     ): Promise<Prisma.ReviewGetPayload<T> | null> {
         try {
-            return (await this.prisma.review.findFirst(params)) as Prisma.ReviewGetPayload<T> | null;
+            return (await this.prisma.review.findFirst(
+                params,
+            )) as Prisma.ReviewGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first review', error);
         }
@@ -31,7 +35,9 @@ export class ReviewRepo {
         params: T,
     ): Promise<Prisma.ReviewGetPayload<T>[]> {
         try {
-            return (await this.prisma.review.findMany(params)) as Prisma.ReviewGetPayload<T>[];
+            return (await this.prisma.review.findMany(
+                params,
+            )) as Prisma.ReviewGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find reviews', error);
         }
@@ -41,7 +47,9 @@ export class ReviewRepo {
         params: T,
     ): Promise<Prisma.ReviewGetPayload<T>> {
         try {
-            return (await this.prisma.review.create(params)) as Prisma.ReviewGetPayload<T>;
+            return (await this.prisma.review.create(
+                params,
+            )) as Prisma.ReviewGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create review', error);
         }
@@ -59,7 +67,9 @@ export class ReviewRepo {
         params: T,
     ): Promise<Prisma.ReviewGetPayload<T>> {
         try {
-            return (await this.prisma.review.update(params)) as Prisma.ReviewGetPayload<T>;
+            return (await this.prisma.review.update(
+                params,
+            )) as Prisma.ReviewGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update review', error);
         }
@@ -77,7 +87,9 @@ export class ReviewRepo {
         params: T,
     ): Promise<Prisma.ReviewGetPayload<T>> {
         try {
-            return (await this.prisma.review.delete(params)) as Prisma.ReviewGetPayload<T>;
+            return (await this.prisma.review.delete(
+                params,
+            )) as Prisma.ReviewGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete review', error);
         }

@@ -11,7 +11,9 @@ export class OfferRepo {
         params: T,
     ): Promise<Prisma.OfferGetPayload<T> | null> {
         try {
-            return (await this.prisma.offer.findUnique(params)) as Prisma.OfferGetPayload<T> | null;
+            return (await this.prisma.offer.findUnique(
+                params,
+            )) as Prisma.OfferGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique offer', error);
         }
@@ -21,7 +23,9 @@ export class OfferRepo {
         params: T,
     ): Promise<Prisma.OfferGetPayload<T> | null> {
         try {
-            return (await this.prisma.offer.findFirst(params)) as Prisma.OfferGetPayload<T> | null;
+            return (await this.prisma.offer.findFirst(
+                params,
+            )) as Prisma.OfferGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first offer', error);
         }
@@ -31,7 +35,9 @@ export class OfferRepo {
         params: T,
     ): Promise<Prisma.OfferGetPayload<T>[]> {
         try {
-            return (await this.prisma.offer.findMany(params)) as Prisma.OfferGetPayload<T>[];
+            return (await this.prisma.offer.findMany(
+                params,
+            )) as Prisma.OfferGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find offers', error);
         }
@@ -41,7 +47,9 @@ export class OfferRepo {
         params: T,
     ): Promise<Prisma.OfferGetPayload<T>> {
         try {
-            return (await this.prisma.offer.create(params)) as Prisma.OfferGetPayload<T>;
+            return (await this.prisma.offer.create(
+                params,
+            )) as Prisma.OfferGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create offer', error);
         }
@@ -59,7 +67,9 @@ export class OfferRepo {
         params: T,
     ): Promise<Prisma.OfferGetPayload<T>> {
         try {
-            return (await this.prisma.offer.update(params)) as Prisma.OfferGetPayload<T>;
+            return (await this.prisma.offer.update(
+                params,
+            )) as Prisma.OfferGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update offer', error);
         }
@@ -77,7 +87,9 @@ export class OfferRepo {
         params: T,
     ): Promise<Prisma.OfferGetPayload<T>> {
         try {
-            return (await this.prisma.offer.delete(params)) as Prisma.OfferGetPayload<T>;
+            return (await this.prisma.offer.delete(
+                params,
+            )) as Prisma.OfferGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete offer', error);
         }

@@ -11,7 +11,9 @@ export class ViewingRepo {
         params: T,
     ): Promise<Prisma.ViewingGetPayload<T> | null> {
         try {
-            return (await this.prisma.viewing.findUnique(params)) as Prisma.ViewingGetPayload<T> | null;
+            return (await this.prisma.viewing.findUnique(
+                params,
+            )) as Prisma.ViewingGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique viewing', error);
         }
@@ -21,7 +23,9 @@ export class ViewingRepo {
         params: T,
     ): Promise<Prisma.ViewingGetPayload<T> | null> {
         try {
-            return (await this.prisma.viewing.findFirst(params)) as Prisma.ViewingGetPayload<T> | null;
+            return (await this.prisma.viewing.findFirst(
+                params,
+            )) as Prisma.ViewingGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first viewing', error);
         }
@@ -31,7 +35,9 @@ export class ViewingRepo {
         params: T,
     ): Promise<Prisma.ViewingGetPayload<T>[]> {
         try {
-            return (await this.prisma.viewing.findMany(params)) as Prisma.ViewingGetPayload<T>[];
+            return (await this.prisma.viewing.findMany(
+                params,
+            )) as Prisma.ViewingGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find viewings', error);
         }
@@ -41,7 +47,9 @@ export class ViewingRepo {
         params: T,
     ): Promise<Prisma.ViewingGetPayload<T>> {
         try {
-            return (await this.prisma.viewing.create(params)) as Prisma.ViewingGetPayload<T>;
+            return (await this.prisma.viewing.create(
+                params,
+            )) as Prisma.ViewingGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create viewing', error);
         }
@@ -59,7 +67,9 @@ export class ViewingRepo {
         params: T,
     ): Promise<Prisma.ViewingGetPayload<T>> {
         try {
-            return (await this.prisma.viewing.update(params)) as Prisma.ViewingGetPayload<T>;
+            return (await this.prisma.viewing.update(
+                params,
+            )) as Prisma.ViewingGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update viewing', error);
         }
@@ -77,7 +87,9 @@ export class ViewingRepo {
         params: T,
     ): Promise<Prisma.ViewingGetPayload<T>> {
         try {
-            return (await this.prisma.viewing.delete(params)) as Prisma.ViewingGetPayload<T>;
+            return (await this.prisma.viewing.delete(
+                params,
+            )) as Prisma.ViewingGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete viewing', error);
         }

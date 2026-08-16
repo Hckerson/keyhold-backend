@@ -11,7 +11,9 @@ export class FlagRepo {
         params: T,
     ): Promise<Prisma.FlagGetPayload<T> | null> {
         try {
-            return (await this.prisma.flag.findUnique(params)) as Prisma.FlagGetPayload<T> | null;
+            return (await this.prisma.flag.findUnique(
+                params,
+            )) as Prisma.FlagGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique flag', error);
         }
@@ -21,7 +23,9 @@ export class FlagRepo {
         params: T,
     ): Promise<Prisma.FlagGetPayload<T> | null> {
         try {
-            return (await this.prisma.flag.findFirst(params)) as Prisma.FlagGetPayload<T> | null;
+            return (await this.prisma.flag.findFirst(
+                params,
+            )) as Prisma.FlagGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first flag', error);
         }
@@ -31,7 +35,9 @@ export class FlagRepo {
         params: T,
     ): Promise<Prisma.FlagGetPayload<T>[]> {
         try {
-            return (await this.prisma.flag.findMany(params)) as Prisma.FlagGetPayload<T>[];
+            return (await this.prisma.flag.findMany(
+                params,
+            )) as Prisma.FlagGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find flags', error);
         }
@@ -41,7 +47,9 @@ export class FlagRepo {
         params: T,
     ): Promise<Prisma.FlagGetPayload<T>> {
         try {
-            return (await this.prisma.flag.create(params)) as Prisma.FlagGetPayload<T>;
+            return (await this.prisma.flag.create(
+                params,
+            )) as Prisma.FlagGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create flag', error);
         }
@@ -59,7 +67,9 @@ export class FlagRepo {
         params: T,
     ): Promise<Prisma.FlagGetPayload<T>> {
         try {
-            return (await this.prisma.flag.update(params)) as Prisma.FlagGetPayload<T>;
+            return (await this.prisma.flag.update(
+                params,
+            )) as Prisma.FlagGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update flag', error);
         }
@@ -77,7 +87,9 @@ export class FlagRepo {
         params: T,
     ): Promise<Prisma.FlagGetPayload<T>> {
         try {
-            return (await this.prisma.flag.delete(params)) as Prisma.FlagGetPayload<T>;
+            return (await this.prisma.flag.delete(
+                params,
+            )) as Prisma.FlagGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete flag', error);
         }

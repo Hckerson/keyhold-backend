@@ -11,9 +11,14 @@ export class EmailVerificationRepo {
         params: T,
     ): Promise<Prisma.VerificationTokenGetPayload<T> | null> {
         try {
-            return (await this.prisma.verificationToken.findUnique(params)) as Prisma.VerificationTokenGetPayload<T> | null;
+            return (await this.prisma.verificationToken.findUnique(
+                params,
+            )) as Prisma.VerificationTokenGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find unique email verification', error);
+            throw new RepoError(
+                'Failed to find unique email verification',
+                error,
+            );
         }
     }
 
@@ -21,9 +26,14 @@ export class EmailVerificationRepo {
         params: T,
     ): Promise<Prisma.VerificationTokenGetPayload<T> | null> {
         try {
-            return (await this.prisma.verificationToken.findFirst(params)) as Prisma.VerificationTokenGetPayload<T> | null;
+            return (await this.prisma.verificationToken.findFirst(
+                params,
+            )) as Prisma.VerificationTokenGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find first email verification', error);
+            throw new RepoError(
+                'Failed to find first email verification',
+                error,
+            );
         }
     }
 
@@ -31,7 +41,9 @@ export class EmailVerificationRepo {
         params: T,
     ): Promise<Prisma.VerificationTokenGetPayload<T>[]> {
         try {
-            return (await this.prisma.verificationToken.findMany(params)) as Prisma.VerificationTokenGetPayload<T>[];
+            return (await this.prisma.verificationToken.findMany(
+                params,
+            )) as Prisma.VerificationTokenGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find email verifications', error);
         }
@@ -41,7 +53,9 @@ export class EmailVerificationRepo {
         params: T,
     ): Promise<Prisma.VerificationTokenGetPayload<T>> {
         try {
-            return (await this.prisma.verificationToken.create(params)) as Prisma.VerificationTokenGetPayload<T>;
+            return (await this.prisma.verificationToken.create(
+                params,
+            )) as Prisma.VerificationTokenGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create email verification', error);
         }
@@ -59,7 +73,9 @@ export class EmailVerificationRepo {
         params: T,
     ): Promise<Prisma.VerificationTokenGetPayload<T>> {
         try {
-            return (await this.prisma.verificationToken.update(params)) as Prisma.VerificationTokenGetPayload<T>;
+            return (await this.prisma.verificationToken.update(
+                params,
+            )) as Prisma.VerificationTokenGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update email verification', error);
         }
@@ -77,7 +93,9 @@ export class EmailVerificationRepo {
         params: T,
     ): Promise<Prisma.VerificationTokenGetPayload<T>> {
         try {
-            return (await this.prisma.verificationToken.delete(params)) as Prisma.VerificationTokenGetPayload<T>;
+            return (await this.prisma.verificationToken.delete(
+                params,
+            )) as Prisma.VerificationTokenGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete email verification', error);
         }

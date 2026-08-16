@@ -86,7 +86,10 @@ export class AuditLogInterceptor implements NestInterceptor {
      * Map endpoint path and HTTP method to AuditActionType enum
      * Returns null if the endpoint doesn't map to a recognized action
      */
-    private mapEndpointToAction(path: string, method: string): AuditActionType | null {
+    private mapEndpointToAction(
+        path: string,
+        method: string,
+    ): AuditActionType | null {
         const normalizedPath = path.toLowerCase();
 
         if (normalizedPath.includes('/users')) {
@@ -205,10 +208,7 @@ export class AuditLogInterceptor implements NestInterceptor {
     /**
      * Extract resource ID from response or path
      */
-    private extractResourceId(
-        path: string,
-        response?: unknown,
-    ): string | null {
+    private extractResourceId(path: string, response?: unknown): string | null {
         // Try to extract from path first (e.g., /properties/123)
         const pathSegments = path.split('/').filter((s) => s.length > 0);
         if (pathSegments.length >= 2) {
@@ -225,11 +225,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             if (obj.id && typeof obj.id === 'string') {
                 return obj.id;
             }
-            if (
-                obj.data &&
-                typeof obj.data === 'object' &&
-                obj.data !== null
-            ) {
+            if (obj.data && typeof obj.data === 'object' && obj.data !== null) {
                 const dataObj = obj.data as Record<string, unknown>;
                 if (dataObj.id && typeof dataObj.id === 'string') {
                     return dataObj.id;
@@ -258,9 +254,17 @@ export class AuditLogInterceptor implements NestInterceptor {
 
         // Alphanumeric ID (excluding common non-ID segments)
         if (/^[a-z0-9_-]{8,}$/i.test(str)) {
-            return !['properties', 'users', 'messages', 'viewings', 'offers', 'transactions', 'connections', 'disputes', 'reviews'].includes(
-                str.toLowerCase(),
-            );
+            return ![
+                'properties',
+                'users',
+                'messages',
+                'viewings',
+                'offers',
+                'transactions',
+                'connections',
+                'disputes',
+                'reviews',
+            ].includes(str.toLowerCase());
         }
 
         return false;
@@ -301,7 +305,8 @@ export class AuditLogInterceptor implements NestInterceptor {
                 actionDetails: {
                     method: context.method,
                     path: context.path,
-                    statusCode: typeof statusCode === 'number' ? statusCode : undefined,
+                    statusCode:
+                        typeof statusCode === 'number' ? statusCode : undefined,
                     success: !logError,
                 },
                 afterValue: response,

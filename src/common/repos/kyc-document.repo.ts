@@ -11,9 +11,14 @@ export class IdentityDocumentRepo {
         params: T,
     ): Promise<Prisma.IdentityDocumentGetPayload<T> | null> {
         try {
-            return (await this.prisma.identityDocument.findUnique(params)) as Prisma.IdentityDocumentGetPayload<T> | null;
+            return (await this.prisma.identityDocument.findUnique(
+                params,
+            )) as Prisma.IdentityDocumentGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find unique identity document', error);
+            throw new RepoError(
+                'Failed to find unique identity document',
+                error,
+            );
         }
     }
 
@@ -21,9 +26,14 @@ export class IdentityDocumentRepo {
         params: T,
     ): Promise<Prisma.IdentityDocumentGetPayload<T> | null> {
         try {
-            return (await this.prisma.identityDocument.findFirst(params)) as Prisma.IdentityDocumentGetPayload<T> | null;
+            return (await this.prisma.identityDocument.findFirst(
+                params,
+            )) as Prisma.IdentityDocumentGetPayload<T> | null;
         } catch (error) {
-            throw new RepoError('Failed to find first identity document', error);
+            throw new RepoError(
+                'Failed to find first identity document',
+                error,
+            );
         }
     }
 
@@ -31,7 +41,9 @@ export class IdentityDocumentRepo {
         params: T,
     ): Promise<Prisma.IdentityDocumentGetPayload<T>[]> {
         try {
-            return (await this.prisma.identityDocument.findMany(params)) as Prisma.IdentityDocumentGetPayload<T>[];
+            return (await this.prisma.identityDocument.findMany(
+                params,
+            )) as Prisma.IdentityDocumentGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find identity documents', error);
         }
@@ -41,7 +53,9 @@ export class IdentityDocumentRepo {
         params: T,
     ): Promise<Prisma.IdentityDocumentGetPayload<T>> {
         try {
-            return (await this.prisma.identityDocument.create(params)) as Prisma.IdentityDocumentGetPayload<T>;
+            return (await this.prisma.identityDocument.create(
+                params,
+            )) as Prisma.IdentityDocumentGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create identity document', error);
         }
@@ -59,7 +73,9 @@ export class IdentityDocumentRepo {
         params: T,
     ): Promise<Prisma.IdentityDocumentGetPayload<T>> {
         try {
-            return (await this.prisma.identityDocument.update(params)) as Prisma.IdentityDocumentGetPayload<T>;
+            return (await this.prisma.identityDocument.update(
+                params,
+            )) as Prisma.IdentityDocumentGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update identity document', error);
         }
@@ -77,7 +93,9 @@ export class IdentityDocumentRepo {
         params: T,
     ): Promise<Prisma.IdentityDocumentGetPayload<T>> {
         try {
-            return (await this.prisma.identityDocument.delete(params)) as Prisma.IdentityDocumentGetPayload<T>;
+            return (await this.prisma.identityDocument.delete(
+                params,
+            )) as Prisma.IdentityDocumentGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete identity document', error);
         }

@@ -11,7 +11,9 @@ export class MessageRepo {
         params: T,
     ): Promise<Prisma.MessageGetPayload<T> | null> {
         try {
-            return (await this.prisma.message.findUnique(params)) as Prisma.MessageGetPayload<T> | null;
+            return (await this.prisma.message.findUnique(
+                params,
+            )) as Prisma.MessageGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique message', error);
         }
@@ -21,7 +23,9 @@ export class MessageRepo {
         params: T,
     ): Promise<Prisma.MessageGetPayload<T> | null> {
         try {
-            return (await this.prisma.message.findFirst(params)) as Prisma.MessageGetPayload<T> | null;
+            return (await this.prisma.message.findFirst(
+                params,
+            )) as Prisma.MessageGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first message', error);
         }
@@ -31,7 +35,9 @@ export class MessageRepo {
         params: T,
     ): Promise<Prisma.MessageGetPayload<T>[]> {
         try {
-            return (await this.prisma.message.findMany(params)) as Prisma.MessageGetPayload<T>[];
+            return (await this.prisma.message.findMany(
+                params,
+            )) as Prisma.MessageGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find messages', error);
         }
@@ -41,7 +47,9 @@ export class MessageRepo {
         params: T,
     ): Promise<Prisma.MessageGetPayload<T>> {
         try {
-            return (await this.prisma.message.create(params)) as Prisma.MessageGetPayload<T>;
+            return (await this.prisma.message.create(
+                params,
+            )) as Prisma.MessageGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create message', error);
         }
@@ -59,7 +67,9 @@ export class MessageRepo {
         params: T,
     ): Promise<Prisma.MessageGetPayload<T>> {
         try {
-            return (await this.prisma.message.update(params)) as Prisma.MessageGetPayload<T>;
+            return (await this.prisma.message.update(
+                params,
+            )) as Prisma.MessageGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update message', error);
         }
@@ -77,7 +87,9 @@ export class MessageRepo {
         params: T,
     ): Promise<Prisma.MessageGetPayload<T>> {
         try {
-            return (await this.prisma.message.delete(params)) as Prisma.MessageGetPayload<T>;
+            return (await this.prisma.message.delete(
+                params,
+            )) as Prisma.MessageGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete message', error);
         }
