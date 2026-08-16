@@ -57,6 +57,9 @@ enum UserAccountStatus {
 // ============================================================================
 
 enum PropertyType {
+  ESTATE
+  VILLA
+  PENTHOUSE
   HOUSE
   APARTMENT
   CONDO
@@ -66,9 +69,11 @@ enum PropertyType {
 }
 
 enum PropertyStatus {
+  DRAFT
   AVAILABLE
   PENDING
   SOLD
+  EXPIRED
 }
 
 enum ConnectionStatus {
@@ -109,6 +114,7 @@ enum VerificationType {
   EMAIL
   PHONE
   KYC
+  PASSWORD_RESET
 }
 
 enum FlagType {
@@ -432,10 +438,20 @@ model Property {
   title       String
   description String
   address     String
+  locality    String
+  region      String
+  postalCode  String
+  country     String   @default("US")
+  latitude    Float?
+  longitude   Float?
   price       Float
   bedrooms    Int
   bathrooms   Int
   sqFt        Float?
+  lotSqFt     Float?
+  yearBuilt   Int?
+  walkScore   Int?
+  viewsCount  Int      @default(0)
   amenities   String[] // JSON array
   features    String[] // JSON array
 
@@ -462,6 +478,9 @@ model Property {
   // Constraints
   @@index([sellerId])
   @@index([status])
+  @@index([locality])
+  @@index([type])
+  @@index([price])
 }
 
 model PropertyImage {
@@ -588,6 +607,11 @@ model User {
   role         UserRole
   status       UserAccountStatus @default(ACTIVE)
 
+  // Seller profile
+  jobTitle      String?
+  agencyName    String?
+  licenseNumber String?
+
   // Enums - period columns powering the stats grouping pattern
   day   Day
   month Month
@@ -624,6 +648,7 @@ model User {
   disputesInitiated  Dispute[]           @relation("DisputeInitiator")
   auditLogs          AuditLog[]          @relation("AuditActor")
   savedProperties    SavedProperty[]
+  suspensions        UserSuspension[]
 
   // Constraints
   @@index([email])
@@ -639,10 +664,17 @@ model UserSuspension {
   duration Int? // Duration in days, null for indefinite
   notes    String?
 
+  // Foreign Keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Timestamps
   liftedAt  DateTime?
   updatedAt DateTime  @updatedAt
   createdAt DateTime  @default(now())
+
+  // Constraints
+  @@index([userId])
 }
 
 model VerificationToken {
