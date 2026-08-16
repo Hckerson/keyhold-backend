@@ -1,6 +1,6 @@
 import * as sgMail from '@sendgrid/mail';
 import { ConfigService } from '@nestjs/config';
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 
 interface EmailOptions {
     to: string | string[];
@@ -20,15 +20,31 @@ interface EmailResponse {
 
 @Injectable()
 export class SendGridEmailService {
+    private readonly logger = new Logger(SendGridEmailService.name);
+    private readonly enabled: boolean;
+
     constructor(private configService: ConfigService) {
         const apiKey = this.configService.get<string>(
             'externalServices.sendgrid.apiKey',
         );
-        if (!apiKey) throw new Error('SENDGRID_API_KEY not configured');
-        sgMail.setApiKey(apiKey);
+        this.enabled = Boolean(apiKey);
+        if (apiKey) {
+            sgMail.setApiKey(apiKey);
+        } else {
+            this.logger.warn(
+                'SENDGRID_API_KEY not configured — outbound email is disabled',
+            );
+        }
     }
 
     async sendEmail(options: EmailOptions): Promise<EmailResponse> {
+        if (!this.enabled) {
+            this.logger.warn(
+                `Email suppressed (SendGrid disabled): "${options.subject}"`,
+            );
+            return { success: false };
+        }
+
         try {
             const fromEmail = this.configService.get<string>(
                 'externalServices.sendgrid.fromEmail',
@@ -122,6 +138,24 @@ export class SendGridEmailService {
         <p>Your purchase of ${propertyTitle} is complete.</p>
         <p><strong>Final Price: $${finalPrice.toLocaleString()}</strong></p>
         <p>Thank you for using our platform. Please rate the seller.</p>
+      `,
+        });
+    }
+
+    async sendPasswordResetEmail(
+        email: string,
+        fullName: string,
+        resetUrl: string,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: email,
+            subject: 'Reset your password',
+            html: `
+        <h2>Password reset</h2>
+        <p>Hello ${fullName},</p>
+        <p>We received a request to reset your password. This link expires in one hour.</p>
+        <p><a href="${resetUrl}">Choose a new password</a></p>
+        <p>If you did not request this, you can safely ignore this email.</p>
       `,
         });
     }
