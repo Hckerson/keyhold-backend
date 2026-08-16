@@ -15,41 +15,41 @@
 This contains complete specs for:
 
 1. ✅ **User Verification & Email Confirmation**
-   - Prisma schema (EmailVerification, PhoneVerification, KycDocument models)
-   - 12 API endpoints (send verification, verify email, verify phone, verify KYC, status checks)
-   - Service layer (token generation, verification logic, rate limiting)
-   - DTOs with class-validator decorators
-   - Repository queries
-   - Controller endpoints with guards
+    - Prisma schema (EmailVerification, PhoneVerification, KycDocument models)
+    - 12 API endpoints (send verification, verify email, verify phone, verify KYC, status checks)
+    - Service layer (token generation, verification logic, rate limiting)
+    - DTOs with class-validator decorators
+    - Repository queries
+    - Controller endpoints with guards
 
 2. ✅ **Escrow & Payment Hold System**
-   - Prisma schema (Escrow model, status enums)
-   - 9 API endpoints (create hold, release, return, dispute freeze, admin override)
-   - Stripe Connect integration
-   - Webhook handling for payment release
-   - Service layer (hold logic, release conditions, dispute handling)
-   - Integration with Transaction model
+    - Prisma schema (Escrow model, status enums)
+    - 9 API endpoints (create hold, release, return, dispute freeze, admin override)
+    - Stripe Connect integration
+    - Webhook handling for payment release
+    - Service layer (hold logic, release conditions, dispute handling)
+    - Integration with Transaction model
 
 3. ✅ **Dispute Resolution System**
-   - Prisma schema (Dispute, DisputeEvidence models)
-   - 12 API endpoints (create dispute, submit evidence, view, respond, admin mediate, resolve)
-   - State machine (OPEN → REVIEW → MEDIATION → RESOLVED → CLOSED)
-   - Service layer (evidence validation, mediation workflow, auto-resolution)
-   - Notification triggers on every status change
+    - Prisma schema (Dispute, DisputeEvidence models)
+    - 12 API endpoints (create dispute, submit evidence, view, respond, admin mediate, resolve)
+    - State machine (OPEN → REVIEW → MEDIATION → RESOLVED → CLOSED)
+    - Service layer (evidence validation, mediation workflow, auto-resolution)
+    - Notification triggers on every status change
 
 4. ✅ **Admin Moderation & Content Control**
-   - Prisma schema (Flag, UserSuspension models)
-   - 18 API endpoints (flag resources, resolve flags, suspend users, view queue)
-   - Service layer (auto-suspend logic at 5+ flags, dispute integration)
-   - Repository queries for moderation queue
-   - Admin dashboard endpoints
+    - Prisma schema (Flag, UserSuspension models)
+    - 18 API endpoints (flag resources, resolve flags, suspend users, view queue)
+    - Service layer (auto-suspend logic at 5+ flags, dispute integration)
+    - Repository queries for moderation queue
+    - Admin dashboard endpoints
 
 5. ✅ **Transaction Audit Trail & Logging**
-   - Prisma schema (AuditLog model)
-   - Middleware to auto-log all state changes
-   - 6 API endpoints (get audit log, export report, view by resource/user)
-   - Immutable log design (no deletion)
-   - Before/after value tracking
+    - Prisma schema (AuditLog model)
+    - Middleware to auto-log all state changes
+    - 6 API endpoints (get audit log, export report, view by resource/user)
+    - Immutable log design (no deletion)
+    - Before/after value tracking
 
 **Plus:** Unified synthesis with complete Prisma schema, dependency order, file structure, integration checklist
 
@@ -130,6 +130,7 @@ npm run prisma:generate
 ### Phase 3: Implementation (Weeks 2-5)
 
 **Build in this order:**
+
 1. Audit Logging (Week 1-2) — foundation, enables all others
 2. User Verification (Week 2-3) — gate for high-value transactions
 3. Admin Moderation (Week 3) — parallel with verification
@@ -147,12 +148,14 @@ npm run prisma:generate
 ## 📋 Complete File Checklist
 
 ### Enums to create:
+
 - [ ] `src/common/enums/verification.enum.ts` — EmailVerificationStatus, PhoneVerificationStatus, KycVerificationStatus, UserVerificationStatus, KycDocumentType
 - [ ] `src/common/enums/escrow.enum.ts` — EscrowStatus
 - [ ] `src/common/enums/dispute.enum.ts` — DisputeStatus, DisputeReason
 - [ ] `src/common/enums/moderation.enum.ts` — FlagReason, FlagStatus, SuspensionReason
 
 ### Repositories:
+
 - [ ] `src/common/repos/verification.repo.ts` (EmailVerification queries)
 - [ ] `src/common/repos/phone-verification.repo.ts` (PhoneVerification queries)
 - [ ] `src/common/repos/kyc-document.repo.ts` (KycDocument queries)
@@ -164,6 +167,7 @@ npm run prisma:generate
 - [ ] `src/common/repos/audit-log.repo.ts` (AuditLog queries)
 
 ### DTOs:
+
 - [ ] Email verification: SendVerificationEmailDto, VerifyEmailDto, ResendVerificationEmailDto, EmailVerificationStatusDto
 - [ ] Phone verification: SendPhoneVerificationCodeDto, VerifyPhoneCodeDto, PhoneVerificationStatusDto
 - [ ] KYC: UploadKycDocumentDto, KycStatusDto, KycDocumentResponseDto
@@ -173,6 +177,7 @@ npm run prisma:generate
 - [ ] Audit: AuditLogFilterDto, AuditLogResponseDto
 
 ### Services:
+
 - [ ] `src/modules/core/verification/verification.service.ts`
 - [ ] `src/modules/escrow/escrow.service.ts`
 - [ ] `src/modules/disputes/disputes.service.ts`
@@ -180,6 +185,7 @@ npm run prisma:generate
 - [ ] `src/common/services/audit-log.service.ts` (middleware)
 
 ### Controllers:
+
 - [ ] `src/modules/core/verification/verification.controller.ts` (12 endpoints)
 - [ ] `src/modules/escrow/escrow.controller.ts` (9 endpoints)
 - [ ] `src/modules/disputes/disputes.controller.ts` (12 endpoints)
@@ -187,6 +193,7 @@ npm run prisma:generate
 - [ ] `src/modules/audit-log/audit-log.controller.ts` (6 endpoints)
 
 ### Modules:
+
 - [ ] `src/modules/core/verification/verification.module.ts`
 - [ ] `src/modules/escrow/escrow.module.ts`
 - [ ] `src/modules/disputes/disputes.module.ts`
@@ -194,6 +201,7 @@ npm run prisma:generate
 - [ ] `src/modules/audit-log/audit-log.module.ts`
 
 ### Integrations (Changes to existing files):
+
 - [ ] Update `src/app.module.ts` — import new modules
 - [ ] Update `prisma/schema.prisma` — extend User (verification fields), Transaction (escrowId, disputeId)
 - [ ] Update `src/modules/core/auth/auth.service.ts` — gate registration by email verification
@@ -203,6 +211,7 @@ npm run prisma:generate
 - [ ] Add audit logging middleware to `src/app.module.ts`
 
 ### Environment variables:
+
 ```env
 # Verification
 TWILIO_ACCOUNT_SID=
@@ -235,10 +244,11 @@ AUDIT_LOG_ARCHIVE_DB_URL=
 ## 🔗 Database Integration Changes
 
 ### User model changes:
+
 ```prisma
 model User {
   // ... existing fields ...
-  
+
   // NEW: Verification fields
   emailVerified Boolean @default(false)
   emailVerifiedAt DateTime?
@@ -247,7 +257,7 @@ model User {
   kycVerified Boolean @default(false)
   kycVerifiedAt DateTime?
   verificationStatus UserVerificationStatus @default(UNVERIFIED)
-  
+
   // NEW: Relations
   emailVerifications EmailVerification[]
   phoneVerifications PhoneVerification[]
@@ -261,18 +271,19 @@ model User {
 ```
 
 ### Transaction model changes:
+
 ```prisma
 model Transaction {
   // ... existing fields ...
-  
+
   // NEW: Escrow integration
   escrowId String?
   escrow Escrow? @relation(fields: [escrowId], references: [id])
-  
+
   // NEW: Dispute integration
   disputeId String?
   dispute Dispute? @relation(fields: [disputeId], references: [id])
-  
+
   @@index([escrowId])
   @@index([disputeId])
 }
@@ -285,6 +296,7 @@ model Transaction {
 **Total: ~65 new endpoints**
 
 ### Verification (12 endpoints)
+
 ```
 POST   /auth/email/send-verification
 POST   /auth/email/verify
@@ -301,6 +313,7 @@ GET    /auth/verification-status
 ```
 
 ### Escrow (9 endpoints)
+
 ```
 POST   /escrow/create
 PATCH  /escrow/:id/release
@@ -314,6 +327,7 @@ PATCH  /escrow/:id/webhook (Stripe callback)
 ```
 
 ### Disputes (12 endpoints)
+
 ```
 POST   /disputes/create
 POST   /disputes/:id/evidence
@@ -331,6 +345,7 @@ PATCH  /disputes/:id/reopen (admin)
 ```
 
 ### Moderation (18 endpoints)
+
 ```
 POST   /moderation/flag
 GET    /moderation/flags/queue (admin)
@@ -353,6 +368,7 @@ POST   /moderation/bulk-action (admin)
 ```
 
 ### Audit Logging (6 endpoints)
+
 ```
 GET    /audit/transaction/:transactionId
 GET    /audit/property/:propertyId
@@ -367,6 +383,7 @@ POST   /audit/export
 ## 🧪 Testing Checklist
 
 ### Unit Tests:
+
 - [ ] EmailVerificationService (token generation, validation, expiry)
 - [ ] PhoneVerificationService (code validation, rate limiting)
 - [ ] KycService (document validation, status tracking)
@@ -376,6 +393,7 @@ POST   /audit/export
 - [ ] AuditLogService (logging accuracy, archival)
 
 ### Integration Tests:
+
 - [ ] Email verification flow (register → send → verify → gate)
 - [ ] Escrow flow (transaction → hold → release/return)
 - [ ] Dispute flow (open → evidence → mediation → resolve)
@@ -383,6 +401,7 @@ POST   /audit/export
 - [ ] Audit logging (every action logged, searchable)
 
 ### E2E Tests:
+
 - [ ] Complete transaction with verification gate
 - [ ] Transaction with escrow hold → inspection pass → release
 - [ ] Transaction with dispute → resolution
@@ -393,18 +412,23 @@ POST   /audit/export
 ## ⚠️ Critical Risks & Mitigations
 
 **Risk 1: Escrow money loss**
+
 - Mitigation: Manual verification for first 100 transactions, thorough testing, use Stripe Connect (not DIY)
 
 **Risk 2: Dispute abuse (frivolous claims)**
+
 - Mitigation: 24h cool-off before opening, dispute history on profile, appeal requires new evidence
 
 **Risk 3: Audit logs grow exponentially**
+
 - Mitigation: Archive to separate DB after 90 days, aggressive cleanup policy
 
 **Risk 4: KYC document storage is PII**
+
 - Mitigation: Encrypt at rest, access controls, retention policy (delete after 2 years)
 
 **Risk 5: Verification gates slow down transactions**
+
 - Mitigation: Email verification instant, phone optional, KYC only for >$500K
 
 ---
@@ -412,36 +436,42 @@ POST   /audit/export
 ## 📅 Weekly Roadmap
 
 **Week 1:**
+
 - [ ] Database schema (Prisma + migrations)
 - [ ] Audit logging middleware (foundation)
 - [ ] All enums and DTOs
 - [ ] Repo layer (all repos)
 
 **Week 2:**
+
 - [ ] Verification service (email + phone)
 - [ ] Verification controller + endpoints
 - [ ] Verification integration with auth module
 - [ ] Gate property creation on verification
 
 **Week 3:**
+
 - [ ] Admin moderation service & controller
 - [ ] Flag resource endpoints
 - [ ] Suspend user endpoints
 - [ ] Admin moderation dashboard (basic)
 
 **Week 4:**
+
 - [ ] Escrow service & controller
 - [ ] Stripe Connect integration
 - [ ] Webhook handler for payment release
 - [ ] Transaction service updates
 
 **Week 5:**
+
 - [ ] Dispute service & controller
 - [ ] Mediation workflow
 - [ ] Evidence upload & storage
 - [ ] Auto-resolution logic
 
 **Week 6:**
+
 - [ ] All unit tests
 - [ ] Integration tests
 - [ ] E2E tests
@@ -454,6 +484,7 @@ POST   /audit/export
 Before shipping each domain:
 
 **Code Quality:**
+
 - [ ] No `any` in services
 - [ ] All repos wrapped in try/catch → RepoError
 - [ ] All services throw HttpException
@@ -462,20 +493,23 @@ Before shipping each domain:
 - [ ] All endpoints documented in Swagger
 
 **Architecture:**
+
 - [ ] Controllers only extract & call service
 - [ ] Services contain business logic only
 - [ ] Repos contain Prisma only
 - [ ] One job per file
 - [ ] No hardcoded values (all env vars)
-- [ ] Absolute imports (@common/*, @lib/*)
+- [ ] Absolute imports (@common/_, @lib/_)
 
 **Testing:**
+
 - [ ] npm run test passes (unit tests)
 - [ ] npm run lint passes (ESLint)
 - [ ] npm run error passes (TypeScript clean)
 - [ ] npm run build succeeds
 
 **Security:**
+
 - [ ] No passwords in logs
 - [ ] Tokens hashed before storage
 - [ ] Rate limiting on verification endpoints
@@ -483,6 +517,7 @@ Before shipping each domain:
 - [ ] Audit logs immutable
 
 **Performance:**
+
 - [ ] Indexes on frequently-queried fields
 - [ ] No N+1 queries
 - [ ] Pagination implemented
@@ -493,11 +528,13 @@ Before shipping each domain:
 ## 📥 How to Get the Full Specs
 
 All detailed specifications are in:
+
 ```
 MVP_1.5_COMPLETE_DESIGN_SPECS.json
 ```
 
 This JSON file contains for each domain:
+
 1. Complete Prisma schema (copy-paste)
 2. All endpoint specs with DTOs
 3. Service method signatures

@@ -1,38 +1,38 @@
 {
-  "permissions": {
-    "allow": [
-      "WebSearch",
-      "Read(//c//**)",
-      "Read(//tmp/**)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git branch:*)",
-      "Bash(git remote:*)",
-      "Bash(git rev-parse:*)",
-      "Bash(git show:*)",
-      "Bash(git push:*)",
-      "Bash(git checkout:*)",
-      "Bash(git restore:*)",
-      "Bash(git rm:*)",
-      "Bash(npx tsc:*)",
-      "Bash(npx next:*)",
-      "Skill(artifact-design:*)",
-      "Skill(update-config:*)",
-      "Bash(node scripts/validate_palette.js \"#1f4e3d,#3e5c76,#b08d57,#9a9288,#2f855a,#b7791f,#b4443a\" --mode light --surface \"#faf8f4\")",
-      "Bash(pnpm build *)",
-      "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('lib/data/listings.ts','utf8'\\);const m=s.match\\(/id:\\\\s*[\\\\\"'\\\\`]/g\\);console.log\\('listing seed entries:', m?m.length:0\\)\")"
-    ],
-    "additionalDirectories": [
-      "C:\\Users\\emman\\.claude",
-      "c:\\Users\\emman\\.claude\\projects\\c--Users-emman-Downloads-Personal-js-web-real-estate-backend\\memory",
-      "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\real-estate\\frontend\\.husky",
-      "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\travel\\frontend\\.claude",
-      "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\travel\\frontend\\.claude\\skills\\elegant-ui",
-      "c:\\Users\\emman\\Downloads\\Personal\\js\\setup\\next-setup\\.claude\\skills\\elegant-ui",
-      "c:\\Users\\emman\\Downloads\\Personal\\js\\setup\\nest-setup\\.claude"
-    ]
-  }
+    "permissions": {
+        "allow": [
+            "WebSearch",
+            "Read(//c//**)",
+            "Read(//tmp/**)",
+            "Bash(git add:*)",
+            "Bash(git commit:*)",
+            "Bash(git status:*)",
+            "Bash(git diff:*)",
+            "Bash(git log:*)",
+            "Bash(git branch:*)",
+            "Bash(git remote:*)",
+            "Bash(git rev-parse:*)",
+            "Bash(git show:*)",
+            "Bash(git push:*)",
+            "Bash(git checkout:*)",
+            "Bash(git restore:*)",
+            "Bash(git rm:*)",
+            "Bash(npx tsc:*)",
+            "Bash(npx next:*)",
+            "Skill(artifact-design:*)",
+            "Skill(update-config:*)",
+            "Bash(node scripts/validate_palette.js \"#1f4e3d,#3e5c76,#b08d57,#9a9288,#2f855a,#b7791f,#b4443a\" --mode light --surface \"#faf8f4\")",
+            "Bash(pnpm build *)",
+            "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('lib/data/listings.ts','utf8'\\);const m=s.match\\(/id:\\\\s*[\\\\\"'\\\\`]/g\\);console.log\\('listing seed entries:', m?m.length:0\\)\")"
+        ],
+        "additionalDirectories": [
+            "C:\\Users\\emman\\.claude",
+            "c:\\Users\\emman\\.claude\\projects\\c--Users-emman-Downloads-Personal-js-web-real-estate-backend\\memory",
+            "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\real-estate\\frontend\\.husky",
+            "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\travel\\frontend\\.claude",
+            "c:\\Users\\emman\\Downloads\\Personal\\js\\web\\travel\\frontend\\.claude\\skills\\elegant-ui",
+            "c:\\Users\\emman\\Downloads\\Personal\\js\\setup\\next-setup\\.claude\\skills\\elegant-ui",
+            "c:\\Users\\emman\\Downloads\\Personal\\js\\setup\\nest-setup\\.claude"
+        ]
+    }
 }

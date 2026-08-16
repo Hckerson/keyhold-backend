@@ -45,19 +45,20 @@ Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or han
 
 ## Required patterns
 
-| Layer | Responsibility | Rules |
-|-------|---|---|
-| **Controller** | Extract route params + body, call service, return result. Add `@UseGuards(JwtAuthGuard)` + `@Roles()` for protected routes. | No business logic. No Prisma. No direct repo calls. |
-| **Service** | Accept DTOs, enforce business rules, throw `HttpException`s, call repo methods, return domain objects. | No raw Prisma models in responses. No `req`/`res` objects. Never throw `RepoError` directly. Business logic, filtering, aggregation, composition — all here. |
-| **Repository** | **ONLY** wrap the 10 Prisma-native methods in `try/catch`, rethrow as `RepoError`. Use `Prisma.[Model]GetPayload<>` for typed results. | Thin Prisma wrapper only. See "Repository Methods: Ironclad Rule" below. No custom domain methods. |
-| **DTO** | Use class-validator decorators for input validation at the boundary. `UpdateDto extends PartialType(CreateDto)`. | Type source for incoming data. Never used as response shape. |
-| **Module** | Import dependencies, declare controller + service, export service if shared. | DI wiring only. |
+| Layer          | Responsibility                                                                                                                         | Rules                                                                                                                                                        |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Controller** | Extract route params + body, call service, return result. Add `@UseGuards(JwtAuthGuard)` + `@Roles()` for protected routes.            | No business logic. No Prisma. No direct repo calls.                                                                                                          |
+| **Service**    | Accept DTOs, enforce business rules, throw `HttpException`s, call repo methods, return domain objects.                                 | No raw Prisma models in responses. No `req`/`res` objects. Never throw `RepoError` directly. Business logic, filtering, aggregation, composition — all here. |
+| **Repository** | **ONLY** wrap the 10 Prisma-native methods in `try/catch`, rethrow as `RepoError`. Use `Prisma.[Model]GetPayload<>` for typed results. | Thin Prisma wrapper only. See "Repository Methods: Ironclad Rule" below. No custom domain methods.                                                           |
+| **DTO**        | Use class-validator decorators for input validation at the boundary. `UpdateDto extends PartialType(CreateDto)`.                       | Type source for incoming data. Never used as response shape.                                                                                                 |
+| **Module**     | Import dependencies, declare controller + service, export service if shared.                                                           | DI wiring only.                                                                                                                                              |
 
 ## Repository Methods: Ironclad Rule
 
 **Repositories are ONLY thin wrappers around Prisma's 10 native methods.** No custom domain methods.
 
 ### ✅ Allowed repo methods (and ONLY these):
+
 - `findUnique(params: T)` → `Prisma.[Model]GetPayload<T> | null`
 - `findFirst(params: T)` → `Prisma.[Model]GetPayload<T> | null`
 - `findMany(params: T)` → `Prisma.[Model]GetPayload<T>[]`
@@ -70,6 +71,7 @@ Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or han
 - `count(params?)` → `number`
 
 ### ❌ Forbidden (move to Service if needed):
+
 - `findByResourceId()`, `findByActorId()`, `search()`, `findRecent()` — these are NOT Prisma methods
 - `getStatistics()`, `getUserActivitySummary()`, `export()` — business logic, belongs in Service
 - `findSensitiveActions()`, `findByDateRange()`, `findChanges()` — filtering & composition belong in Service
@@ -79,16 +81,16 @@ Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or han
 
 ## Folder Structure
 
-| Route | Purpose |
-|-------|---------|
-| `/src/common/` | Shared infrastructure: repos, filters, guards, errors, enums, decorators, middleware. |
-| `/src/common/repos/` | Data access layer. One `[domain].repo.ts` per entity. Prisma only. **Repos = thin wrappers around Prisma's 10 native methods only.** |
-| `/src/common/errors/` | Error definitions and error filter. |
-| `/src/common/enums/` | Constants and enums. Single source of truth. |
-| `/src/common/decorators/` | Custom decorators (auth, roles, etc.). |
-| `/src/lib/` | Pure utility functions and helpers. No NestJS dependencies. |
-| `/src/modules/core/` | Domain-specific modules. One folder per domain with `dto/`, `*.service.ts`, `*.controller.ts`, `*.module.ts`. |
-| `/src/modules/core/auth/` | Authentication logic. Already implemented. Extend, don't reinvent. |
+| Route                     | Purpose                                                                                                                              |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `/src/common/`            | Shared infrastructure: repos, filters, guards, errors, enums, decorators, middleware.                                                |
+| `/src/common/repos/`      | Data access layer. One `[domain].repo.ts` per entity. Prisma only. **Repos = thin wrappers around Prisma's 10 native methods only.** |
+| `/src/common/errors/`     | Error definitions and error filter.                                                                                                  |
+| `/src/common/enums/`      | Constants and enums. Single source of truth.                                                                                         |
+| `/src/common/decorators/` | Custom decorators (auth, roles, etc.).                                                                                               |
+| `/src/lib/`               | Pure utility functions and helpers. No NestJS dependencies.                                                                          |
+| `/src/modules/core/`      | Domain-specific modules. One folder per domain with `dto/`, `*.service.ts`, `*.controller.ts`, `*.module.ts`.                        |
+| `/src/modules/core/auth/` | Authentication logic. Already implemented. Extend, don't reinvent.                                                                   |
 
 ## Workflow: Add a new domain
 
