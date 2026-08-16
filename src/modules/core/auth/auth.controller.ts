@@ -56,12 +56,8 @@ export class AuthController {
     @Post('forgot-password')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Request a password reset' })
-    forgotPassword(@Body() dto: ForgotPasswordDto) {
-        void dto;
-        // Wire up your email provider here to deliver a reset token.
-        return {
-            message: 'If the email exists, reset instructions were sent.',
-        };
+    async forgotPassword(@Body() dto: ForgotPasswordDto) {
+        return this.authService.forgotPassword(dto);
     }
 
     @Post('reset-password')

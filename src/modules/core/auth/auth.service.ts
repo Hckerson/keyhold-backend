@@ -1,11 +1,30 @@
+import { randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
-import { UserRole } from 'generated/prisma/enums';
+import { ConfigService } from '@nestjs/config';
+import {
+    UserRole,
+    VerificationStatus,
+    VerificationType,
+} from 'generated/prisma/enums';
 import { PasswordUtil } from './utils/password.util';
 import { metricBuilder } from 'src/lib/metric-builder';
 import { UsersService } from '@core/users/users.service';
 import { UserRepo } from '@common/repos/user.repo';
+import { EmailVerificationRepo } from '@common/repos/email-verification.repo';
+import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import type { AuthResponse, JwtPayload } from './types/auth.types';
-import { LoginDto, RegisterDto, ResetPasswordDto, OnboardingDto } from './dto';
+import {
+    LoginDto,
+    RegisterDto,
+    ResetPasswordDto,
+    OnboardingDto,
+    ForgotPasswordDto,
+} from './dto';
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+const GENERIC_RESET_MESSAGE =
+    'If the email exists, reset instructions were sent.';
 
 import {
     Injectable,
@@ -17,8 +36,11 @@ import {
 export class AuthService {
     constructor(
         private readonly jwtService: JwtService,
+        private readonly configService: ConfigService,
         private readonly usersService: UsersService,
         private readonly userRepo: UserRepo,
+        private readonly verificationTokenRepo: EmailVerificationRepo,
+        private readonly emailService: SendGridEmailService,
     ) {}
 
     // ─── Registration & Login ──────────────────────────────────────────────────
@@ -56,18 +78,57 @@ export class AuthService {
 
     // ─── Password & Profile ─────────────────────────────────────────────────────
 
-    async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-        try {
-            const payload: JwtPayload = this.jwtService.verify(dto.token);
-            const user = await this.usersService.findByEmail(payload.email);
-            if (!user) throw new UnauthorizedException('Invalid token');
+    async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
+        const user = await this.usersService.findByEmail(dto.email);
 
-            const passwordHash = await PasswordUtil.hash(dto.password);
-            await this.usersService.update(user.id, { passwordHash });
-            return { message: 'Password reset successful.' };
-        } catch {
+        if (user) {
+            const token = randomBytes(32).toString('base64url');
+            await this.verificationTokenRepo.create({
+                data: {
+                    token,
+                    userId: user.id,
+                    type: VerificationType.PASSWORD_RESET,
+                    expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+                },
+            });
+
+            const resetUrl = `${this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000'}/reset-password?token=${token}`;
+            await this.emailService.sendPasswordResetEmail(
+                user.email,
+                user.fullName,
+                resetUrl,
+            );
+        }
+
+        return { message: GENERIC_RESET_MESSAGE };
+    }
+
+    async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+        const record = await this.verificationTokenRepo.findUnique({
+            where: { token: dto.token },
+        });
+
+        const isUsable =
+            record &&
+            record.type === VerificationType.PASSWORD_RESET &&
+            record.status === VerificationStatus.PENDING &&
+            record.expiresAt > new Date();
+
+        if (!isUsable) {
             throw new UnauthorizedException('Invalid or expired token.');
         }
+
+        const passwordHash = await PasswordUtil.hash(dto.password);
+        await this.usersService.update(record.userId, { passwordHash });
+        await this.verificationTokenRepo.update({
+            where: { id: record.id },
+            data: {
+                status: VerificationStatus.VERIFIED,
+                verifiedAt: new Date(),
+            },
+        });
+
+        return { message: 'Password reset successful.' };
     }
 
     async onboarding(
