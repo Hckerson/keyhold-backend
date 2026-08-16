@@ -18,6 +18,8 @@ import { ViewingsModule } from '@modules/viewings/viewings.module';
 import { OffersModule } from '@modules/offers/offers.module';
 import { TransactionsModule } from '@modules/transactions/transactions.module';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
+import { SavedPropertiesModule } from '@modules/saved-properties/saved-properties.module';
+import { StatsModule } from '@modules/stats/stats.module';
 
 @Module({
     imports: [
@@ -37,6 +39,8 @@ import { ReviewsModule } from '@modules/reviews/reviews.module';
         OffersModule,
         TransactionsModule,
         ReviewsModule,
+        SavedPropertiesModule,
+        StatsModule,
     ],
     controllers: [AppController],
     providers: [
