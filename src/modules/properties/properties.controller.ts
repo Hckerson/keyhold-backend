@@ -7,6 +7,8 @@ import {
     Param,
     Body,
     Query,
+    HttpCode,
+    HttpStatus,
     UseGuards,
     UseInterceptors,
     UploadedFiles,
@@ -14,11 +16,10 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
-import { CreatePropertyDto, UpdatePropertyDto } from './dto';
+import { CreatePropertyDto, UpdatePropertyDto, QueryPropertyDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth-user';
-import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
 
 @ApiTags('properties')
 @Controller('properties')
@@ -26,21 +27,9 @@ export class PropertiesController {
     constructor(private readonly propertiesService: PropertiesService) {}
 
     @Get()
-    @ApiOperation({ summary: 'Get all properties with optional filters' })
-    async getAll(
-        @Query('status') status?: PropertyStatus,
-        @Query('type') type?: PropertyType,
-        @Query('minPrice') minPrice?: string,
-        @Query('maxPrice') maxPrice?: string,
-        @Query('bedrooms') bedrooms?: string,
-    ) {
-        return this.propertiesService.findAll({
-            status: status as PropertyStatus,
-            type: type as PropertyType,
-            minPrice: minPrice ? parseFloat(minPrice) : undefined,
-            maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-            bedrooms: bedrooms ? parseInt(bedrooms) : undefined,
-        });
+    @ApiOperation({ summary: 'Get a paginated, filtered page of properties' })
+    async getAll(@Query() query: QueryPropertyDto) {
+        return this.propertiesService.findAll(query);
     }
 
     @Get('search')
@@ -50,20 +39,30 @@ export class PropertiesController {
     async search(@Query('q') query: string, @Query('limit') limit?: string) {
         return this.propertiesService.search(
             query,
-            limit ? parseInt(limit) : 20,
+            limit ? parseInt(limit) : undefined,
         );
     }
 
     @Get('seller/:sellerId')
     @ApiOperation({ summary: 'Get all properties by a seller' })
-    async getBySeller(@Param('sellerId') sellerId: string) {
-        return this.propertiesService.findBySeller(sellerId);
+    async getBySeller(
+        @Param('sellerId') sellerId: string,
+        @Query() query: QueryPropertyDto,
+    ) {
+        return this.propertiesService.findBySeller(sellerId, query);
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Get property by ID' })
     async getOne(@Param('id') id: string) {
         return this.propertiesService.findOne(id);
+    }
+
+    @Post(':id/view')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Record a property detail view' })
+    async recordView(@Param('id') id: string) {
+        return this.propertiesService.recordView(id);
     }
 
     @Post()

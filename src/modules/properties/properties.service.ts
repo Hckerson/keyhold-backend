@@ -7,8 +7,50 @@ import {
 import { PropertyRepo } from '@common/repos/property.repo';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import { PrismaService } from '@common/database/prisma.service';
-import { CreatePropertyDto, UpdatePropertyDto } from './dto';
-import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
+import { Prisma } from 'generated/prisma/client';
+import {
+    CreatePropertyDto,
+    UpdatePropertyDto,
+    QueryPropertyDto,
+    PropertySort,
+} from './dto';
+import { PropertyStatus } from '@generated/prisma/enums';
+
+const LIST_INCLUDE = {
+    images: { orderBy: { order: 'asc' } },
+    seller: { select: { id: true, fullName: true, avatar: true } },
+    _count: { select: { savedBy: true } },
+} satisfies Prisma.PropertyInclude;
+
+const DETAIL_INCLUDE = {
+    images: { orderBy: { order: 'asc' } },
+    seller: {
+        select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phoneNumber: true,
+            avatar: true,
+            bio: true,
+            jobTitle: true,
+            agencyName: true,
+            licenseNumber: true,
+            createdAt: true,
+        },
+    },
+    _count: { select: { savedBy: true, viewings: true, offers: true } },
+} satisfies Prisma.PropertyInclude;
+
+const ORDER_BY: Record<PropertySort, Prisma.PropertyOrderByWithRelationInput> =
+    {
+        [PropertySort.NEWEST]: { createdAt: 'desc' },
+        [PropertySort.PRICE_ASC]: { price: 'asc' },
+        [PropertySort.PRICE_DESC]: { price: 'desc' },
+        [PropertySort.BEDROOMS_DESC]: { bedrooms: 'desc' },
+        [PropertySort.SQFT_DESC]: { sqFt: 'desc' },
+    };
+
+const DEFAULT_LIMIT = 20;
 
 @Injectable()
 export class PropertiesService {
@@ -18,56 +60,86 @@ export class PropertiesService {
         private prisma: PrismaService,
     ) {}
 
-    async findAll(filters?: {
-        status?: PropertyStatus;
-        type?: PropertyType;
-        minPrice?: number;
-        maxPrice?: number;
-        bedrooms?: number;
-        sellerId?: string;
-    }) {
-        return this.propertyRepo.findMany({
-            where: {
-                status: filters?.status,
-                type: filters?.type,
-                price: {
-                    gte: filters?.minPrice,
-                    lte: filters?.maxPrice,
-                },
-                bedrooms: filters?.bedrooms,
-                sellerId: filters?.sellerId,
-            },
-            include: {
-                images: { orderBy: { order: 'asc' } },
-                seller: { select: { id: true, fullName: true, email: true } },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+    private buildWhere(
+        filters: QueryPropertyDto & { sellerId?: string },
+    ): Prisma.PropertyWhereInput {
+        const { q } = filters;
+        return {
+            status: filters.status,
+            type: filters.type,
+            sellerId: filters.sellerId,
+            locality: filters.locality
+                ? { equals: filters.locality, mode: 'insensitive' }
+                : undefined,
+            price:
+                filters.minPrice !== undefined || filters.maxPrice !== undefined
+                    ? { gte: filters.minPrice, lte: filters.maxPrice }
+                    : undefined,
+            bedrooms:
+                filters.bedrooms !== undefined
+                    ? { gte: filters.bedrooms }
+                    : undefined,
+            bathrooms:
+                filters.bathrooms !== undefined
+                    ? { gte: filters.bathrooms }
+                    : undefined,
+            sqFt:
+                filters.minSqFt !== undefined
+                    ? { gte: filters.minSqFt }
+                    : undefined,
+            OR: q
+                ? [
+                      { title: { contains: q, mode: 'insensitive' } },
+                      { description: { contains: q, mode: 'insensitive' } },
+                      { address: { contains: q, mode: 'insensitive' } },
+                      { locality: { contains: q, mode: 'insensitive' } },
+                  ]
+                : undefined,
+        };
+    }
+
+    async findAll(filters: QueryPropertyDto & { sellerId?: string } = {}) {
+        const page = filters.page ?? 1;
+        const limit = filters.limit ?? DEFAULT_LIMIT;
+        const where = this.buildWhere(filters);
+
+        const [items, total] = await Promise.all([
+            this.propertyRepo.findMany({
+                where,
+                include: LIST_INCLUDE,
+                orderBy: ORDER_BY[filters.sort ?? PropertySort.NEWEST],
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            this.propertyRepo.count({ where }),
+        ]);
+
+        return {
+            items,
+            total,
+            page,
+            limit,
+            pageCount: Math.max(1, Math.ceil(total / limit)),
+        };
     }
 
     async findOne(id: string) {
         const property = await this.propertyRepo.findUnique({
             where: { id },
-            include: {
-                images: { orderBy: { order: 'asc' } },
-                seller: {
-                    select: {
-                        id: true,
-                        fullName: true,
-                        email: true,
-                        phoneNumber: true,
-                    },
-                },
-                connections: {
-                    where: { status: 'ACCEPTED' },
-                    select: { buyerId: true },
-                },
-            },
+            include: DETAIL_INCLUDE,
         });
         if (!property) {
             throw new NotFoundException(`Property with ID ${id} not found`);
         }
         return property;
+    }
+
+    async recordView(id: string) {
+        await this.propertyRepo.updateMany({
+            where: { id },
+            data: { viewsCount: { increment: 1 } },
+        });
+        return { recorded: true };
     }
 
     async create(userId: string, createDto: CreatePropertyDto) {
@@ -98,10 +170,7 @@ export class PropertiesService {
         return this.propertyRepo.update({
             where: { id },
             data: updateDto,
-            include: {
-                images: { orderBy: { order: 'asc' } },
-                seller: { select: { id: true, fullName: true, email: true } },
-            },
+            include: DETAIL_INCLUDE,
         });
     }
 
@@ -120,37 +189,21 @@ export class PropertiesService {
         return this.propertyRepo.delete({ where: { id } });
     }
 
-    async search(query: string, limit: number = 20) {
+    async search(query: string, limit: number = DEFAULT_LIMIT) {
         if (!query || query.trim().length < 2) {
             throw new BadRequestException(
                 'Search query must be at least 2 characters',
             );
         }
-        return this.propertyRepo.findMany({
-            where: {
-                OR: [
-                    { title: { contains: query, mode: 'insensitive' } },
-                    { description: { contains: query, mode: 'insensitive' } },
-                    { address: { contains: query, mode: 'insensitive' } },
-                ],
-                status: PropertyStatus.AVAILABLE,
-            },
-            include: {
-                images: { orderBy: { order: 'asc' }, take: 1 },
-                seller: { select: { id: true, fullName: true } },
-            },
-            take: limit,
+        return this.findAll({
+            q: query,
+            limit,
+            status: PropertyStatus.AVAILABLE,
         });
     }
 
-    async findBySeller(sellerId: string) {
-        return this.propertyRepo.findMany({
-            where: { sellerId },
-            include: {
-                images: { orderBy: { order: 'asc' } },
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+    async findBySeller(sellerId: string, filters: QueryPropertyDto = {}) {
+        return this.findAll({ ...filters, sellerId });
     }
 
     async uploadImages(
