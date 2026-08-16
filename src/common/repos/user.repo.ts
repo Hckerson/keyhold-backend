@@ -111,7 +111,7 @@ export class UserRepo {
         }
     }
 
-    async groupBy(params: Prisma.UserGroupByArgs) {
+    async groupBy(params: Omit<Prisma.UserGroupByArgs, 'skip' | 'take'>) {
         try {
             return await this.prisma.user.groupBy(params);
         } catch (error) {

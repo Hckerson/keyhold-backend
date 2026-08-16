@@ -5,7 +5,6 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AuthModule } from '@core/auth/auth.module';
 import { UsersModule } from '@core/users/users.module';
-import { AdminModule } from '@core/admin/admin.module';
 import { RepoModule } from '@common/repos/repo.module';
 import { PrismaModule } from '@common/database/prisma.module';
 import { ServicesModule } from '@common/services/services.module';
@@ -31,7 +30,6 @@ import { ReviewsModule } from '@modules/reviews/reviews.module';
         ServicesModule,
         AuthModule,
         UsersModule,
-        AdminModule,
         PropertiesModule,
         ConnectionsModule,
         MessagesModule,

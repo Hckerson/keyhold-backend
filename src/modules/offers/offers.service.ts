@@ -23,7 +23,11 @@ export class OffersService {
     async makeOffer(userId: string, createDto: CreateOfferDto) {
         const connection = await this.connectionRepo.findUnique({
             where: { id: createDto.connectionId },
-            include: { property: { select: { id: true } } },
+            include: {
+                property: { select: { id: true, title: true } },
+                seller: { select: { email: true, phoneNumber: true } },
+                buyer: { select: { fullName: true } },
+            },
         });
         if (!connection) throw new NotFoundException('Connection not found');
 
