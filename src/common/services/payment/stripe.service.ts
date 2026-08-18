@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    BadRequestException,
+    Logger,
+    ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
@@ -9,14 +14,29 @@ interface PaymentIntentResponse {
 
 @Injectable()
 export class StripeService {
-    private stripe: Stripe;
+    private readonly logger = new Logger(StripeService.name);
+    private readonly client: Stripe | null;
 
     constructor(private configService: ConfigService) {
         const apiKey = this.configService.get<string>(
             'externalServices.stripe.apiKey',
         );
-        if (!apiKey) throw new Error('STRIPE_API_KEY not configured');
-        this.stripe = new Stripe(apiKey);
+        this.client = apiKey ? new Stripe(apiKey) : null;
+
+        if (!this.client) {
+            this.logger.warn(
+                'STRIPE_API_KEY not configured — payment processing is disabled',
+            );
+        }
+    }
+
+    private get stripe(): Stripe {
+        if (!this.client) {
+            throw new ServiceUnavailableException(
+                'Payment processing is not configured on this environment',
+            );
+        }
+        return this.client;
     }
 
     async createPaymentIntent(

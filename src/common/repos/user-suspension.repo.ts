@@ -11,7 +11,9 @@ export class UserSuspensionRepo {
         params: T,
     ): Promise<Prisma.UserSuspensionGetPayload<T> | null> {
         try {
-            return (await this.prisma.userSuspension.findUnique(params)) as Prisma.UserSuspensionGetPayload<T> | null;
+            return (await this.prisma.userSuspension.findUnique(
+                params,
+            )) as Prisma.UserSuspensionGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique user suspension', error);
         }
@@ -21,7 +23,9 @@ export class UserSuspensionRepo {
         params: T,
     ): Promise<Prisma.UserSuspensionGetPayload<T> | null> {
         try {
-            return (await this.prisma.userSuspension.findFirst(params)) as Prisma.UserSuspensionGetPayload<T> | null;
+            return (await this.prisma.userSuspension.findFirst(
+                params,
+            )) as Prisma.UserSuspensionGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first user suspension', error);
         }
@@ -31,7 +35,9 @@ export class UserSuspensionRepo {
         params: T,
     ): Promise<Prisma.UserSuspensionGetPayload<T>[]> {
         try {
-            return (await this.prisma.userSuspension.findMany(params)) as Prisma.UserSuspensionGetPayload<T>[];
+            return (await this.prisma.userSuspension.findMany(
+                params,
+            )) as Prisma.UserSuspensionGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find user suspensions', error);
         }
@@ -41,7 +47,9 @@ export class UserSuspensionRepo {
         params: T,
     ): Promise<Prisma.UserSuspensionGetPayload<T>> {
         try {
-            return (await this.prisma.userSuspension.create(params)) as Prisma.UserSuspensionGetPayload<T>;
+            return (await this.prisma.userSuspension.create(
+                params,
+            )) as Prisma.UserSuspensionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create user suspension', error);
         }
@@ -59,7 +67,9 @@ export class UserSuspensionRepo {
         params: T,
     ): Promise<Prisma.UserSuspensionGetPayload<T>> {
         try {
-            return (await this.prisma.userSuspension.update(params)) as Prisma.UserSuspensionGetPayload<T>;
+            return (await this.prisma.userSuspension.update(
+                params,
+            )) as Prisma.UserSuspensionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update user suspension', error);
         }
@@ -77,7 +87,9 @@ export class UserSuspensionRepo {
         params: T,
     ): Promise<Prisma.UserSuspensionGetPayload<T>> {
         try {
-            return (await this.prisma.userSuspension.delete(params)) as Prisma.UserSuspensionGetPayload<T>;
+            return (await this.prisma.userSuspension.delete(
+                params,
+            )) as Prisma.UserSuspensionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete user suspension', error);
         }

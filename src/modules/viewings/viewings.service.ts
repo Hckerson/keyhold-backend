@@ -61,11 +61,25 @@ export class ViewingsService {
         return viewing;
     }
 
-    async confirmViewing(viewingId: string, confirmedTime: string) {
+    async confirmViewing(
+        viewingId: string,
+        userId: string,
+        confirmedTime: string,
+    ) {
         const viewing = await this.viewingRepo.findUnique({
             where: { id: viewingId },
+            include: {
+                connection: { select: { buyerId: true, sellerId: true } },
+            },
         });
         if (!viewing) throw new NotFoundException('Viewing not found');
+
+        if (
+            viewing.connection.buyerId !== userId &&
+            viewing.connection.sellerId !== userId
+        ) {
+            throw new ForbiddenException('You are not part of this connection');
+        }
 
         const confirmedDate = new Date(confirmedTime);
         if (isNaN(confirmedDate.getTime())) {
@@ -82,6 +96,7 @@ export class ViewingsService {
             where: { id: viewingId },
             data: {
                 confirmedTime: confirmedDate,
+                confirmedById: userId,
                 status: ViewingStatus.CONFIRMED,
             },
             include: {

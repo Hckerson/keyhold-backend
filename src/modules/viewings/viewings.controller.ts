@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ViewingsService } from './viewings.service';
-import { CreateViewingDto } from './dto';
+import { CreateViewingDto, ConfirmViewingDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth-user';
@@ -56,8 +56,12 @@ export class ViewingsController {
     async confirmViewing(
         @Param('id') id: string,
         @CurrentUser() user: AuthUser,
-        @Body() body: { confirmedTime: string },
+        @Body() body: ConfirmViewingDto,
     ) {
-        return this.viewingsService.confirmViewing(id, body.confirmedTime);
+        return this.viewingsService.confirmViewing(
+            id,
+            user.sub,
+            body.confirmedTime,
+        );
     }
 }

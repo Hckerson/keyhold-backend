@@ -11,7 +11,9 @@ export class SavedPropertyRepo {
         params: T,
     ): Promise<Prisma.SavedPropertyGetPayload<T> | null> {
         try {
-            return (await this.prisma.savedProperty.findUnique(params)) as Prisma.SavedPropertyGetPayload<T> | null;
+            return (await this.prisma.savedProperty.findUnique(
+                params,
+            )) as Prisma.SavedPropertyGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique saved property', error);
         }
@@ -21,7 +23,9 @@ export class SavedPropertyRepo {
         params: T,
     ): Promise<Prisma.SavedPropertyGetPayload<T> | null> {
         try {
-            return (await this.prisma.savedProperty.findFirst(params)) as Prisma.SavedPropertyGetPayload<T> | null;
+            return (await this.prisma.savedProperty.findFirst(
+                params,
+            )) as Prisma.SavedPropertyGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first saved property', error);
         }
@@ -31,7 +35,9 @@ export class SavedPropertyRepo {
         params: T,
     ): Promise<Prisma.SavedPropertyGetPayload<T>[]> {
         try {
-            return (await this.prisma.savedProperty.findMany(params)) as Prisma.SavedPropertyGetPayload<T>[];
+            return (await this.prisma.savedProperty.findMany(
+                params,
+            )) as Prisma.SavedPropertyGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find saved properties', error);
         }
@@ -41,7 +47,9 @@ export class SavedPropertyRepo {
         params: T,
     ): Promise<Prisma.SavedPropertyGetPayload<T>> {
         try {
-            return (await this.prisma.savedProperty.create(params)) as Prisma.SavedPropertyGetPayload<T>;
+            return (await this.prisma.savedProperty.create(
+                params,
+            )) as Prisma.SavedPropertyGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create saved property', error);
         }
@@ -59,7 +67,9 @@ export class SavedPropertyRepo {
         params: T,
     ): Promise<Prisma.SavedPropertyGetPayload<T>> {
         try {
-            return (await this.prisma.savedProperty.update(params)) as Prisma.SavedPropertyGetPayload<T>;
+            return (await this.prisma.savedProperty.update(
+                params,
+            )) as Prisma.SavedPropertyGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update saved property', error);
         }
@@ -77,7 +87,9 @@ export class SavedPropertyRepo {
         params: T,
     ): Promise<Prisma.SavedPropertyGetPayload<T>> {
         try {
-            return (await this.prisma.savedProperty.delete(params)) as Prisma.SavedPropertyGetPayload<T>;
+            return (await this.prisma.savedProperty.delete(
+                params,
+            )) as Prisma.SavedPropertyGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete saved property', error);
         }

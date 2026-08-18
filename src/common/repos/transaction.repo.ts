@@ -11,7 +11,9 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T> | null> {
         try {
-            return (await this.prisma.transaction.findUnique(params)) as Prisma.TransactionGetPayload<T> | null;
+            return (await this.prisma.transaction.findUnique(
+                params,
+            )) as Prisma.TransactionGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique transaction', error);
         }
@@ -21,7 +23,9 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T> | null> {
         try {
-            return (await this.prisma.transaction.findFirst(params)) as Prisma.TransactionGetPayload<T> | null;
+            return (await this.prisma.transaction.findFirst(
+                params,
+            )) as Prisma.TransactionGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first transaction', error);
         }
@@ -31,7 +35,9 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>[]> {
         try {
-            return (await this.prisma.transaction.findMany(params)) as Prisma.TransactionGetPayload<T>[];
+            return (await this.prisma.transaction.findMany(
+                params,
+            )) as Prisma.TransactionGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find transactions', error);
         }
@@ -41,7 +47,9 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>> {
         try {
-            return (await this.prisma.transaction.create(params)) as Prisma.TransactionGetPayload<T>;
+            return (await this.prisma.transaction.create(
+                params,
+            )) as Prisma.TransactionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create transaction', error);
         }
@@ -59,7 +67,9 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>> {
         try {
-            return (await this.prisma.transaction.update(params)) as Prisma.TransactionGetPayload<T>;
+            return (await this.prisma.transaction.update(
+                params,
+            )) as Prisma.TransactionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update transaction', error);
         }
@@ -77,7 +87,9 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>> {
         try {
-            return (await this.prisma.transaction.delete(params)) as Prisma.TransactionGetPayload<T>;
+            return (await this.prisma.transaction.delete(
+                params,
+            )) as Prisma.TransactionGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete transaction', error);
         }

@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    BadRequestException,
+    Logger,
+    ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     v2 as cloudinary,
@@ -22,6 +27,9 @@ interface UploadSignatureResponse {
 
 @Injectable()
 export class CloudinaryService {
+    private readonly logger = new Logger(CloudinaryService.name);
+    private readonly enabled: boolean;
+
     constructor(private configService: ConfigService) {
         const cloudName = this.configService.get<string>(
             'externalServices.cloudinary.cloudName',
@@ -33,21 +41,34 @@ export class CloudinaryService {
             'externalServices.cloudinary.apiSecret',
         );
 
-        if (!cloudName || !apiKey || !apiSecret) {
-            throw new Error('Cloudinary credentials not configured');
-        }
+        this.enabled = Boolean(cloudName && apiKey && apiSecret);
 
-        cloudinary.config({
-            cloud_name: cloudName,
-            api_key: apiKey,
-            api_secret: apiSecret,
-        });
+        if (this.enabled) {
+            cloudinary.config({
+                cloud_name: cloudName,
+                api_key: apiKey,
+                api_secret: apiSecret,
+            });
+        } else {
+            this.logger.warn(
+                'Cloudinary credentials not configured — media upload is disabled',
+            );
+        }
+    }
+
+    private assertEnabled() {
+        if (!this.enabled) {
+            throw new ServiceUnavailableException(
+                'Media storage is not configured on this environment',
+            );
+        }
     }
 
     async uploadPropertyImage(
         fileBuffer: Buffer,
         filename: string,
     ): Promise<UploadResponse> {
+        this.assertEnabled();
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
@@ -83,6 +104,7 @@ export class CloudinaryService {
     }
 
     async deleteImage(publicId: string): Promise<void> {
+        this.assertEnabled();
         try {
             await cloudinary.uploader.destroy(publicId);
         } catch (error: unknown) {
@@ -96,6 +118,7 @@ export class CloudinaryService {
         fileBuffer: Buffer,
         filename: string,
     ): Promise<UploadResponse> {
+        this.assertEnabled();
         return new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
@@ -131,6 +154,7 @@ export class CloudinaryService {
     }
 
     getUploadSignature(): UploadSignatureResponse {
+        this.assertEnabled();
         const timestamp = Math.floor(Date.now() / 1000);
         const apiSecret = this.configService.get<string>(
             'externalServices.cloudinary.apiSecret',

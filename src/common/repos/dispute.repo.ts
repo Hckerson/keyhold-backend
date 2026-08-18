@@ -11,7 +11,9 @@ export class DisputeRepo {
         params: T,
     ): Promise<Prisma.DisputeGetPayload<T> | null> {
         try {
-            return (await this.prisma.dispute.findUnique(params)) as Prisma.DisputeGetPayload<T> | null;
+            return (await this.prisma.dispute.findUnique(
+                params,
+            )) as Prisma.DisputeGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique dispute', error);
         }
@@ -21,7 +23,9 @@ export class DisputeRepo {
         params: T,
     ): Promise<Prisma.DisputeGetPayload<T> | null> {
         try {
-            return (await this.prisma.dispute.findFirst(params)) as Prisma.DisputeGetPayload<T> | null;
+            return (await this.prisma.dispute.findFirst(
+                params,
+            )) as Prisma.DisputeGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first dispute', error);
         }
@@ -31,7 +35,9 @@ export class DisputeRepo {
         params: T,
     ): Promise<Prisma.DisputeGetPayload<T>[]> {
         try {
-            return (await this.prisma.dispute.findMany(params)) as Prisma.DisputeGetPayload<T>[];
+            return (await this.prisma.dispute.findMany(
+                params,
+            )) as Prisma.DisputeGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find disputes', error);
         }
@@ -41,7 +47,9 @@ export class DisputeRepo {
         params: T,
     ): Promise<Prisma.DisputeGetPayload<T>> {
         try {
-            return (await this.prisma.dispute.create(params)) as Prisma.DisputeGetPayload<T>;
+            return (await this.prisma.dispute.create(
+                params,
+            )) as Prisma.DisputeGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create dispute', error);
         }
@@ -59,7 +67,9 @@ export class DisputeRepo {
         params: T,
     ): Promise<Prisma.DisputeGetPayload<T>> {
         try {
-            return (await this.prisma.dispute.update(params)) as Prisma.DisputeGetPayload<T>;
+            return (await this.prisma.dispute.update(
+                params,
+            )) as Prisma.DisputeGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update dispute', error);
         }
@@ -77,7 +87,9 @@ export class DisputeRepo {
         params: T,
     ): Promise<Prisma.DisputeGetPayload<T>> {
         try {
-            return (await this.prisma.dispute.delete(params)) as Prisma.DisputeGetPayload<T>;
+            return (await this.prisma.dispute.delete(
+                params,
+            )) as Prisma.DisputeGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete dispute', error);
         }

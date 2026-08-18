@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import twilio, { Twilio } from 'twilio';
 
@@ -9,7 +9,8 @@ interface SMSResponse {
 
 @Injectable()
 export class TwilioService {
-    private client: Twilio;
+    private readonly logger = new Logger(TwilioService.name);
+    private readonly client: Twilio | null;
 
     constructor(private configService: ConfigService) {
         const accountSid = this.configService.get<string>(
@@ -19,14 +20,22 @@ export class TwilioService {
             'externalServices.twilio.authToken',
         );
 
-        if (!accountSid || !authToken) {
-            throw new Error('Twilio credentials not configured');
-        }
+        this.client =
+            accountSid && authToken ? twilio(accountSid, authToken) : null;
 
-        this.client = twilio(accountSid, authToken);
+        if (!this.client) {
+            this.logger.warn(
+                'Twilio credentials not configured — outbound SMS is disabled',
+            );
+        }
     }
 
     async sendSMS(toNumber: string, message: string): Promise<SMSResponse> {
+        if (!this.client) {
+            this.logger.warn(`SMS suppressed (Twilio disabled) to ${toNumber}`);
+            return { success: false, messageId: '' };
+        }
+
         try {
             const fromNumber = this.configService.get<string>(
                 'externalServices.twilio.fromNumber',

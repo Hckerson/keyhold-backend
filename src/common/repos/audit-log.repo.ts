@@ -11,7 +11,9 @@ export class AuditLogRepo {
         params: T,
     ): Promise<Prisma.AuditLogGetPayload<T> | null> {
         try {
-            return (await this.prisma.auditLog.findUnique(params)) as Prisma.AuditLogGetPayload<T> | null;
+            return (await this.prisma.auditLog.findUnique(
+                params,
+            )) as Prisma.AuditLogGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find unique audit log', error);
         }
@@ -21,7 +23,9 @@ export class AuditLogRepo {
         params: T,
     ): Promise<Prisma.AuditLogGetPayload<T> | null> {
         try {
-            return (await this.prisma.auditLog.findFirst(params)) as Prisma.AuditLogGetPayload<T> | null;
+            return (await this.prisma.auditLog.findFirst(
+                params,
+            )) as Prisma.AuditLogGetPayload<T> | null;
         } catch (error) {
             throw new RepoError('Failed to find first audit log', error);
         }
@@ -31,7 +35,9 @@ export class AuditLogRepo {
         params: T,
     ): Promise<Prisma.AuditLogGetPayload<T>[]> {
         try {
-            return (await this.prisma.auditLog.findMany(params)) as Prisma.AuditLogGetPayload<T>[];
+            return (await this.prisma.auditLog.findMany(
+                params,
+            )) as Prisma.AuditLogGetPayload<T>[];
         } catch (error) {
             throw new RepoError('Failed to find audit logs', error);
         }
@@ -41,7 +47,9 @@ export class AuditLogRepo {
         params: T,
     ): Promise<Prisma.AuditLogGetPayload<T>> {
         try {
-            return (await this.prisma.auditLog.create(params)) as Prisma.AuditLogGetPayload<T>;
+            return (await this.prisma.auditLog.create(
+                params,
+            )) as Prisma.AuditLogGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to create audit log', error);
         }
@@ -59,7 +67,9 @@ export class AuditLogRepo {
         params: T,
     ): Promise<Prisma.AuditLogGetPayload<T>> {
         try {
-            return (await this.prisma.auditLog.update(params)) as Prisma.AuditLogGetPayload<T>;
+            return (await this.prisma.auditLog.update(
+                params,
+            )) as Prisma.AuditLogGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to update audit log', error);
         }
@@ -77,7 +87,9 @@ export class AuditLogRepo {
         params: T,
     ): Promise<Prisma.AuditLogGetPayload<T>> {
         try {
-            return (await this.prisma.auditLog.delete(params)) as Prisma.AuditLogGetPayload<T>;
+            return (await this.prisma.auditLog.delete(
+                params,
+            )) as Prisma.AuditLogGetPayload<T>;
         } catch (error) {
             throw new RepoError('Failed to delete audit log', error);
         }
