@@ -64,6 +64,41 @@ export class OffersService {
         return offer;
     }
 
+    async acceptCounter(offerId: string, userId: string) {
+        const offer = await this.offerRepo.findUnique({
+            where: { id: offerId },
+        });
+        if (!offer) throw new NotFoundException('Offer not found');
+
+        if (offer.offererId !== userId) {
+            throw new ForbiddenException(
+                'Only the buyer can accept this counter',
+            );
+        }
+
+        if (offer.status !== OfferStatus.COUNTERED) {
+            throw new BadRequestException(
+                'Only a countered offer can be accepted this way',
+            );
+        }
+
+        return this.offerRepo.update({
+            where: { id: offerId },
+            data: {
+                status: OfferStatus.ACCEPTED,
+                offeredPrice: offer.responsePrice ?? offer.offeredPrice,
+                respondedAt: new Date(),
+            },
+            include: {
+                offerer: {
+                    select: { id: true, fullName: true, email: true },
+                },
+                responseFrom: { select: { id: true, fullName: true } },
+                property: { select: { id: true, title: true } },
+            },
+        });
+    }
+
     async respondToOffer(
         offerId: string,
         userId: string,

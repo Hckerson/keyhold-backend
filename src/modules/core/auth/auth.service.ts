@@ -73,6 +73,11 @@ export class AuthService {
             role: user.role,
         });
 
+        await this.userRepo.update({
+            where: { id: user.id },
+            data: { lastActive: new Date() },
+        });
+
         return { user: this.toAuthUser(user), accessToken };
     }
 

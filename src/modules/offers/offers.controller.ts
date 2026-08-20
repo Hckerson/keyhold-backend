@@ -49,6 +49,17 @@ export class OffersController {
         return this.offersService.getByConnection(connectionId, user.sub);
     }
 
+    @Patch(':id/accept-counter')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Buyer accepts the seller counter' })
+    async acceptCounter(
+        @Param('id') id: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.offersService.acceptCounter(id, user.sub);
+    }
+
     @Patch(':id/respond')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()

@@ -4,6 +4,7 @@ import {
     NotFoundException,
     ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { UserRepo } from '@common/repos/user.repo';
@@ -12,6 +13,51 @@ import { TwilioService } from '@common/services/notification/twilio.service';
 import { ConnectionStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
 import { CreateConnectionDto } from './dto';
+
+const listInclude = (viewerId: string) =>
+    ({
+        property: {
+            select: {
+                id: true,
+                title: true,
+                price: true,
+                address: true,
+                locality: true,
+                status: true,
+                images: { orderBy: { order: 'asc' }, take: 1 },
+            },
+        },
+        buyer: {
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                avatar: true,
+                phoneNumber: true,
+            },
+        },
+        seller: {
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                avatar: true,
+                phoneNumber: true,
+                jobTitle: true,
+                agencyName: true,
+            },
+        },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        offers: { orderBy: { createdAt: 'desc' }, take: 1 },
+        viewings: { orderBy: { createdAt: 'desc' }, take: 1 },
+        _count: {
+            select: {
+                messages: { where: { receiverId: viewerId, isRead: false } },
+                viewings: true,
+                offers: true,
+            },
+        },
+    }) satisfies Prisma.ConnectionInclude;
 
 @Injectable()
 export class ConnectionsService {
@@ -138,28 +184,16 @@ export class ConnectionsService {
     async getByBuyer(buyerId: string) {
         return this.connectionRepo.findMany({
             where: { buyerId },
-            include: {
-                property: {
-                    select: { id: true, title: true, price: true },
-                },
-                seller: { select: { id: true, fullName: true } },
-            },
-            orderBy: { createdAt: 'desc' },
+            include: listInclude(buyerId),
+            orderBy: { updatedAt: 'desc' },
         });
     }
 
     async getBySeller(sellerId: string) {
         return this.connectionRepo.findMany({
             where: { sellerId },
-            include: {
-                buyer: {
-                    select: { id: true, fullName: true, email: true },
-                },
-                property: {
-                    select: { id: true, title: true, price: true },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
+            include: listInclude(sellerId),
+            orderBy: { updatedAt: 'desc' },
         });
     }
 

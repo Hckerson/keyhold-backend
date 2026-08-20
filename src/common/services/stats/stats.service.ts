@@ -56,7 +56,8 @@ export class StatsService {
 
         const userData = userStats.map((stat) => ({
             name: actualFilter === TimeFilter.DAY ? stat.day : stat.month,
-            value: stat?._count || 0,
+            value:
+                typeof stat._count === 'object' ? (stat._count._all ?? 0) : 0,
         }));
 
         const dataKey =

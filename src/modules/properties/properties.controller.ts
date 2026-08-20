@@ -16,7 +16,12 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PropertiesService } from './properties.service';
-import { CreatePropertyDto, UpdatePropertyDto, QueryPropertyDto } from './dto';
+import {
+    CreatePropertyDto,
+    UpdatePropertyDto,
+    QueryPropertyDto,
+    FacetsPropertyDto,
+} from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth-user';
@@ -41,6 +46,13 @@ export class PropertiesController {
             query,
             limit ? parseInt(limit) : undefined,
         );
+    }
+
+    @Post('facets')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Count matching properties per filter option' })
+    async facets(@Body() dto: FacetsPropertyDto) {
+        return this.propertiesService.facets(dto);
     }
 
     @Get('seller/:sellerId')

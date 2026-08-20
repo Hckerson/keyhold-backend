@@ -1,10 +1,12 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+    IsArray,
     IsEnum,
     IsInt,
     IsNumber,
     IsOptional,
     IsString,
+    Matches,
     Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -16,7 +18,18 @@ export enum PropertySort {
     PRICE_DESC = 'price-desc',
     BEDROOMS_DESC = 'bedrooms-desc',
     SQFT_DESC = 'sqft-desc',
+    POPULAR = 'popular',
 }
+
+export const COUNT_TOKEN_PATTERN = /^\d+(plus)?$/;
+export const PRICE_RANGE_PATTERN = /^\d+-\d*$/;
+
+const toArray = ({ value }: { value: unknown }) =>
+    value === undefined || value === null
+        ? undefined
+        : Array.isArray(value)
+          ? value
+          : [value];
 
 export class QueryPropertyDto {
     @ApiPropertyOptional({ enum: PropertyStatus })
@@ -24,48 +37,52 @@ export class QueryPropertyDto {
     @IsOptional()
     status?: PropertyStatus;
 
-    @ApiPropertyOptional({ enum: PropertyType })
-    @IsEnum(PropertyType)
+    @ApiPropertyOptional({ enum: PropertyType, isArray: true })
+    @Transform(toArray)
+    @IsArray()
+    @IsEnum(PropertyType, { each: true })
     @IsOptional()
-    type?: PropertyType;
+    types?: PropertyType[];
 
     @ApiPropertyOptional()
     @IsString()
     @IsOptional()
     locality?: string;
 
-    @ApiPropertyOptional()
+    @ApiPropertyOptional({ description: 'Free-text search term' })
     @IsString()
     @IsOptional()
     q?: string;
 
-    @ApiPropertyOptional()
-    @Type(() => Number)
-    @IsNumber()
+    @ApiPropertyOptional({
+        isArray: true,
+        example: ['0-1000000', '5000000-'],
+        description:
+            'OR-ed price ranges as "min-max"; open upper bound as "min-"',
+    })
+    @Transform(toArray)
+    @IsArray()
+    @Matches(PRICE_RANGE_PATTERN, { each: true })
     @IsOptional()
-    @Min(0)
-    minPrice?: number;
+    priceRanges?: string[];
 
-    @ApiPropertyOptional()
-    @Type(() => Number)
-    @IsNumber()
+    @ApiPropertyOptional({
+        isArray: true,
+        example: ['3', '5plus'],
+        description: 'OR-ed bedroom counts; "Nplus" means N or more',
+    })
+    @Transform(toArray)
+    @IsArray()
+    @Matches(COUNT_TOKEN_PATTERN, { each: true })
     @IsOptional()
-    @Min(0)
-    maxPrice?: number;
+    beds?: string[];
 
-    @ApiPropertyOptional()
-    @Type(() => Number)
-    @IsInt()
+    @ApiPropertyOptional({ isArray: true, example: ['2', '4plus'] })
+    @Transform(toArray)
+    @IsArray()
+    @Matches(COUNT_TOKEN_PATTERN, { each: true })
     @IsOptional()
-    @Min(0)
-    bedrooms?: number;
-
-    @ApiPropertyOptional()
-    @Type(() => Number)
-    @IsInt()
-    @IsOptional()
-    @Min(0)
-    bathrooms?: number;
+    baths?: string[];
 
     @ApiPropertyOptional()
     @Type(() => Number)

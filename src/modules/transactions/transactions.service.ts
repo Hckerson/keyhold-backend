@@ -208,8 +208,26 @@ export class TransactionsService {
         return this.transactionRepo.findMany({
             where: { buyerId },
             include: {
-                property: { select: { id: true, title: true } },
-                seller: { select: { id: true, fullName: true } },
+                property: {
+                    select: {
+                        id: true,
+                        title: true,
+                        price: true,
+                        address: true,
+                        locality: true,
+                        status: true,
+                        images: { orderBy: { order: 'asc' }, take: 1 },
+                    },
+                },
+                seller: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        avatar: true,
+                        phoneNumber: true,
+                    },
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -219,8 +237,26 @@ export class TransactionsService {
         return this.transactionRepo.findMany({
             where: { sellerId },
             include: {
-                property: { select: { id: true, title: true } },
-                buyer: { select: { id: true, fullName: true } },
+                property: {
+                    select: {
+                        id: true,
+                        title: true,
+                        price: true,
+                        address: true,
+                        locality: true,
+                        status: true,
+                        images: { orderBy: { order: 'asc' }, take: 1 },
+                    },
+                },
+                buyer: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        avatar: true,
+                        phoneNumber: true,
+                    },
+                },
             },
             orderBy: { createdAt: 'desc' },
         });
