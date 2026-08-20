@@ -12,6 +12,8 @@ import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { ConnectionStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
+import { NotificationsService } from '@modules/notifications/notifications.service';
+import { NotificationType } from '@generated/prisma/enums';
 import { CreateConnectionDto } from './dto';
 
 const listInclude = (viewerId: string) =>
@@ -67,6 +69,7 @@ export class ConnectionsService {
         private userRepo: UserRepo,
         private emailService: SendGridEmailService,
         private smsService: TwilioService,
+        private notificationsService: NotificationsService,
     ) {}
 
     async expressInterest(buyerId: string, createDto: CreateConnectionDto) {
@@ -116,7 +119,18 @@ export class ConnectionsService {
             },
         });
 
-        await this.notifySeller(connection);
+        await Promise.all([
+            this.notifySeller(connection),
+            this.notificationsService.notify({
+                userId: connection.seller.id,
+                type: NotificationType.CONNECTION_REQUEST,
+                title: 'New buyer enquiry',
+                body: `${connection.buyer.fullName} enquired about ${connection.property.title}`,
+                entityType: 'CONNECTION',
+                entityId: connection.id,
+            }),
+        ]);
+
         return connection;
     }
 
@@ -156,7 +170,18 @@ export class ConnectionsService {
             },
         });
 
-        await this.notifyBuyerAccepted(updated);
+        await Promise.all([
+            this.notifyBuyerAccepted(updated),
+            this.notificationsService.notify({
+                userId: updated.buyer.id,
+                type: NotificationType.STATUS_CHANGE,
+                title: 'Enquiry accepted',
+                body: `${updated.seller.fullName} accepted your enquiry on ${updated.property.title}`,
+                entityType: 'CONNECTION',
+                entityId: updated.id,
+            }),
+        ]);
+
         return updated;
     }
 

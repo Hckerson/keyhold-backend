@@ -4,7 +4,7 @@ import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 
 @ApiTags('messages')
 @Controller('messages')
@@ -19,7 +19,7 @@ export class MessagesController {
         @CurrentUser() user: AuthUser,
         @Body() createDto: CreateMessageDto,
     ) {
-        return this.messagesService.sendMessage(user.sub, createDto);
+        return this.messagesService.sendMessage(user.id, createDto);
     }
 
     @Get('connection/:connectionId')
@@ -30,7 +30,7 @@ export class MessagesController {
         @Param('connectionId') connectionId: string,
         @CurrentUser() user: AuthUser,
     ) {
-        return this.messagesService.getMessages(connectionId, user.sub);
+        return this.messagesService.getMessages(connectionId, user.id);
     }
 
     @Get('unread/count')
@@ -38,7 +38,7 @@ export class MessagesController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get unread message count' })
     async getUnreadCount(@CurrentUser() user: AuthUser) {
-        const count = await this.messagesService.getUnreadCount(user.sub);
+        const count = await this.messagesService.getUnreadCount(user.id);
         return { unreadCount: count };
     }
 }

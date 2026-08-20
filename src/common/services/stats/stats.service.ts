@@ -10,6 +10,63 @@ import {
     ViewingStatus,
 } from '@generated/prisma/enums';
 
+interface Settled {
+    createdAt: Date;
+    completedAt: Date | null;
+    finalPrice: number;
+    property: { price: number };
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MONTH_KEY_LENGTH = 7;
+
+const bucketBy = <T>(
+    rows: T[],
+    dateOf: (row: T) => Date | null,
+    valueOf: (row: T) => number,
+) => {
+    const buckets = new Map<string, number>();
+
+    for (const row of rows) {
+        const date = dateOf(row);
+        if (!date) continue;
+        const key = date.toISOString().slice(0, MONTH_KEY_LENGTH);
+        buckets.set(key, (buckets.get(key) ?? 0) + valueOf(row));
+    }
+
+    return [...buckets.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, value]) => ({ name, value }));
+};
+
+const averageDaysToClose = (sales: Settled[]) => {
+    const closed = sales.filter((sale) => sale.completedAt);
+    if (!closed.length) return 0;
+
+    const total = closed.reduce((sum, sale) => {
+        const completedAt = sale.completedAt;
+        if (!completedAt) return sum;
+        return (
+            sum +
+            (completedAt.getTime() - sale.createdAt.getTime()) / MS_PER_DAY
+        );
+    }, 0);
+
+    return Math.round(total / closed.length);
+};
+
+const averageSaleToList = (sales: Settled[]) => {
+    const priced = sales.filter((sale) => sale.property.price > 0);
+    if (!priced.length) return 0;
+
+    const total = priced.reduce(
+        (sum, sale) => sum + sale.finalPrice / sale.property.price,
+        0,
+    );
+
+    return Number(((total / priced.length) * 100).toFixed(1));
+};
+
 @Injectable()
 export class StatsService {
     constructor(
@@ -182,6 +239,141 @@ export class StatsService {
             transactions,
             completedTransactions,
             volume: volume._sum.finalPrice ?? 0,
+        };
+    }
+
+    async fetchRegionMetrics() {
+        const [grouped, sold] = await Promise.all([
+            this.prisma.property.groupBy({
+                by: ['region'],
+                _count: { _all: true },
+                _avg: { price: true },
+            }),
+            this.prisma.transaction.findMany({
+                where: { status: TransactionStatus.COMPLETED },
+                select: {
+                    finalPrice: true,
+                    property: { select: { region: true } },
+                },
+            }),
+        ]);
+
+        const volumeByRegion = new Map<string, number>();
+        for (const sale of sold) {
+            const region = sale.property.region;
+            volumeByRegion.set(
+                region,
+                (volumeByRegion.get(region) ?? 0) + sale.finalPrice,
+            );
+        }
+
+        return grouped
+            .map((row) => ({
+                region: row.region,
+                listings: typeof row._count === 'object' ? row._count._all : 0,
+                avgPrice: row._avg?.price ?? 0,
+                volume: volumeByRegion.get(row.region) ?? 0,
+            }))
+            .sort((a, b) => b.volume - a.volume);
+    }
+
+    async fetchTrend(filter: TimeFilter) {
+        const startDate = this.getStartDate(filter);
+
+        const [sales, signups, listings] = await Promise.all([
+            this.prisma.transaction.findMany({
+                where: {
+                    status: TransactionStatus.COMPLETED,
+                    completedAt: { gte: startDate },
+                },
+                select: { completedAt: true, finalPrice: true },
+            }),
+            this.prisma.user.findMany({
+                where: { createdAt: { gte: startDate } },
+                select: { createdAt: true },
+            }),
+            this.prisma.property.findMany({
+                where: { createdAt: { gte: startDate } },
+                select: { createdAt: true },
+            }),
+        ]);
+
+        return {
+            gmv: bucketBy(
+                sales,
+                (sale) => sale.completedAt,
+                (sale) => sale.finalPrice,
+            ),
+            deals: bucketBy(
+                sales,
+                (sale) => sale.completedAt,
+                () => 1,
+            ),
+            users: bucketBy(
+                signups,
+                (row) => row.createdAt,
+                () => 1,
+            ),
+            listings: bucketBy(
+                listings,
+                (row) => row.createdAt,
+                () => 1,
+            ),
+        };
+    }
+
+    async fetchAgentAnalytics(sellerId: string) {
+        const startDate = this.getStartDate(TimeFilter.MONTH);
+
+        const [sales, listings, platformSales] = await Promise.all([
+            this.prisma.transaction.findMany({
+                where: {
+                    sellerId,
+                    status: TransactionStatus.COMPLETED,
+                    completedAt: { gte: startDate },
+                },
+                select: {
+                    completedAt: true,
+                    createdAt: true,
+                    finalPrice: true,
+                    property: { select: { price: true, createdAt: true } },
+                },
+            }),
+            this.prisma.property.count({ where: { sellerId } }),
+            this.prisma.transaction.findMany({
+                where: { status: TransactionStatus.COMPLETED },
+                select: {
+                    createdAt: true,
+                    completedAt: true,
+                    finalPrice: true,
+                    property: { select: { price: true } },
+                },
+            }),
+        ]);
+
+        const volume = sales.reduce(
+            (total, sale) => total + sale.finalPrice,
+            0,
+        );
+
+        return {
+            production: {
+                deals: sales.length,
+                volume,
+                averagePrice: sales.length ? volume / sales.length : 0,
+                listings,
+            },
+            monthly: bucketBy(
+                sales,
+                (sale) => sale.completedAt,
+                (sale) => sale.finalPrice,
+            ),
+            benchmarks: {
+                daysToClose: averageDaysToClose(sales),
+                platformDaysToClose: averageDaysToClose(platformSales),
+                saleToList: averageSaleToList(sales),
+                platformSaleToList: averageSaleToList(platformSales),
+            },
         };
     }
 }

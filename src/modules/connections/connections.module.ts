@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConnectionsService } from './connections.service';
 import { ConnectionsController } from './connections.controller';
 import { ServicesModule } from '@common/services/services.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
 
 @Module({
-    imports: [ServicesModule],
+    imports: [ServicesModule, NotificationsModule],
     providers: [ConnectionsService],
     controllers: [ConnectionsController],
 })

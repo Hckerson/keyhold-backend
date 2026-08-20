@@ -12,7 +12,7 @@ import { ViewingsService } from './viewings.service';
 import { CreateViewingDto, ConfirmViewingDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 
 @ApiTags('viewings')
 @Controller('viewings')
@@ -27,7 +27,7 @@ export class ViewingsController {
         @CurrentUser() user: AuthUser,
         @Body() createDto: CreateViewingDto,
     ) {
-        return this.viewingsService.requestViewing(user.sub, createDto);
+        return this.viewingsService.requestViewing(user.id, createDto);
     }
 
     @Get(':id')
@@ -46,7 +46,7 @@ export class ViewingsController {
         @Param('connectionId') connectionId: string,
         @CurrentUser() user: AuthUser,
     ) {
-        return this.viewingsService.getByConnection(connectionId, user.sub);
+        return this.viewingsService.getByConnection(connectionId, user.id);
     }
 
     @Patch(':id/confirm')
@@ -60,7 +60,7 @@ export class ViewingsController {
     ) {
         return this.viewingsService.confirmViewing(
             id,
-            user.sub,
+            user.id,
             body.confirmedTime,
         );
     }

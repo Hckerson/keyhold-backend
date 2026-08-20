@@ -20,6 +20,14 @@ import { TransactionsModule } from '@modules/transactions/transactions.module';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
 import { SavedPropertiesModule } from '@modules/saved-properties/saved-properties.module';
 import { StatsModule } from '@modules/stats/stats.module';
+import { FlagsModule } from '@modules/flags/flags.module';
+import { KycModule } from '@modules/kyc/kyc.module';
+import { SuspensionsModule } from '@modules/suspensions/suspensions.module';
+import { EscrowModule } from '@modules/escrow/escrow.module';
+import { DisputesModule } from '@modules/disputes/disputes.module';
+import { AuditLogsModule } from '@modules/audit-logs/audit-logs.module';
+import { NotificationsModule } from '@modules/notifications/notifications.module';
+import { SettingsModule } from '@modules/settings/settings.module';
 
 @Module({
     imports: [
@@ -41,6 +49,14 @@ import { StatsModule } from '@modules/stats/stats.module';
         ReviewsModule,
         SavedPropertiesModule,
         StatsModule,
+        FlagsModule,
+        KycModule,
+        SuspensionsModule,
+        EscrowModule,
+        DisputesModule,
+        AuditLogsModule,
+        NotificationsModule,
+        SettingsModule,
     ],
     controllers: [AppController],
     providers: [

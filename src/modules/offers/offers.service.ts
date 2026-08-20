@@ -9,6 +9,8 @@ import { ConnectionRepo } from '@common/repos/connection.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { OfferStatus } from '@generated/prisma/enums';
+import { NotificationsService } from '@modules/notifications/notifications.service';
+import { NotificationType } from '@generated/prisma/enums';
 import { CreateOfferDto, RespondOfferDto } from './dto';
 
 @Injectable()
@@ -18,6 +20,7 @@ export class OffersService {
         private connectionRepo: ConnectionRepo,
         private emailService: SendGridEmailService,
         private smsService: TwilioService,
+        private notificationsService: NotificationsService,
     ) {}
 
     async makeOffer(userId: string, createDto: CreateOfferDto) {
@@ -60,7 +63,18 @@ export class OffersService {
             },
         });
 
-        await this.notifySellerOfOffer(offer, connection);
+        await Promise.all([
+            this.notifySellerOfOffer(offer, connection),
+            this.notificationsService.notify({
+                userId: connection.sellerId,
+                type: NotificationType.OFFER_RESPONSE,
+                title: 'New offer received',
+                body: `${connection.buyer.fullName} offered on ${connection.property.title}`,
+                entityType: 'OFFER',
+                entityId: offer.id,
+            }),
+        ]);
+
         return offer;
     }
 
@@ -148,7 +162,20 @@ export class OffersService {
             },
         });
 
-        await this.notifyBuyerOfResponse(updated);
+        await Promise.all([
+            this.notifyBuyerOfResponse(updated),
+            this.notificationsService.notify({
+                userId: updated.offererId,
+                type: NotificationType.OFFER_RESPONSE,
+                title: `Offer ${updated.status.toLowerCase()}`,
+                body:
+                    updated.responseFeedback ??
+                    'The seller responded to your offer',
+                entityType: 'OFFER',
+                entityId: updated.id,
+            }),
+        ]);
+
         return updated;
     }
 

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
@@ -22,7 +22,7 @@ export class ReviewsController {
     ) {
         return this.reviewsService.createReview(
             transactionId,
-            user.sub,
+            user.id,
             createDto,
         );
     }

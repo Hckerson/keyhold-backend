@@ -9,6 +9,8 @@ import { ConnectionRepo } from '@common/repos/connection.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { ViewingStatus } from '@generated/prisma/enums';
+import { NotificationsService } from '@modules/notifications/notifications.service';
+import { NotificationType } from '@generated/prisma/enums';
 import { CreateViewingDto } from './dto';
 
 @Injectable()
@@ -18,6 +20,7 @@ export class ViewingsService {
         private connectionRepo: ConnectionRepo,
         private emailService: SendGridEmailService,
         private smsService: TwilioService,
+        private notificationsService: NotificationsService,
     ) {}
 
     async requestViewing(userId: string, createDto: CreateViewingDto) {
@@ -115,7 +118,23 @@ export class ViewingsService {
             },
         });
 
-        await this.notifyViewingConfirmed(confirmed);
+        const recipientId =
+            viewing.connection.buyerId === userId
+                ? viewing.connection.sellerId
+                : viewing.connection.buyerId;
+
+        await Promise.all([
+            this.notifyViewingConfirmed(confirmed),
+            this.notificationsService.notify({
+                userId: recipientId,
+                type: NotificationType.VIEWING_CONFIRMATION,
+                title: 'Viewing confirmed',
+                body: `${confirmed.property.title} is confirmed for ${confirmedDate.toISOString()}`,
+                entityType: 'VIEWING',
+                entityId: confirmed.id,
+            }),
+        ]);
+
         return confirmed;
     }
 

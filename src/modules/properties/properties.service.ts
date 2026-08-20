@@ -15,7 +15,11 @@ import {
     PropertySort,
     FacetsPropertyDto,
     FacetOptionsDto,
+    ModeratePropertyDto,
+    ModerationDecision,
 } from './dto';
+import { FlagsService } from '@modules/flags/flags.service';
+import { FlagType } from '@generated/prisma/enums';
 import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
 
 const LIST_INCLUDE = {
@@ -55,13 +59,35 @@ const ORDER_BY: Record<PropertySort, Prisma.PropertyOrderByWithRelationInput> =
 
 const DEFAULT_LIMIT = 20;
 
+const MODERATION_STATUS: Record<ModerationDecision, PropertyStatus> = {
+    [ModerationDecision.APPROVE]: PropertyStatus.AVAILABLE,
+    [ModerationDecision.CHANGES]: PropertyStatus.DRAFT,
+    [ModerationDecision.REJECT]: PropertyStatus.EXPIRED,
+};
+
+const PUBLIC_STATUSES: PropertyStatus[] = [
+    PropertyStatus.AVAILABLE,
+    PropertyStatus.PENDING,
+    PropertyStatus.SOLD,
+];
+
 @Injectable()
 export class PropertiesService {
     constructor(
         private propertyRepo: PropertyRepo,
         private cloudinaryService: CloudinaryService,
         private prisma: PrismaService,
+        private flagsService: FlagsService,
     ) {}
+
+    private statusClause(
+        status: PropertyStatus | undefined,
+        privileged: boolean,
+    ): Prisma.EnumPropertyStatusFilter | PropertyStatus | undefined {
+        if (privileged) return status;
+        if (!status) return { in: PUBLIC_STATUSES };
+        return PUBLIC_STATUSES.includes(status) ? status : { in: [] };
+    }
 
     private countClause(tokens: string[]): Prisma.IntFilter[] {
         return tokens.map((token) =>
@@ -82,6 +108,7 @@ export class PropertiesService {
 
     private buildWhere(
         filters: QueryPropertyDto & { sellerId?: string },
+        privileged = false,
     ): Prisma.PropertyWhereInput {
         const { q, types, priceRanges, beds, baths } = filters;
         const and: Prisma.PropertyWhereInput[] = [];
@@ -117,7 +144,7 @@ export class PropertiesService {
         }
 
         return {
-            status: filters.status,
+            status: this.statusClause(filters.status, privileged),
             sellerId: filters.sellerId,
             type: types?.length ? { in: types } : undefined,
             locality: filters.locality
@@ -131,10 +158,13 @@ export class PropertiesService {
         };
     }
 
-    async findAll(filters: QueryPropertyDto & { sellerId?: string } = {}) {
+    async findAll(
+        filters: QueryPropertyDto & { sellerId?: string } = {},
+        privileged = false,
+    ) {
         const page = filters.page ?? 1;
         const limit = filters.limit ?? DEFAULT_LIMIT;
-        const where = this.buildWhere(filters);
+        const where = this.buildWhere(filters, privileged);
 
         const [items, total] = await Promise.all([
             this.propertyRepo.findMany({
@@ -244,6 +274,42 @@ export class PropertiesService {
         });
     }
 
+    async moderate(
+        id: string,
+        moderatorId: string,
+        moderateDto: ModeratePropertyDto,
+    ) {
+        const property = await this.propertyRepo.findUnique({ where: { id } });
+        if (!property) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
+        }
+
+        const note = moderateDto.note?.trim();
+        if (moderateDto.decision !== ModerationDecision.APPROVE && !note) {
+            throw new BadRequestException(
+                'A note is required when requesting changes or rejecting',
+            );
+        }
+
+        const status = MODERATION_STATUS[moderateDto.decision];
+
+        const updated = await this.propertyRepo.update({
+            where: { id },
+            data: { status },
+            include: DETAIL_INCLUDE,
+        });
+
+        await this.flagsService.recordDecision({
+            type: FlagType.PROPERTY,
+            targetId: id,
+            creatorId: moderatorId,
+            reason: `Listing ${moderateDto.decision}`,
+            details: note,
+        });
+
+        return updated;
+    }
+
     async delete(id: string, userId: string) {
         const property = await this.propertyRepo.findUnique({ where: { id } });
         if (!property) {
@@ -272,8 +338,12 @@ export class PropertiesService {
         });
     }
 
-    async findBySeller(sellerId: string, filters: QueryPropertyDto = {}) {
-        return this.findAll({ ...filters, sellerId });
+    async findBySeller(
+        sellerId: string,
+        filters: QueryPropertyDto = {},
+        privileged = false,
+    ) {
+        return this.findAll({ ...filters, sellerId }, privileged);
     }
 
     async uploadImages(

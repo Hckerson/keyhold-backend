@@ -4,16 +4,33 @@ import {
     ForbiddenException,
     BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { StripeService } from '@common/services/payment/stripe.service';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
-import { PDFService } from '@common/services/document/pdf.service';
-import { CloudinaryService } from '@common/services/storage/cloudinary.service';
-import { PropertyStatus } from '@generated/prisma/enums';
-import { CreateTransactionDto } from './dto';
+import { PropertyStatus, TransactionStatus } from '@generated/prisma/enums';
+import { EscrowService } from '@modules/escrow/escrow.service';
+import { CreateTransactionDto, QueryTransactionDto } from './dto';
+
+const DEFAULT_LIMIT = 20;
+
+const ADMIN_INCLUDE = {
+    buyer: { select: { id: true, fullName: true, email: true, avatar: true } },
+    seller: { select: { id: true, fullName: true, email: true, avatar: true } },
+    property: {
+        select: {
+            id: true,
+            title: true,
+            address: true,
+            locality: true,
+            price: true,
+        },
+    },
+    escrowHold: true,
+    dispute: { select: { id: true, title: true, status: true } },
+} satisfies Prisma.TransactionInclude;
 
 @Injectable()
 export class TransactionsService {
@@ -23,9 +40,7 @@ export class TransactionsService {
         private connectionRepo: ConnectionRepo,
         private propertyRepo: PropertyRepo,
         private stripeService: StripeService,
-        private emailService: SendGridEmailService,
-        private pdfService: PDFService,
-        private cloudinaryService: CloudinaryService,
+        private escrowService: EscrowService,
     ) {}
 
     async initiateTransaction(userId: string, createDto: CreateTransactionDto) {
@@ -124,35 +139,18 @@ export class TransactionsService {
             throw new BadRequestException('Payment could not be confirmed');
         }
 
-        const agreementPDF = this.pdfService.generatePurchaseAgreement({
-            buyerName: transaction?.buyer?.fullName,
-            buyerEmail: transaction?.buyer?.email,
-            sellerName: transaction?.seller?.fullName,
-            sellerEmail: transaction?.seller?.email,
-            propertyTitle: transaction?.property?.title,
-            propertyAddress: 'Address not specified',
-            purchasePrice: transaction.finalPrice,
-            terms: transaction.terms,
-            date: new Date(),
-        });
-
-        const { url: docUrl } = await this.cloudinaryService.uploadDocument(
-            agreementPDF,
-            `agreement-${transactionId}.pdf`,
+        const escrow = await this.escrowService.hold(
+            transactionId,
+            transaction.finalPrice,
         );
 
         await this.propertyRepo.update({
             where: { id: transaction.propertyId },
-            data: { status: PropertyStatus.SOLD },
+            data: { status: PropertyStatus.PENDING },
         });
 
-        const completed = await this.transactionRepo.update({
+        const held = await this.transactionRepo.findUnique({
             where: { id: transactionId },
-            data: {
-                status: 'COMPLETED',
-                completedAt: new Date(),
-                agreementDocUrl: docUrl,
-            },
             include: {
                 buyer: {
                     select: { id: true, fullName: true, email: true },
@@ -161,15 +159,82 @@ export class TransactionsService {
                     select: { id: true, fullName: true, email: true },
                 },
                 property: { select: { id: true, title: true } },
+                escrowHold: true,
             },
         });
 
-        await this.notifyBothParties(completed);
+        return {
+            transaction: held,
+            escrow,
+            inspectionEndDate: escrow.inspectionEndDate,
+        };
+    }
+
+    async findAll(query: QueryTransactionDto) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? DEFAULT_LIMIT;
+        const where: Prisma.TransactionWhereInput = {
+            status: query.status,
+            property: query.q
+                ? {
+                      OR: [
+                          { title: { contains: query.q, mode: 'insensitive' } },
+                          {
+                              address: {
+                                  contains: query.q,
+                                  mode: 'insensitive',
+                              },
+                          },
+                      ],
+                  }
+                : undefined,
+        };
+
+        const [items, total] = await Promise.all([
+            this.transactionRepo.findMany({
+                where,
+                include: ADMIN_INCLUDE,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            this.transactionRepo.count({ where }),
+        ]);
 
         return {
-            transaction: completed,
-            agreementUrl: docUrl,
+            items,
+            total,
+            page,
+            limit,
+            pageCount: Math.max(1, Math.ceil(total / limit)),
         };
+    }
+
+    async stages() {
+        const statuses = [
+            TransactionStatus.PENDING,
+            TransactionStatus.IN_PROGRESS,
+            TransactionStatus.COMPLETED,
+            TransactionStatus.CANCELLED,
+        ];
+
+        return Promise.all(
+            statuses.map(async (status) => {
+                const rows = await this.transactionRepo.findMany({
+                    where: { status },
+                    select: { finalPrice: true },
+                });
+
+                return {
+                    status,
+                    count: rows.length,
+                    volume: rows.reduce(
+                        (total, row) => total + row.finalPrice,
+                        0,
+                    ),
+                };
+            }),
+        );
     }
 
     async getOne(transactionId: string, userId: string) {
@@ -260,33 +325,5 @@ export class TransactionsService {
             },
             orderBy: { createdAt: 'desc' },
         });
-    }
-
-    private async notifyBothParties(transaction: {
-        buyer: { email: string };
-        seller: { email: string };
-        property: { title: string };
-        finalPrice: number;
-    }): Promise<void> {
-        try {
-            await this.emailService.sendTransactionCompletedEmail(
-                transaction.buyer.email,
-                transaction.property.title,
-                transaction.finalPrice,
-            );
-
-            await this.emailService.sendEmail({
-                to: transaction.seller.email,
-                subject: `Sale Completed: ${transaction.property.title}`,
-                html: `
-          <h2>Congratulations on the Sale!</h2>
-          <p>Your property <strong>${transaction.property.title}</strong> has been sold.</p>
-          <p><strong>Final Price: $${transaction.finalPrice.toLocaleString()}</strong></p>
-          <p>The buyer should rate you based on their experience. Thank you for using our platform.</p>
-        `,
-            });
-        } catch (error) {
-            console.error('Failed to send completion emails:', error);
-        }
     }
 }

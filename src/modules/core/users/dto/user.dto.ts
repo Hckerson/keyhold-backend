@@ -44,7 +44,9 @@ export class UserDto {
     @ApiProperty()
     kycVerified: boolean;
 
-    @ApiProperty({ description: 'Completed transactions this user is party to' })
+    @ApiProperty({
+        description: 'Completed transactions this user is party to',
+    })
     transactions: number;
 
     @ApiProperty({ description: 'Settled value across completed transactions' })
