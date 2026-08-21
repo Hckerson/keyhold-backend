@@ -28,6 +28,10 @@ import { DisputesModule } from '@modules/disputes/disputes.module';
 import { AuditLogsModule } from '@modules/audit-logs/audit-logs.module';
 import { NotificationsModule } from '@modules/notifications/notifications.module';
 import { SettingsModule } from '@modules/settings/settings.module';
+import { ConciergeModule } from '@modules/concierge/concierge.module';
+import { SavedSearchesModule } from '@modules/saved-searches/saved-searches.module';
+import { ServiceHealthModule } from '@modules/service-health/service-health.module';
+import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.interceptor';
 
 @Module({
     imports: [
@@ -57,6 +61,9 @@ import { SettingsModule } from '@modules/settings/settings.module';
         AuditLogsModule,
         NotificationsModule,
         SettingsModule,
+        ConciergeModule,
+        SavedSearchesModule,
+        ServiceHealthModule,
     ],
     controllers: [AppController],
     providers: [
@@ -65,6 +72,10 @@ import { SettingsModule } from '@modules/settings/settings.module';
         {
             provide: APP_INTERCEPTOR,
             useClass: AuditLogInterceptor,
+        },
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: ServiceMetricInterceptor,
         },
     ],
 })
