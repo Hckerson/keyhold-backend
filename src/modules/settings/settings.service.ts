@@ -1,0 +1,100 @@
+import { Injectable } from '@nestjs/common';
+import { PlatformSettingRepo } from '@common/repos/platform-setting.repo';
+import { SettingCategory } from '@generated/prisma/enums';
+import { UpdateSettingsDto } from './dto';
+
+export const SETTING_DEFAULTS: {
+    key: string;
+    value: string;
+    category: SettingCategory;
+}[] = [
+    { key: 'platformName', value: '', category: SettingCategory.PLATFORM },
+    { key: 'supportEmail', value: '', category: SettingCategory.PLATFORM },
+    { key: 'baseCurrency', value: 'USD', category: SettingCategory.COMMERCE },
+    { key: 'commissionRate', value: '2.5', category: SettingCategory.COMMERCE },
+    { key: 'platformFee', value: '495', category: SettingCategory.COMMERCE },
+    { key: 'escrowHoldDays', value: '3', category: SettingCategory.COMMERCE },
+    {
+        key: 'listingExpiryDays',
+        value: '90',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'maxPhotosPerListing',
+        value: '24',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'autoApproveThreshold',
+        value: '0',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'maintenanceMode',
+        value: 'false',
+        category: SettingCategory.AVAILABILITY,
+    },
+    {
+        key: 'openSignups',
+        value: 'true',
+        category: SettingCategory.AVAILABILITY,
+    },
+];
+
+@Injectable()
+export class SettingsService {
+    constructor(private settingRepo: PlatformSettingRepo) {}
+
+    async findAll() {
+        const stored = await this.settingRepo.findMany({
+            include: {
+                updatedBy: { select: { id: true, fullName: true, role: true } },
+            },
+        });
+        const byKey = new Map(stored.map((setting) => [setting.key, setting]));
+
+        return SETTING_DEFAULTS.map((fallback) => {
+            const setting = byKey.get(fallback.key);
+            return {
+                key: fallback.key,
+                value: setting?.value ?? fallback.value,
+                category: setting?.category ?? fallback.category,
+                updatedBy: setting?.updatedBy ?? null,
+                updatedAt: setting?.updatedAt ?? null,
+            };
+        });
+    }
+
+    async findValue(key: string) {
+        const setting = await this.settingRepo.findUnique({ where: { key } });
+        if (setting) return setting.value;
+
+        return (
+            SETTING_DEFAULTS.find((fallback) => fallback.key === key)?.value ??
+            null
+        );
+    }
+
+    async update(updatedById: string, updateDto: UpdateSettingsDto) {
+        await Promise.all(
+            updateDto.settings.map((setting) =>
+                this.settingRepo.upsert({
+                    where: { key: setting.key },
+                    create: {
+                        key: setting.key,
+                        value: setting.value,
+                        category: setting.category,
+                        updatedById,
+                    },
+                    update: {
+                        value: setting.value,
+                        category: setting.category,
+                        updatedById,
+                    },
+                }),
+            ),
+        );
+
+        return this.findAll();
+    }
+}

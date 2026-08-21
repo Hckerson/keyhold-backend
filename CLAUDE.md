@@ -91,6 +91,7 @@ Never replace a derived artifact with `any`, `Record<>`, `as` assertions, or han
 | `/src/lib/`               | Pure utility functions and helpers. No NestJS dependencies.                                                                          |
 | `/src/modules/core/`      | Domain-specific modules. One folder per domain with `dto/`, `*.service.ts`, `*.controller.ts`, `*.module.ts`.                        |
 | `/src/modules/core/auth/` | Authentication logic. Already implemented. Extend, don't reinvent.                                                                   |
+| `/docs/`                  | Prose documentation and design specs. Not application code. Only `README.md` and `CLAUDE.md` stay at the repo root.                  |
 
 ## Workflow: Add a new domain
 

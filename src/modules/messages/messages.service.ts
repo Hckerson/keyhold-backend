@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { MessageRepo } from '@common/repos/message.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
+import { NotificationsService } from '@modules/notifications/notifications.service';
+import { NotificationType } from '@generated/prisma/enums';
 import { CreateMessageDto } from './dto';
 
 @Injectable()
@@ -12,6 +14,7 @@ export class MessagesService {
     constructor(
         private messageRepo: MessageRepo,
         private connectionRepo: ConnectionRepo,
+        private notificationsService: NotificationsService,
     ) {}
 
     async sendMessage(userId: string, createDto: CreateMessageDto) {
@@ -29,7 +32,7 @@ export class MessagesService {
                 ? connection.sellerId
                 : connection.buyerId;
 
-        return this.messageRepo.create({
+        const message = await this.messageRepo.create({
             data: {
                 connectionId: createDto.connectionId,
                 senderId: userId,
@@ -41,6 +44,17 @@ export class MessagesService {
                 receiver: { select: { id: true, fullName: true } },
             },
         });
+
+        await this.notificationsService.notify({
+            userId: receiverId,
+            type: NotificationType.MESSAGE_RECEIVED,
+            title: `New message from ${message.sender.fullName}`,
+            body: message.content,
+            entityType: 'CONNECTION',
+            entityId: message.connectionId,
+        });
+
+        return message;
     }
 
     async getMessages(connectionId: string, userId: string) {

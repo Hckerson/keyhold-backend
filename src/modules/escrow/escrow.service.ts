@@ -1,0 +1,315 @@
+import {
+    BadRequestException,
+    ForbiddenException,
+    Injectable,
+    Logger,
+    NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
+import { EscrowRepo } from '@common/repos/escrow.repo';
+import { TransactionRepo } from '@common/repos/transaction.repo';
+import { PropertyRepo } from '@common/repos/property.repo';
+import { StripeService } from '@common/services/payment/stripe.service';
+import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { PDFService } from '@common/services/document/pdf.service';
+import { CloudinaryService } from '@common/services/storage/cloudinary.service';
+import {
+    EscrowStatus,
+    PropertyStatus,
+    TransactionStatus,
+    UserRole,
+} from '@generated/prisma/enums';
+import { SettingsService } from '@modules/settings/settings.service';
+import { QueryEscrowDto, RefundEscrowDto } from './dto';
+
+const DEFAULT_LIMIT = 20;
+const DEFAULT_INSPECTION_DAYS = 3;
+const ESCROW_HOLD_SETTING = 'escrowHoldDays';
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const UNKNOWN_ADDRESS = 'Address not specified';
+
+const TRANSACTION_INCLUDE = {
+    transaction: {
+        include: {
+            buyer: { select: { id: true, fullName: true, email: true } },
+            seller: { select: { id: true, fullName: true, email: true } },
+            property: {
+                select: {
+                    id: true,
+                    title: true,
+                    address: true,
+                    locality: true,
+                    price: true,
+                },
+            },
+        },
+    },
+} satisfies Prisma.EscrowInclude;
+
+@Injectable()
+export class EscrowService {
+    private readonly logger = new Logger(EscrowService.name);
+
+    constructor(
+        private escrowRepo: EscrowRepo,
+        private transactionRepo: TransactionRepo,
+        private propertyRepo: PropertyRepo,
+        private stripeService: StripeService,
+        private emailService: SendGridEmailService,
+        private pdfService: PDFService,
+        private cloudinaryService: CloudinaryService,
+        private settingsService: SettingsService,
+    ) {}
+
+    private async inspectionDays() {
+        const configured =
+            await this.settingsService.findValue(ESCROW_HOLD_SETTING);
+        const days = Number(configured);
+        return Number.isFinite(days) && days > 0
+            ? days
+            : DEFAULT_INSPECTION_DAYS;
+    }
+
+    async hold(transactionId: string, amount: number) {
+        const days = await this.inspectionDays();
+        const inspectionEndDate = new Date(Date.now() + days * MS_PER_DAY);
+
+        const escrow = await this.escrowRepo.create({
+            data: { amount, inspectionEndDate, status: EscrowStatus.HELD },
+        });
+
+        await this.transactionRepo.update({
+            where: { id: transactionId },
+            data: {
+                escrowHoldId: escrow.id,
+                status: TransactionStatus.IN_PROGRESS,
+            },
+        });
+
+        return escrow;
+    }
+
+    async findAll(query: QueryEscrowDto) {
+        const page = query.page ?? 1;
+        const limit = query.limit ?? DEFAULT_LIMIT;
+        const where: Prisma.EscrowWhereInput = { status: query.status };
+
+        const [items, total] = await Promise.all([
+            this.escrowRepo.findMany({
+                where,
+                include: TRANSACTION_INCLUDE,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            this.escrowRepo.count({ where }),
+        ]);
+
+        return {
+            items,
+            total,
+            page,
+            limit,
+            pageCount: Math.max(1, Math.ceil(total / limit)),
+        };
+    }
+
+    async stages() {
+        const statuses = [
+            EscrowStatus.HELD,
+            EscrowStatus.RELEASED,
+            EscrowStatus.REFUNDED,
+            EscrowStatus.DISPUTED,
+        ];
+
+        const stages = await Promise.all(
+            statuses.map(async (status) => {
+                const rows = await this.escrowRepo.findMany({
+                    where: { status },
+                    select: { amount: true, createdAt: true },
+                    orderBy: { createdAt: 'asc' },
+                });
+
+                return {
+                    status,
+                    count: rows.length,
+                    amount: rows.reduce((total, row) => total + row.amount, 0),
+                    oldestAt: rows[0]?.createdAt ?? null,
+                };
+            }),
+        );
+
+        return stages;
+    }
+
+    async findOne(id: string) {
+        const escrow = await this.escrowRepo.findUnique({
+            where: { id },
+            include: TRANSACTION_INCLUDE,
+        });
+        if (!escrow) throw new NotFoundException('Escrow hold not found');
+        return escrow;
+    }
+
+    async release(id: string, actorId: string, actorRole: UserRole) {
+        const escrow = await this.requireHeld(id);
+        const transaction = escrow.transaction;
+        if (!transaction) {
+            throw new BadRequestException(
+                'This hold is not attached to a transaction',
+            );
+        }
+
+        const isBuyer = transaction.buyerId === actorId;
+        const isAdmin = actorRole === UserRole.ADMIN;
+        const windowClosed = escrow.inspectionEndDate <= new Date();
+        const isSellerAfterWindow =
+            transaction.sellerId === actorId && windowClosed;
+
+        if (!isBuyer && !isAdmin && !isSellerAfterWindow) {
+            throw new ForbiddenException(
+                'Only the buyer or an admin can release before the inspection window closes',
+            );
+        }
+
+        const agreementPDF = this.pdfService.generatePurchaseAgreement({
+            buyerName: transaction.buyer.fullName,
+            buyerEmail: transaction.buyer.email,
+            sellerName: transaction.seller.fullName,
+            sellerEmail: transaction.seller.email,
+            propertyTitle: transaction.property.title,
+            propertyAddress: transaction.property.address ?? UNKNOWN_ADDRESS,
+            purchasePrice: transaction.finalPrice,
+            terms: transaction.terms,
+            date: new Date(),
+        });
+
+        const { url: agreementDocUrl } =
+            await this.cloudinaryService.uploadDocument(
+                agreementPDF,
+                `agreement-${transaction.id}.pdf`,
+            );
+
+        const [released] = await Promise.all([
+            this.escrowRepo.update({
+                where: { id },
+                data: {
+                    status: EscrowStatus.RELEASED,
+                    releasedAt: new Date(),
+                },
+                include: TRANSACTION_INCLUDE,
+            }),
+            this.transactionRepo.update({
+                where: { id: transaction.id },
+                data: {
+                    status: TransactionStatus.COMPLETED,
+                    completedAt: new Date(),
+                    agreementDocUrl,
+                },
+            }),
+            this.propertyRepo.update({
+                where: { id: transaction.propertyId },
+                data: { status: PropertyStatus.SOLD },
+            }),
+        ]);
+
+        await this.notifySettlement(transaction);
+
+        return { escrow: released, agreementUrl: agreementDocUrl };
+    }
+
+    async refund(id: string, refundDto: RefundEscrowDto) {
+        const escrow = await this.requireHeld(id);
+        const transaction = escrow.transaction;
+        if (!transaction) {
+            throw new BadRequestException(
+                'This hold is not attached to a transaction',
+            );
+        }
+
+        if (transaction.stripePaymentIntentId) {
+            await this.stripeService.refundPayment(
+                transaction.stripePaymentIntentId,
+            );
+        }
+
+        const [refunded] = await Promise.all([
+            this.escrowRepo.update({
+                where: { id },
+                data: {
+                    status: EscrowStatus.REFUNDED,
+                    refundedAt: new Date(),
+                },
+                include: TRANSACTION_INCLUDE,
+            }),
+            this.transactionRepo.update({
+                where: { id: transaction.id },
+                data: { status: TransactionStatus.CANCELLED },
+            }),
+            this.propertyRepo.update({
+                where: { id: transaction.propertyId },
+                data: { status: PropertyStatus.AVAILABLE },
+            }),
+        ]);
+
+        return { escrow: refunded, reason: refundDto.reason };
+    }
+
+    async markDisputed(id: string) {
+        const escrow = await this.escrowRepo.findUnique({ where: { id } });
+        if (!escrow) throw new NotFoundException('Escrow hold not found');
+
+        if (escrow.status !== EscrowStatus.HELD) {
+            throw new BadRequestException('Only a held escrow can be disputed');
+        }
+
+        return this.escrowRepo.update({
+            where: { id },
+            data: { status: EscrowStatus.DISPUTED },
+        });
+    }
+
+    private async requireHeld(id: string) {
+        const escrow = await this.escrowRepo.findUnique({
+            where: { id },
+            include: TRANSACTION_INCLUDE,
+        });
+        if (!escrow) throw new NotFoundException('Escrow hold not found');
+
+        if (escrow.status !== EscrowStatus.HELD) {
+            throw new BadRequestException('This hold has already been settled');
+        }
+
+        return escrow;
+    }
+
+    private async notifySettlement(transaction: {
+        buyer: { email: string };
+        seller: { email: string };
+        property: { title: string };
+        finalPrice: number;
+    }) {
+        try {
+            await this.emailService.sendTransactionCompletedEmail(
+                transaction.buyer.email,
+                transaction.property.title,
+                transaction.finalPrice,
+            );
+
+            await this.emailService.sendEmail({
+                to: transaction.seller.email,
+                subject: `Sale Completed: ${transaction.property.title}`,
+                html: `
+          <h2>Congratulations on the Sale!</h2>
+          <p>Your property <strong>${transaction.property.title}</strong> has been sold.</p>
+          <p><strong>Final Price: $${transaction.finalPrice.toLocaleString()}</strong></p>
+          <p>The buyer should rate you based on their experience. Thank you for using our platform.</p>
+        `,
+            });
+        } catch (error) {
+            this.logger.error(
+                `Failed to send settlement emails: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }
+}

@@ -4,6 +4,7 @@ import {
     NotFoundException,
     ForbiddenException,
 } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { UserRepo } from '@common/repos/user.repo';
@@ -11,7 +12,54 @@ import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { ConnectionStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
+import { NotificationsService } from '@modules/notifications/notifications.service';
+import { NotificationType } from '@generated/prisma/enums';
 import { CreateConnectionDto } from './dto';
+
+const listInclude = (viewerId: string) =>
+    ({
+        property: {
+            select: {
+                id: true,
+                title: true,
+                price: true,
+                address: true,
+                locality: true,
+                status: true,
+                images: { orderBy: { order: 'asc' }, take: 1 },
+            },
+        },
+        buyer: {
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                avatar: true,
+                phoneNumber: true,
+            },
+        },
+        seller: {
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                avatar: true,
+                phoneNumber: true,
+                jobTitle: true,
+                agencyName: true,
+            },
+        },
+        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+        offers: { orderBy: { createdAt: 'desc' }, take: 1 },
+        viewings: { orderBy: { createdAt: 'desc' }, take: 1 },
+        _count: {
+            select: {
+                messages: { where: { receiverId: viewerId, isRead: false } },
+                viewings: true,
+                offers: true,
+            },
+        },
+    }) satisfies Prisma.ConnectionInclude;
 
 @Injectable()
 export class ConnectionsService {
@@ -21,6 +69,7 @@ export class ConnectionsService {
         private userRepo: UserRepo,
         private emailService: SendGridEmailService,
         private smsService: TwilioService,
+        private notificationsService: NotificationsService,
     ) {}
 
     async expressInterest(buyerId: string, createDto: CreateConnectionDto) {
@@ -70,7 +119,18 @@ export class ConnectionsService {
             },
         });
 
-        await this.notifySeller(connection);
+        await Promise.all([
+            this.notifySeller(connection),
+            this.notificationsService.notify({
+                userId: connection.seller.id,
+                type: NotificationType.CONNECTION_REQUEST,
+                title: 'New buyer enquiry',
+                body: `${connection.buyer.fullName} enquired about ${connection.property.title}`,
+                entityType: 'CONNECTION',
+                entityId: connection.id,
+            }),
+        ]);
+
         return connection;
     }
 
@@ -110,7 +170,18 @@ export class ConnectionsService {
             },
         });
 
-        await this.notifyBuyerAccepted(updated);
+        await Promise.all([
+            this.notifyBuyerAccepted(updated),
+            this.notificationsService.notify({
+                userId: updated.buyer.id,
+                type: NotificationType.STATUS_CHANGE,
+                title: 'Enquiry accepted',
+                body: `${updated.seller.fullName} accepted your enquiry on ${updated.property.title}`,
+                entityType: 'CONNECTION',
+                entityId: updated.id,
+            }),
+        ]);
+
         return updated;
     }
 
@@ -138,28 +209,16 @@ export class ConnectionsService {
     async getByBuyer(buyerId: string) {
         return this.connectionRepo.findMany({
             where: { buyerId },
-            include: {
-                property: {
-                    select: { id: true, title: true, price: true },
-                },
-                seller: { select: { id: true, fullName: true } },
-            },
-            orderBy: { createdAt: 'desc' },
+            include: listInclude(buyerId),
+            orderBy: { updatedAt: 'desc' },
         });
     }
 
     async getBySeller(sellerId: string) {
         return this.connectionRepo.findMany({
             where: { sellerId },
-            include: {
-                buyer: {
-                    select: { id: true, fullName: true, email: true },
-                },
-                property: {
-                    select: { id: true, title: true, price: true },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
+            include: listInclude(sellerId),
+            orderBy: { updatedAt: 'desc' },
         });
     }
 

@@ -142,6 +142,30 @@ enum DisputeEvidenceType {
   DOCUMENT
 }
 
+enum NotificationType {
+  PRICE_DROP
+  NEW_LISTING
+  UNDER_OFFER
+  STATUS_CHANGE
+  OFFER_RESPONSE
+  VIEWING_CONFIRMATION
+  MESSAGE_RECEIVED
+  CONNECTION_REQUEST
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum SettingCategory {
+  PLATFORM
+  COMMERCE
+  MODERATION
+  AVAILABILITY
+}
+
 enum EscrowStatus {
   HELD
   RELEASED
@@ -373,6 +397,61 @@ model Message {
   @@index([receiverId])
 }
 
+model Notification {
+  // Scalars
+  id     String  @id @default(uuid())
+  title  String
+  body   String
+  isRead Boolean @default(false)
+
+  // Enums
+  type    NotificationType
+  channel NotificationChannel @default(IN_APP)
+
+  // Loose reference to whatever the notification is about
+  entityType String?
+  entityId   String?
+
+  // Foreign Keys
+  userId String
+  user   User   @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  readAt    DateTime?
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime  @default(now())
+
+  // Constraints
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model NotificationPreference {
+  // Scalars
+  id      String  @id @default(uuid())
+  enabled Boolean @default(true)
+  email   Boolean @default(true)
+  sms     Boolean @default(false)
+  inApp   Boolean @default(true)
+
+  // Enums
+  type NotificationType
+
+  // Foreign Keys
+  userId String
+  user   User   @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@unique([userId, type])
+  @@index([userId])
+}
+
 model Offer {
   // Scalars
   id               String  @id @default(uuid())
@@ -430,6 +509,26 @@ model PhoneVerification {
   @@index([userId])
   @@index([phone])
   @@index([status])
+}
+
+model PlatformSetting {
+  // Scalars
+  key   String @id
+  value String
+
+  // Enums
+  category SettingCategory @default(PLATFORM)
+
+  // Foreign Keys
+  updatedById String?
+  updatedBy   User?   @relation("SettingUpdates", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@index([category])
 }
 
 model Property {
@@ -628,27 +727,30 @@ model User {
   createdAt  DateTime  @default(now())
 
   // Relations
-  propertiesOwned    Property[]          @relation("SellerProperties")
-  connections        Connection[]        @relation("BuyerConnections")
-  sellerConnections  Connection[]        @relation("SellerConnections")
-  sentMessages       Message[]           @relation("SenderMessages")
-  receivedMessages   Message[]           @relation("ReceiverMessages")
-  viewingsRequested  Viewing[]           @relation("BuyerViewings")
-  viewingsProposed   Viewing[]           @relation("SellerViewings")
-  offers             Offer[]             @relation("BuyerOffers")
-  receivedOffers     Offer[]             @relation("SellerOffers")
-  buyerTransactions  Transaction[]       @relation("BuyerTransactions")
-  sellerTransactions Transaction[]       @relation("SellerTransactions")
-  givenReviews       Review[]            @relation("ReviewerReviews")
-  receivedReviews    Review[]            @relation("RevieweeReviews")
-  verificationTokens VerificationToken[]
-  phoneVerifications PhoneVerification[]
-  identityDocuments  IdentityDocument[]
-  flagsCreated       Flag[]              @relation("FlagCreator")
-  disputesInitiated  Dispute[]           @relation("DisputeInitiator")
-  auditLogs          AuditLog[]          @relation("AuditActor")
-  savedProperties    SavedProperty[]
-  suspensions        UserSuspension[]
+  propertiesOwned         Property[]               @relation("SellerProperties")
+  connections             Connection[]             @relation("BuyerConnections")
+  sellerConnections       Connection[]             @relation("SellerConnections")
+  sentMessages            Message[]                @relation("SenderMessages")
+  receivedMessages        Message[]                @relation("ReceiverMessages")
+  viewingsRequested       Viewing[]                @relation("BuyerViewings")
+  viewingsProposed        Viewing[]                @relation("SellerViewings")
+  offers                  Offer[]                  @relation("BuyerOffers")
+  receivedOffers          Offer[]                  @relation("SellerOffers")
+  buyerTransactions       Transaction[]            @relation("BuyerTransactions")
+  sellerTransactions      Transaction[]            @relation("SellerTransactions")
+  givenReviews            Review[]                 @relation("ReviewerReviews")
+  receivedReviews         Review[]                 @relation("RevieweeReviews")
+  verificationTokens      VerificationToken[]
+  phoneVerifications      PhoneVerification[]
+  identityDocuments       IdentityDocument[]
+  flagsCreated            Flag[]                   @relation("FlagCreator")
+  disputesInitiated       Dispute[]                @relation("DisputeInitiator")
+  auditLogs               AuditLog[]               @relation("AuditActor")
+  savedProperties         SavedProperty[]
+  suspensions             UserSuspension[]
+  notifications           Notification[]           @relation("UserNotifications")
+  notificationPreferences NotificationPreference[] @relation("UserNotificationPreferences")
+  settingUpdates          PlatformSetting[]        @relation("SettingUpdates")
 
   // Constraints
   @@index([email])

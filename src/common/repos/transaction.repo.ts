@@ -103,6 +103,16 @@ export class TransactionRepo {
         }
     }
 
+    async groupBy(
+        params: Omit<Prisma.TransactionGroupByArgs, 'skip' | 'take'>,
+    ) {
+        try {
+            return await this.prisma.transaction.groupBy(params);
+        } catch (error) {
+            throw new RepoError('Failed to group transactions', error);
+        }
+    }
+
     async count(params?: Prisma.TransactionCountArgs): Promise<number> {
         try {
             return await this.prisma.transaction.count(params);

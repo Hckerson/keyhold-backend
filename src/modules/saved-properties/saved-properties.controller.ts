@@ -9,7 +9,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 import { SavedPropertiesService } from './saved-properties.service';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
@@ -26,13 +26,13 @@ export class SavedPropertiesController {
     @Get()
     @ApiOperation({ summary: 'List the current buyer saved properties' })
     async findAll(@CurrentUser() user: AuthUser) {
-        return this.savedPropertiesService.findAll(user.sub);
+        return this.savedPropertiesService.findAll(user.id);
     }
 
     @Get('ids')
     @ApiOperation({ summary: 'List saved property IDs for quick lookups' })
     async findIds(@CurrentUser() user: AuthUser) {
-        return this.savedPropertiesService.findIds(user.sub);
+        return this.savedPropertiesService.findIds(user.id);
     }
 
     @Post(':propertyId')
@@ -42,7 +42,7 @@ export class SavedPropertiesController {
         @CurrentUser() user: AuthUser,
         @Param('propertyId') propertyId: string,
     ) {
-        return this.savedPropertiesService.save(user.sub, propertyId);
+        return this.savedPropertiesService.save(user.id, propertyId);
     }
 
     @Delete(':propertyId')
@@ -52,6 +52,6 @@ export class SavedPropertiesController {
         @CurrentUser() user: AuthUser,
         @Param('propertyId') propertyId: string,
     ) {
-        return this.savedPropertiesService.unsave(user.sub, propertyId);
+        return this.savedPropertiesService.unsave(user.id, propertyId);
     }
 }

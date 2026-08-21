@@ -10,7 +10,7 @@
 
 ## 📂 What You Have
 
-**File:** `MVP_1.5_COMPLETE_DESIGN_SPECS.json` (in backend root)
+**File:** `MVP_1.5_COMPLETE_DESIGN_SPECS.json` (in `backend/docs/`)
 
 This contains complete specs for:
 

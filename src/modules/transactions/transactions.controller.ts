@@ -1,10 +1,20 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Param,
+    Body,
+    Query,
+    UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TransactionsService } from './transactions.service';
-import { CreateTransactionDto } from './dto';
-import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
+import { CreateTransactionDto, QueryTransactionDto } from './dto';
+import { JwtAuthGuard, RolesGuard } from '@modules/core/auth/guards';
+import { Roles } from '@modules/core/auth/decorators/roles.decorator';
+import { UserRole } from '@generated/prisma/enums';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 
 @ApiTags('transactions')
 @Controller('transactions')
@@ -21,10 +31,7 @@ export class TransactionsController {
         @CurrentUser() user: AuthUser,
         @Body() createDto: CreateTransactionDto,
     ) {
-        return this.transactionsService.initiateTransaction(
-            user.sub,
-            createDto,
-        );
+        return this.transactionsService.initiateTransaction(user.id, createDto);
     }
 
     @Post(':id/confirm-payment')
@@ -38,9 +45,27 @@ export class TransactionsController {
     ) {
         return this.transactionsService.confirmPayment(
             id,
-            user.sub,
+            user.id,
             body.paymentIntentId,
         );
+    }
+
+    @Get()
+    @Roles(UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Every transaction on the platform' })
+    async findAll(@Query() query: QueryTransactionDto) {
+        return this.transactionsService.findAll(query);
+    }
+
+    @Get('stages')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Transaction count and volume by status' })
+    async stages() {
+        return this.transactionsService.stages();
     }
 
     @Get(':id')
@@ -48,7 +73,7 @@ export class TransactionsController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get transaction details' })
     async getOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-        return this.transactionsService.getOne(id, user.sub);
+        return this.transactionsService.getOne(id, user.id);
     }
 
     @Get('my/purchases')
@@ -56,7 +81,7 @@ export class TransactionsController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get all buyer transactions' })
     async getMyPurchases(@CurrentUser() user: AuthUser) {
-        return this.transactionsService.getByBuyer(user.sub);
+        return this.transactionsService.getByBuyer(user.id);
     }
 
     @Get('my/sales')
@@ -64,6 +89,6 @@ export class TransactionsController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get all seller transactions' })
     async getMySales(@CurrentUser() user: AuthUser) {
-        return this.transactionsService.getBySeller(user.sub);
+        return this.transactionsService.getBySeller(user.id);
     }
 }

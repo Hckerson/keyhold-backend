@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 import { StatsService } from '@common/services/stats/stats.service';
 import { TimeFilter } from '@common/enums/filter';
 import { UserRole } from '@generated/prisma/enums';
@@ -18,7 +18,7 @@ export class StatsController {
     @Get('seller')
     @ApiOperation({ summary: 'Portfolio stats for the current seller' })
     async seller(@CurrentUser() user: AuthUser) {
-        return this.statsService.fetchSellerStats(user.sub);
+        return this.statsService.fetchSellerStats(user.id);
     }
 
     @Get('platform')
@@ -35,6 +35,30 @@ export class StatsController {
     @ApiOperation({ summary: 'User account status breakdown' })
     async users() {
         return this.statsService.fetchUserStats();
+    }
+
+    @Get('regions')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Listings, volume and average price by region' })
+    async regions() {
+        return this.statsService.fetchRegionMetrics();
+    }
+
+    @Get('trend')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(RolesGuard)
+    @ApiOperation({ summary: 'Monthly GMV, deals, signups and new listings' })
+    async trend(@Query('filter') filter?: TimeFilter) {
+        return this.statsService.fetchTrend(filter ?? TimeFilter.MONTH);
+    }
+
+    @Get('agent')
+    @ApiOperation({
+        summary: 'Production and benchmarks for the current agent',
+    })
+    async agent(@CurrentUser() user: AuthUser) {
+        return this.statsService.fetchAgentAnalytics(user.id);
     }
 
     @Get('dashboard')

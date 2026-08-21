@@ -16,6 +16,9 @@ import { FlagRepo } from './flag.repo';
 import { UserSuspensionRepo } from './user-suspension.repo';
 import { AuditLogRepo } from './audit-log.repo';
 import { SavedPropertyRepo } from './saved-property.repo';
+import { NotificationRepo } from './notification.repo';
+import { NotificationPreferenceRepo } from './notification-preference.repo';
+import { PlatformSettingRepo } from './platform-setting.repo';
 import { Global, Module } from '@nestjs/common';
 
 const repos = [
@@ -40,6 +43,9 @@ const repos = [
     AuditLogRepo,
     // Wishlist repositories
     SavedPropertyRepo,
+    NotificationRepo,
+    NotificationPreferenceRepo,
+    PlatformSettingRepo,
 ];
 
 @Global()

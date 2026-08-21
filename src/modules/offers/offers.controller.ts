@@ -12,7 +12,7 @@ import { OffersService } from './offers.service';
 import { CreateOfferDto, RespondOfferDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
-import type { AuthUser } from '@core/auth/types/auth-user';
+import type { AuthUser } from '@core/auth/types/auth.types';
 
 @ApiTags('offers')
 @Controller('offers')
@@ -27,7 +27,7 @@ export class OffersController {
         @CurrentUser() user: AuthUser,
         @Body() createDto: CreateOfferDto,
     ) {
-        return this.offersService.makeOffer(user.sub, createDto);
+        return this.offersService.makeOffer(user.id, createDto);
     }
 
     @Get(':id')
@@ -46,7 +46,18 @@ export class OffersController {
         @Param('connectionId') connectionId: string,
         @CurrentUser() user: AuthUser,
     ) {
-        return this.offersService.getByConnection(connectionId, user.sub);
+        return this.offersService.getByConnection(connectionId, user.id);
+    }
+
+    @Patch(':id/accept-counter')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Buyer accepts the seller counter' })
+    async acceptCounter(
+        @Param('id') id: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.offersService.acceptCounter(id, user.id);
     }
 
     @Patch(':id/respond')
@@ -58,6 +69,6 @@ export class OffersController {
         @CurrentUser() user: AuthUser,
         @Body() respondDto: RespondOfferDto,
     ) {
-        return this.offersService.respondToOffer(id, user.sub, respondDto);
+        return this.offersService.respondToOffer(id, user.id, respondDto);
     }
 }
