@@ -1,6 +1,6 @@
 import { UsersService } from './users.service';
 import { UserRole } from 'generated/prisma/enums';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { CreateUserDto, UpdateUserDto, SetUserTierDto } from './dto';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
 import { CurrentUser } from '@core/auth/decorators/current-user.decorator';
@@ -62,6 +62,22 @@ export class UsersController {
     @ApiOperation({ summary: 'Update user profile' })
     update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
         return this.usersService.update(id, updateUserDto);
+    }
+
+    @Get('tiers/distribution')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @ApiOperation({ summary: 'Membership tier distribution (Admin only)' })
+    tierDistribution() {
+        return this.usersService.tierDistribution();
+    }
+
+    @Patch(':id/tier')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @ApiOperation({ summary: 'Set a user membership tier (Admin only)' })
+    setTier(@Param('id') id: string, @Body() dto: SetUserTierDto) {
+        return this.usersService.setTier(id, dto.tier);
     }
 
     @Delete(':id')

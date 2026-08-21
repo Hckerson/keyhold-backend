@@ -2,7 +2,7 @@ import { UserDto } from './dto';
 import { Injectable } from '@nestjs/common';
 import { User } from 'generated/prisma/client';
 import { Prisma } from 'generated/prisma/client';
-import { TransactionStatus } from '@generated/prisma/enums';
+import { TransactionStatus, UserTier } from '@generated/prisma/enums';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 
@@ -20,6 +20,12 @@ interface Settlement {
 }
 
 const EMPTY_SETTLEMENT: Settlement = { transactions: 0, volume: 0 };
+
+const TIER_KEYS: UserTier[] = [
+    UserTier.PLATINUM,
+    UserTier.PREMIUM,
+    UserTier.STANDARD,
+];
 
 @Injectable()
 export class UsersService {
@@ -57,6 +63,25 @@ export class UsersService {
     async findByEmail(email: string): Promise<UserDto | null> {
         const user = await this.userRepo.findUnique({ where: { email } });
         return user ? this.toDto(user) : null;
+    }
+
+    async setTier(id: string, tier: UserTier): Promise<UserDto> {
+        const user = await this.userRepo.update({
+            where: { id },
+            data: { tier },
+        });
+        return this.toDto(user);
+    }
+
+    async tierDistribution() {
+        const counts = await Promise.all(
+            TIER_KEYS.map(async (tier) => ({
+                tier,
+                count: await this.userRepo.count({ where: { tier } }),
+            })),
+        );
+        const total = counts.reduce((sum, entry) => sum + entry.count, 0);
+        return { total, segments: counts };
     }
 
     async update(id: string, data: Prisma.UserUpdateInput): Promise<UserDto> {
@@ -138,6 +163,7 @@ export class UsersService {
             avatar: user.avatar || undefined,
             role: user.role,
             status: user.status,
+            tier: user.tier,
             jobTitle: user.jobTitle || undefined,
             agencyName: user.agencyName || undefined,
             licenseNumber: user.licenseNumber || undefined,
