@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "real-estate",
+    "framework": "nestjs",
+    "httpPort": 5000,
+    "build": {
+      "command": "pnpm run build",
+      "outputDirectory": "dist"
+    }
+  }
+}
