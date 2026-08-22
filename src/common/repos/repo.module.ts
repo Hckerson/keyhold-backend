@@ -19,6 +19,13 @@ import { SavedPropertyRepo } from './saved-property.repo';
 import { NotificationRepo } from './notification.repo';
 import { NotificationPreferenceRepo } from './notification-preference.repo';
 import { PlatformSettingRepo } from './platform-setting.repo';
+import { ConciergeClientRepo } from './concierge-client.repo';
+import { ConciergeServiceRepo } from './concierge-service.repo';
+import { ConciergeServiceRequestRepo } from './concierge-service-request.repo';
+import { ConciergePracticeRepo } from './concierge-practice.repo';
+import { ConciergePracticeCoverageRepo } from './concierge-practice-coverage.repo';
+import { SavedSearchRepo } from './saved-search.repo';
+import { ServiceMetricRepo } from './service-metric.repo';
 import { Global, Module } from '@nestjs/common';
 
 const repos = [
@@ -46,6 +53,13 @@ const repos = [
     NotificationRepo,
     NotificationPreferenceRepo,
     PlatformSettingRepo,
+    ConciergeClientRepo,
+    ConciergeServiceRepo,
+    ConciergeServiceRequestRepo,
+    ConciergePracticeRepo,
+    ConciergePracticeCoverageRepo,
+    SavedSearchRepo,
+    ServiceMetricRepo,
 ];
 
 @Global()

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole, UserAccountStatus } from '@generated/prisma/enums';
+import { UserRole, UserAccountStatus, UserTier } from '@generated/prisma/enums';
 
 export class UserDto {
     @ApiProperty()
@@ -25,6 +25,9 @@ export class UserDto {
 
     @ApiProperty()
     status: UserAccountStatus;
+
+    @ApiProperty({ enum: UserTier })
+    tier: UserTier;
 
     @ApiProperty({ required: false })
     jobTitle?: string;
