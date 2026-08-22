@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import { SavedPropertyRepo } from '@common/repos/saved-property.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
+import { SavedSearchRepo } from '@common/repos/saved-search.repo';
+import { scoreProperty } from '@modules/saved-searches/saved-searches.service';
 
 const SAVED_INCLUDE = {
     property: {
@@ -13,19 +15,40 @@ const SAVED_INCLUDE = {
     },
 } satisfies Prisma.SavedPropertyInclude;
 
+type SearchRecord = Prisma.SavedSearchGetPayload<object>;
+type ScoredProperty = Parameters<typeof scoreProperty>[1];
+
+const bestMatch = (searches: SearchRecord[], property: ScoredProperty) =>
+    searches.length === 0
+        ? { score: 0, facets: [] }
+        : searches
+              .map((search) => scoreProperty(search, property))
+              .reduce((best, current) =>
+                  current.score > best.score ? current : best,
+              );
+
 @Injectable()
 export class SavedPropertiesService {
     constructor(
         private savedPropertyRepo: SavedPropertyRepo,
         private propertyRepo: PropertyRepo,
+        private savedSearchRepo: SavedSearchRepo,
     ) {}
 
     async findAll(buyerId: string) {
-        return this.savedPropertyRepo.findMany({
-            where: { buyerId },
-            include: SAVED_INCLUDE,
-            orderBy: { createdAt: 'desc' },
-        });
+        const [saved, searches] = await Promise.all([
+            this.savedPropertyRepo.findMany({
+                where: { buyerId },
+                include: SAVED_INCLUDE,
+                orderBy: { createdAt: 'desc' },
+            }),
+            this.savedSearchRepo.findMany({ where: { buyerId } }),
+        ]);
+
+        return saved.map((entry) => ({
+            ...entry,
+            ...bestMatch(searches, entry.property),
+        }));
     }
 
     async findIds(buyerId: string) {
