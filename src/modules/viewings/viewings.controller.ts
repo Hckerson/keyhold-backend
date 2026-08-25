@@ -9,7 +9,12 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ViewingsService } from './viewings.service';
-import { CreateViewingDto, ConfirmViewingDto } from './dto';
+import {
+    CreateViewingDto,
+    ConfirmViewingDto,
+    RescheduleViewingDto,
+} from './dto';
+import { ViewingStatus } from '@generated/prisma/enums';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth.types';
@@ -62,6 +67,30 @@ export class ViewingsController {
             id,
             user.id,
             body.confirmedTime,
+        );
+    }
+
+    @Patch(':id/reschedule')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Propose new times and reopen the viewing' })
+    async reschedule(
+        @Param('id') id: string,
+        @CurrentUser() user: AuthUser,
+        @Body() body: RescheduleViewingDto,
+    ) {
+        return this.viewingsService.reschedule(id, user.id, body.proposedTimes);
+    }
+
+    @Patch(':id/cancel')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Cancel a viewing' })
+    async cancel(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+        return this.viewingsService.updateStatus(
+            id,
+            user.id,
+            ViewingStatus.CANCELLED,
         );
     }
 }

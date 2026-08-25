@@ -27,10 +27,15 @@ export interface FlagPropertyTarget {
     price: number;
     status: PropertyStatus;
     image: string | null;
+    images: string[];
+    description: string;
+    sqFt: number | null;
     sellerId: string;
     sellerName: string;
     sellerEmail: string;
     sellerPhone: string | null;
+    sellerLicensed: boolean;
+    sellerVerified: boolean;
 }
 
 export interface FlagUserTarget {
@@ -259,13 +264,17 @@ export class FlagsService {
                           locality: true,
                           price: true,
                           status: true,
-                          images: { orderBy: { order: 'asc' }, take: 1 },
+                          description: true,
+                          sqFt: true,
+                          images: { orderBy: { order: 'asc' } },
                           seller: {
                               select: {
                                   id: true,
                                   fullName: true,
                                   email: true,
                                   phoneNumber: true,
+                                  licenseNumber: true,
+                                  kycVerified: true,
                               },
                           },
                       },
@@ -308,10 +317,15 @@ export class FlagsService {
                 price: property.price,
                 status: property.status,
                 image: property.images[0]?.url ?? null,
+                images: property.images.map((image) => image.url),
+                description: property.description,
+                sqFt: property.sqFt,
                 sellerId: property.seller.id,
                 sellerName: property.seller.fullName,
                 sellerEmail: property.seller.email,
                 sellerPhone: property.seller.phoneNumber,
+                sellerLicensed: Boolean(property.seller.licenseNumber),
+                sellerVerified: property.seller.kycVerified,
             });
         }
 

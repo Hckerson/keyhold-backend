@@ -82,6 +82,12 @@ enum ConnectionStatus {
   REJECTED
 }
 
+enum ViewingMode {
+  IN_PERSON
+  VIRTUAL
+  OPEN_HOUSE
+}
+
 enum ViewingStatus {
   PENDING
   CONFIRMED
@@ -811,12 +817,14 @@ model VerificationToken {
 
 model Viewing {
   // Scalars
-  id            String   @id @default(uuid())
-  proposedTimes String[] // JSON array of ISO timestamps
-  notes         String?
+  id              String   @id @default(uuid())
+  proposedTimes   String[] // JSON array of ISO timestamps
+  notes           String?
+  durationMinutes Int      @default(30)
 
   // Enums
   status ViewingStatus @default(PENDING)
+  mode   ViewingMode   @default(IN_PERSON)
 
   // Foreign Keys
   connectionId  String

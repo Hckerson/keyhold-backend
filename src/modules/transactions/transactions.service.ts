@@ -293,6 +293,8 @@ export class TransactionsService {
                         phoneNumber: true,
                     },
                 },
+                escrowHold: true,
+                dispute: { select: { id: true, title: true, status: true } },
             },
             orderBy: { createdAt: 'desc' },
         });
@@ -322,6 +324,8 @@ export class TransactionsService {
                         phoneNumber: true,
                     },
                 },
+                escrowHold: true,
+                dispute: { select: { id: true, title: true, status: true } },
             },
             orderBy: { createdAt: 'desc' },
         });

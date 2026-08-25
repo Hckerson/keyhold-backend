@@ -1,4 +1,15 @@
-import { IsString, IsArray, IsISO8601 } from 'class-validator';
+import {
+    IsString,
+    IsArray,
+    IsISO8601,
+    IsOptional,
+    IsEnum,
+    IsInt,
+    Min,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ViewingMode } from '@generated/prisma/enums';
 
 export class CreateViewingDto {
     @IsString()
@@ -7,4 +18,16 @@ export class CreateViewingDto {
     @IsArray()
     @IsISO8601({}, { each: true })
     proposedTimes: string[];
+
+    @ApiPropertyOptional({ enum: ViewingMode })
+    @IsOptional()
+    @IsEnum(ViewingMode)
+    mode?: ViewingMode;
+
+    @ApiPropertyOptional({ example: 30 })
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    durationMinutes?: number;
 }
