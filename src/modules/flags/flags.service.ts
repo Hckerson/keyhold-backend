@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { toNumber } from '@common/money';
 import { Prisma } from 'generated/prisma/client';
 import { FlagRepo } from '@common/repos/flag.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
@@ -314,7 +315,7 @@ export class FlagsService {
                 title: property.title,
                 address: property.address,
                 locality: property.locality,
-                price: property.price,
+                price: toNumber(property.price),
                 status: property.status,
                 image: property.images[0]?.url ?? null,
                 images: property.images.map((image) => image.url),

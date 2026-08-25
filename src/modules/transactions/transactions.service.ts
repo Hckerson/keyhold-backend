@@ -8,6 +8,7 @@ import { Prisma } from 'generated/prisma/client';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
+import { sumDecimal, toNumber } from '@common/money';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { StripeService } from '@common/services/payment/stripe.service';
 import { PropertyStatus, TransactionStatus } from '@generated/prisma/enums';
@@ -228,9 +229,8 @@ export class TransactionsService {
                 return {
                     status,
                     count: rows.length,
-                    volume: rows.reduce(
-                        (total, row) => total + row.finalPrice,
-                        0,
+                    volume: toNumber(
+                        sumDecimal(rows.map((row) => row.finalPrice)),
                     ),
                 };
             }),
