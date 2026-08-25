@@ -6,6 +6,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
+import { sumDecimal, toNumber } from '@common/money';
 import { EscrowRepo } from '@common/repos/escrow.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
@@ -70,7 +71,7 @@ export class EscrowService {
             : DEFAULT_INSPECTION_DAYS;
     }
 
-    async hold(transactionId: string, amount: number) {
+    async hold(transactionId: string, amount: Prisma.Decimal) {
         const days = await this.inspectionDays();
         const inspectionEndDate = new Date(Date.now() + days * MS_PER_DAY);
 
@@ -133,7 +134,7 @@ export class EscrowService {
                 return {
                     status,
                     count: rows.length,
-                    amount: rows.reduce((total, row) => total + row.amount, 0),
+                    amount: toNumber(sumDecimal(rows.map((row) => row.amount))),
                     oldestAt: rows[0]?.createdAt ?? null,
                 };
             }),
@@ -179,7 +180,7 @@ export class EscrowService {
             sellerEmail: transaction.seller.email,
             propertyTitle: transaction.property.title,
             propertyAddress: transaction.property.address ?? UNKNOWN_ADDRESS,
-            purchasePrice: transaction.finalPrice,
+            purchasePrice: toNumber(transaction.finalPrice),
             terms: transaction.terms,
             date: new Date(),
         });
@@ -287,13 +288,13 @@ export class EscrowService {
         buyer: { email: string };
         seller: { email: string };
         property: { title: string };
-        finalPrice: number;
+        finalPrice: Prisma.Decimal;
     }) {
         try {
             await this.emailService.sendTransactionCompletedEmail(
                 transaction.buyer.email,
                 transaction.property.title,
-                transaction.finalPrice,
+                toNumber(transaction.finalPrice),
             );
 
             await this.emailService.sendEmail({

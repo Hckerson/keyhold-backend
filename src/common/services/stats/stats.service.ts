@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
 import { TimeFilter } from '@common/enums/filter';
+import { sumDecimal, toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { PrismaService } from '@common/database/prisma.service';
 import {
@@ -13,8 +15,8 @@ import {
 interface Settled {
     createdAt: Date;
     completedAt: Date | null;
-    finalPrice: number;
-    property: { price: number };
+    finalPrice: Prisma.Decimal;
+    property: { price: Prisma.Decimal };
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -56,11 +58,11 @@ const averageDaysToClose = (sales: Settled[]) => {
 };
 
 const averageSaleToList = (sales: Settled[]) => {
-    const priced = sales.filter((sale) => sale.property.price > 0);
+    const priced = sales.filter((sale) => sale.property.price.gt(0));
     if (!priced.length) return 0;
 
     const total = priced.reduce(
-        (sum, sale) => sum + sale.finalPrice / sale.property.price,
+        (sum, sale) => sum + sale.finalPrice.div(sale.property.price).toNumber(),
         0,
     );
 
@@ -196,12 +198,12 @@ export class StatsService {
             activeListings,
             soldListings,
             views: engagement._sum.viewsCount ?? 0,
-            averagePrice: engagement._avg.price ?? 0,
+            averagePrice: toNumber(engagement._avg.price),
             saves: savesCount,
             pendingViewings,
             pendingOffers,
             acceptedOffers,
-            closedValue: closedValue._sum.finalPrice ?? 0,
+            closedValue: toNumber(closedValue._sum.finalPrice),
         };
     }
 
@@ -238,7 +240,7 @@ export class StatsService {
             connections,
             transactions,
             completedTransactions,
-            volume: volume._sum.finalPrice ?? 0,
+            volume: toNumber(volume._sum.finalPrice),
         };
     }
 
@@ -258,12 +260,14 @@ export class StatsService {
             }),
         ]);
 
-        const volumeByRegion = new Map<string, number>();
+        const volumeByRegion = new Map<string, Prisma.Decimal>();
         for (const sale of sold) {
             const region = sale.property.region;
             volumeByRegion.set(
                 region,
-                (volumeByRegion.get(region) ?? 0) + sale.finalPrice,
+                (volumeByRegion.get(region) ?? new Prisma.Decimal(0)).add(
+                    sale.finalPrice,
+                ),
             );
         }
 
@@ -271,8 +275,8 @@ export class StatsService {
             .map((row) => ({
                 region: row.region,
                 listings: typeof row._count === 'object' ? row._count._all : 0,
-                avgPrice: row._avg?.price ?? 0,
-                volume: volumeByRegion.get(row.region) ?? 0,
+                avgPrice: toNumber(row._avg?.price),
+                volume: toNumber(volumeByRegion.get(row.region)),
             }))
             .sort((a, b) => b.volume - a.volume);
     }
@@ -302,7 +306,7 @@ export class StatsService {
             gmv: bucketBy(
                 sales,
                 (sale) => sale.completedAt,
-                (sale) => sale.finalPrice,
+                (sale) => toNumber(sale.finalPrice),
             ),
             deals: bucketBy(
                 sales,
@@ -351,9 +355,8 @@ export class StatsService {
             }),
         ]);
 
-        const volume = sales.reduce(
-            (total, sale) => total + sale.finalPrice,
-            0,
+        const volume = toNumber(
+            sumDecimal(sales.map((sale) => sale.finalPrice)),
         );
 
         return {
@@ -366,7 +369,7 @@ export class StatsService {
             monthly: bucketBy(
                 sales,
                 (sale) => sale.completedAt,
-                (sale) => sale.finalPrice,
+                (sale) => toNumber(sale.finalPrice),
             ),
             benchmarks: {
                 daysToClose: averageDaysToClose(sales),

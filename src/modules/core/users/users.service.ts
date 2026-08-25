@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { User } from 'generated/prisma/client';
 import { Prisma } from 'generated/prisma/client';
 import { TransactionStatus, UserTier } from '@generated/prisma/enums';
+import { toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 
@@ -125,12 +126,12 @@ export class UsersService {
         const accumulate = (
             id: string,
             count: number | undefined,
-            sum: number | null | undefined,
+            sum: Prisma.Decimal | null | undefined,
         ) => {
             const current = totals.get(id) ?? EMPTY_SETTLEMENT;
             totals.set(id, {
                 transactions: current.transactions + (count ?? 0),
-                volume: current.volume + (sum ?? 0),
+                volume: current.volume + toNumber(sum),
             });
         };
 

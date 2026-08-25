@@ -30,8 +30,8 @@ const facetsFor = (
             id: 'price',
             label: 'Price',
             met:
-                (minPrice === null || property.price >= minPrice) &&
-                (maxPrice === null || property.price <= maxPrice),
+                (minPrice === null || property.price.gte(minPrice)) &&
+                (maxPrice === null || property.price.lte(maxPrice)),
         });
     }
     if (search.locality) {

@@ -97,7 +97,7 @@ export class PropertiesService {
         );
     }
 
-    private priceClause(ranges: string[]): Prisma.FloatFilter[] {
+    private priceClause(ranges: string[]): Prisma.DecimalFilter[] {
         return ranges.map((range) => {
             const [min, max] = range.split('-');
             return max

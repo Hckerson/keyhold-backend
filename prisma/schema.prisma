@@ -302,7 +302,7 @@ model DisputeEvidence {
 model Escrow {
   // Scalars
   id                String       @id @default(uuid())
-  amount            Float
+  amount            Decimal      @db.Decimal(14, 2)
   inspectionEndDate DateTime
   stripeTransferId  String?
   stripeAccountId   String?
@@ -455,9 +455,9 @@ model NotificationPreference {
 model Offer {
   // Scalars
   id               String  @id @default(uuid())
-  offeredPrice     Float
+  offeredPrice     Decimal  @db.Decimal(14, 2)
   offeredTerms     String
-  responsePrice    Float?
+  responsePrice    Decimal? @db.Decimal(14, 2)
   responseFeedback String?
 
   // Enums
@@ -543,7 +543,7 @@ model Property {
   country     String   @default("US")
   latitude    Float?
   longitude   Float?
-  price       Float
+  price       Decimal     @db.Decimal(14, 2)
   bedrooms    Int
   bathrooms   Int
   sqFt        Float?
@@ -648,7 +648,7 @@ model SavedProperty {
 model Transaction {
   // Scalars
   id                    String  @id @default(uuid())
-  finalPrice            Float
+  finalPrice            Decimal   @db.Decimal(14, 2)
   terms                 String
   agreementDocUrl       String?
   stripePaymentIntentId String?

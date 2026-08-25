@@ -4,6 +4,8 @@ import {
     ForbiddenException,
     BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from 'generated/prisma/client';
+import { toNumber } from '@common/money';
 import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
@@ -218,7 +220,7 @@ export class OffersService {
     }
 
     private async notifySellerOfOffer(
-        offer: { offeredPrice: number },
+        offer: { offeredPrice: Prisma.Decimal },
         connection: {
             seller: { email: string; phoneNumber?: string | null };
             buyer: { fullName: string };
@@ -230,13 +232,13 @@ export class OffersService {
                 connection.seller.email,
                 connection.buyer.fullName,
                 connection.property.title,
-                offer.offeredPrice,
+                toNumber(offer.offeredPrice),
             );
 
             if (connection.seller.phoneNumber) {
                 await this.smsService.sendOfferNotificationSMS(
                     connection.seller.phoneNumber,
-                    offer.offeredPrice,
+                    toNumber(offer.offeredPrice),
                 );
             }
         } catch (error) {
@@ -246,7 +248,7 @@ export class OffersService {
 
     private async notifyBuyerOfResponse(offer: {
         status: string;
-        responsePrice?: number | null;
+        responsePrice?: Prisma.Decimal | null;
         responseFeedback?: string | null;
         offerer: { email: string };
     }): Promise<void> {
