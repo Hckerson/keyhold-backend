@@ -12,6 +12,7 @@ import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { PDFService } from '@common/services/document/pdf.service';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import { SettingsService } from '@modules/settings/settings.service';
+import { DbTransaction } from '@common/database/db-transaction';
 import {
     EscrowStatus,
     PropertyStatus,
@@ -66,7 +67,11 @@ const anEscrow = (
 
 describe('EscrowService.release', () => {
     let service: EscrowService;
-    let escrowRepo: { findUnique: jest.Mock; update: jest.Mock };
+    let escrowRepo: {
+        findUnique: jest.Mock;
+        update: jest.Mock;
+        updateMany: jest.Mock;
+    };
     let transactionRepo: { update: jest.Mock };
     let propertyRepo: { update: jest.Mock };
     let pdfService: { generatePurchaseAgreement: jest.Mock };
@@ -81,6 +86,7 @@ describe('EscrowService.release', () => {
 
     const wroteNothing = () => {
         expect(escrowRepo.update).not.toHaveBeenCalled();
+        expect(escrowRepo.updateMany).not.toHaveBeenCalled();
         expect(transactionRepo.update).not.toHaveBeenCalled();
         expect(propertyRepo.update).not.toHaveBeenCalled();
     };
@@ -92,6 +98,7 @@ describe('EscrowService.release', () => {
                 id: 'esc_1',
                 ...data,
             })),
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         };
         transactionRepo = { update: jest.fn().mockResolvedValue(undefined) };
         propertyRepo = { update: jest.fn().mockResolvedValue(undefined) };
@@ -121,6 +128,10 @@ describe('EscrowService.release', () => {
                 { provide: SendGridEmailService, useValue: emailService },
                 { provide: StripeService, useValue: { refundPayment: jest.fn() } },
                 { provide: SettingsService, useValue: { findValue: jest.fn() } },
+                {
+                    provide: DbTransaction,
+                    useValue: { run: (fn: () => Promise<unknown>) => fn() },
+                },
             ],
         }).compile();
 
@@ -235,9 +246,9 @@ describe('EscrowService.release', () => {
             givenHold(anEscrow());
             await service.release('esc_1', BUYER, UserRole.BUYER);
 
-            expect(escrowRepo.update).toHaveBeenCalledWith(
+            expect(escrowRepo.updateMany).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    where: { id: 'esc_1' },
+                    where: expect.objectContaining({ id: 'esc_1' }),
                     data: expect.objectContaining({
                         status: EscrowStatus.RELEASED,
                         releasedAt: expect.any(Date),
@@ -302,6 +313,16 @@ describe('EscrowService.release', () => {
             );
         });
 
+        it('refuses a second concurrent release once the hold is claimed', async () => {
+            givenHold(anEscrow());
+            escrowRepo.updateMany.mockResolvedValue({ count: 0 });
+
+            await expect(
+                service.release('esc_1', BUYER, UserRole.BUYER),
+            ).rejects.toThrow(BadRequestException);
+            expect(transactionRepo.update).not.toHaveBeenCalled();
+        });
+
         it('9.6 settles even when the notification email fails', async () => {
             givenHold(anEscrow());
             emailService.sendTransactionCompletedEmail.mockRejectedValue(
@@ -311,7 +332,7 @@ describe('EscrowService.release', () => {
             await expect(
                 service.release('esc_1', BUYER, UserRole.BUYER),
             ).resolves.toBeDefined();
-            expect(escrowRepo.update).toHaveBeenCalled();
+            expect(escrowRepo.updateMany).toHaveBeenCalled();
         });
     });
 });

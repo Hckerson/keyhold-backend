@@ -9,7 +9,8 @@ import { DisputeRepo } from '@common/repos/dispute.repo';
 import { DisputeEvidenceRepo } from '@common/repos/dispute-evidence.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { EscrowService } from '@modules/escrow/escrow.service';
-import { DisputeStatus, UserRole } from '@generated/prisma/enums';
+import { DisputeStatus, EscrowStatus, UserRole } from '@generated/prisma/enums';
+import { DisputeOutcome } from '@common/enums';
 import {
     AddEvidenceDto,
     CreateDisputeDto,
@@ -25,6 +26,8 @@ const DISPUTE_INCLUDE = {
     transactions: {
         select: {
             id: true,
+            buyerId: true,
+            sellerId: true,
             finalPrice: true,
             status: true,
             escrowHoldId: true,
@@ -46,6 +49,12 @@ export class DisputesService {
         const transaction = createDto.transactionId
             ? await this.requireParty(createDto.transactionId, initiatorId)
             : null;
+
+        if (transaction?.disputeId) {
+            throw new BadRequestException(
+                'This transaction already has a dispute',
+            );
+        }
 
         const dispute = await this.disputeRepo.create({
             data: {
@@ -148,7 +157,11 @@ export class DisputesService {
         });
         if (!dispute) throw new NotFoundException('Dispute not found');
 
-        if (dispute.initiatorId !== actorId && actorRole !== UserRole.ADMIN) {
+        if (
+            actorRole !== UserRole.ADMIN &&
+            dispute.initiatorId !== actorId &&
+            !this.isCounterparty(dispute, actorId)
+        ) {
             throw new ForbiddenException('You cannot view this dispute');
         }
 
@@ -160,11 +173,19 @@ export class DisputesService {
         actorId: string,
         evidenceDto: AddEvidenceDto,
     ) {
-        const dispute = await this.disputeRepo.findUnique({ where: { id } });
+        const dispute = await this.disputeRepo.findUnique({
+            where: { id },
+            include: DISPUTE_INCLUDE,
+        });
         if (!dispute) throw new NotFoundException('Dispute not found');
 
-        if (dispute.initiatorId !== actorId) {
-            throw new ForbiddenException('Only the initiator can add evidence');
+        if (
+            dispute.initiatorId !== actorId &&
+            !this.isCounterparty(dispute, actorId)
+        ) {
+            throw new ForbiddenException(
+                'Only the parties can add evidence',
+            );
         }
 
         if (dispute.resolvedAt) {
@@ -185,12 +206,51 @@ export class DisputesService {
         id: string,
         status: DisputeStatus,
         resolveDto: ResolveDisputeDto,
+        actorId: string,
     ) {
-        const dispute = await this.disputeRepo.findUnique({ where: { id } });
+        const dispute = await this.disputeRepo.findUnique({
+            where: { id },
+            include: DISPUTE_INCLUDE,
+        });
         if (!dispute) throw new NotFoundException('Dispute not found');
 
         if (dispute.resolvedAt) {
             throw new BadRequestException('This dispute is already closed');
+        }
+
+        const holdIds = dispute.transactions
+            .map((transaction) => transaction.escrowHoldId)
+            .filter((holdId): holdId is string => Boolean(holdId));
+
+        if (status === DisputeStatus.RESOLVED) {
+            if (!resolveDto.outcome) {
+                throw new BadRequestException(
+                    'A release or refund outcome is required',
+                );
+            }
+
+            for (const holdId of holdIds) {
+                if (resolveDto.outcome === DisputeOutcome.RELEASE) {
+                    await this.escrowService.release(
+                        holdId,
+                        actorId,
+                        UserRole.ADMIN,
+                        [EscrowStatus.DISPUTED, EscrowStatus.HELD],
+                    );
+                } else {
+                    await this.escrowService.refund(
+                        holdId,
+                        { reason: resolveDto.resolutionNotes },
+                        [EscrowStatus.DISPUTED, EscrowStatus.HELD],
+                    );
+                }
+            }
+        }
+
+        if (status === DisputeStatus.DISMISSED) {
+            for (const holdId of holdIds) {
+                await this.escrowService.restoreHeld(holdId);
+            }
         }
 
         return this.disputeRepo.update({
@@ -204,6 +264,17 @@ export class DisputesService {
         });
     }
 
+    private isCounterparty(
+        dispute: { transactions: { buyerId: string; sellerId: string }[] },
+        actorId: string,
+    ) {
+        return dispute.transactions.some(
+            (transaction) =>
+                transaction.buyerId === actorId ||
+                transaction.sellerId === actorId,
+        );
+    }
+
     private async requireParty(transactionId: string, actorId: string) {
         const transaction = await this.transactionRepo.findUnique({
             where: { id: transactionId },
@@ -212,6 +283,7 @@ export class DisputesService {
                 buyerId: true,
                 sellerId: true,
                 escrowHoldId: true,
+                disputeId: true,
             },
         });
         if (!transaction) throw new NotFoundException('Transaction not found');

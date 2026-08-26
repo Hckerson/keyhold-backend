@@ -21,6 +21,8 @@ import {
     UserRole,
 } from '@generated/prisma/enums';
 import { SettingsService } from '@modules/settings/settings.service';
+import { DbTransaction } from '@common/database/db-transaction';
+import { LIVE_TRANSACTION_STATUSES } from '@common/enums';
 import { QueryEscrowDto, RefundEscrowDto } from './dto';
 
 const DEFAULT_LIMIT = 20;
@@ -60,6 +62,7 @@ export class EscrowService {
         private pdfService: PDFService,
         private cloudinaryService: CloudinaryService,
         private settingsService: SettingsService,
+        private dbTransaction: DbTransaction,
     ) {}
 
     private async inspectionDays() {
@@ -72,6 +75,12 @@ export class EscrowService {
     }
 
     async hold(transactionId: string, amount: Prisma.Decimal) {
+        const existing = await this.transactionRepo.findUnique({
+            where: { id: transactionId },
+            include: { escrowHold: true },
+        });
+        if (existing?.escrowHold) return existing.escrowHold;
+
         const days = await this.inspectionDays();
         const inspectionEndDate = new Date(Date.now() + days * MS_PER_DAY);
 
@@ -143,17 +152,32 @@ export class EscrowService {
         return stages;
     }
 
-    async findOne(id: string) {
+    async findOne(id: string, actorId: string, actorRole: UserRole) {
         const escrow = await this.escrowRepo.findUnique({
             where: { id },
             include: TRANSACTION_INCLUDE,
         });
         if (!escrow) throw new NotFoundException('Escrow hold not found');
+
+        const transaction = escrow.transaction;
+        const isParty =
+            transaction &&
+            (transaction.buyerId === actorId ||
+                transaction.sellerId === actorId);
+        if (actorRole !== UserRole.ADMIN && !isParty) {
+            throw new ForbiddenException('You cannot view this escrow hold');
+        }
+
         return escrow;
     }
 
-    async release(id: string, actorId: string, actorRole: UserRole) {
-        const escrow = await this.requireHeld(id);
+    async release(
+        id: string,
+        actorId: string,
+        actorRole: UserRole,
+        allowed: EscrowStatus[] = [EscrowStatus.HELD],
+    ) {
+        const escrow = await this.requireSettlable(id, allowed);
         const transaction = escrow.transaction;
         if (!transaction) {
             throw new BadRequestException(
@@ -191,36 +215,52 @@ export class EscrowService {
                 `agreement-${transaction.id}.pdf`,
             );
 
-        const [released] = await Promise.all([
-            this.escrowRepo.update({
-                where: { id },
+        const released = await this.dbTransaction.run(async () => {
+            const claimed = await this.escrowRepo.updateMany({
+                where: { id, status: { in: allowed } },
                 data: {
                     status: EscrowStatus.RELEASED,
                     releasedAt: new Date(),
                 },
-                include: TRANSACTION_INCLUDE,
-            }),
-            this.transactionRepo.update({
+            });
+            if (claimed.count !== 1) {
+                throw new BadRequestException(
+                    'This hold has already been settled',
+                );
+            }
+
+            await this.transactionRepo.update({
                 where: { id: transaction.id },
                 data: {
                     status: TransactionStatus.COMPLETED,
                     completedAt: new Date(),
                     agreementDocUrl,
                 },
-            }),
-            this.propertyRepo.update({
+            });
+            await this.propertyRepo.update({
                 where: { id: transaction.propertyId },
                 data: { status: PropertyStatus.SOLD },
-            }),
-        ]);
+            });
+
+            return this.escrowRepo.findUnique({
+                where: { id },
+                include: TRANSACTION_INCLUDE,
+            });
+        });
+
+        if (!released) throw new NotFoundException('Escrow hold not found');
 
         await this.notifySettlement(transaction);
 
         return { escrow: released, agreementUrl: agreementDocUrl };
     }
 
-    async refund(id: string, refundDto: RefundEscrowDto) {
-        const escrow = await this.requireHeld(id);
+    async refund(
+        id: string,
+        refundDto: RefundEscrowDto,
+        allowed: EscrowStatus[] = [EscrowStatus.HELD],
+    ) {
+        const escrow = await this.requireSettlable(id, allowed);
         const transaction = escrow.transaction;
         if (!transaction) {
             throw new BadRequestException(
@@ -234,24 +274,47 @@ export class EscrowService {
             );
         }
 
-        const [refunded] = await Promise.all([
-            this.escrowRepo.update({
-                where: { id },
+        const otherLive = await this.transactionRepo.findFirst({
+            where: {
+                propertyId: transaction.propertyId,
+                id: { not: transaction.id },
+                status: { in: [...LIVE_TRANSACTION_STATUSES] },
+            },
+        });
+
+        const refunded = await this.dbTransaction.run(async () => {
+            const claimed = await this.escrowRepo.updateMany({
+                where: { id, status: { in: allowed } },
                 data: {
                     status: EscrowStatus.REFUNDED,
                     refundedAt: new Date(),
                 },
-                include: TRANSACTION_INCLUDE,
-            }),
-            this.transactionRepo.update({
+            });
+            if (claimed.count !== 1) {
+                throw new BadRequestException(
+                    'This hold has already been settled',
+                );
+            }
+
+            await this.transactionRepo.update({
                 where: { id: transaction.id },
                 data: { status: TransactionStatus.CANCELLED },
-            }),
-            this.propertyRepo.update({
-                where: { id: transaction.propertyId },
-                data: { status: PropertyStatus.AVAILABLE },
-            }),
-        ]);
+            });
+
+            if (!otherLive) {
+                await this.propertyRepo.update({
+                    where: { id: transaction.propertyId },
+                    data: { status: PropertyStatus.AVAILABLE },
+                });
+            }
+
+            return this.escrowRepo.findUnique({
+                where: { id },
+                include: TRANSACTION_INCLUDE,
+            });
+        });
+
+        if (!refunded) throw new NotFoundException('Escrow hold not found');
 
         return { escrow: refunded, reason: refundDto.reason };
     }
@@ -270,14 +333,25 @@ export class EscrowService {
         });
     }
 
-    private async requireHeld(id: string) {
+    async restoreHeld(id: string) {
+        const escrow = await this.escrowRepo.findUnique({ where: { id } });
+        if (!escrow) throw new NotFoundException('Escrow hold not found');
+        if (escrow.status !== EscrowStatus.DISPUTED) return escrow;
+
+        return this.escrowRepo.update({
+            where: { id },
+            data: { status: EscrowStatus.HELD },
+        });
+    }
+
+    private async requireSettlable(id: string, allowed: EscrowStatus[]) {
         const escrow = await this.escrowRepo.findUnique({
             where: { id },
             include: TRANSACTION_INCLUDE,
         });
         if (!escrow) throw new NotFoundException('Escrow hold not found');
 
-        if (escrow.status !== EscrowStatus.HELD) {
+        if (!allowed.includes(escrow.status)) {
             throw new BadRequestException('This hold has already been settled');
         }
 

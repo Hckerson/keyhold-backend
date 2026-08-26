@@ -1,5 +1,6 @@
 import {
     Injectable,
+    Logger,
     NotFoundException,
     ForbiddenException,
     BadRequestException,
@@ -8,18 +9,36 @@ import { Prisma } from 'generated/prisma/client';
 import { toNumber } from '@common/money';
 import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
+import { PropertyRepo } from '@common/repos/property.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import { OfferStatus } from '@generated/prisma/enums';
+import {
+    OfferStatus,
+    PropertyStatus,
+    UserRole,
+} from '@generated/prisma/enums';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
 import { CreateOfferDto, RespondOfferDto } from './dto';
+import {
+    LIVE_OFFER_STATUSES,
+    MAX_OFFER_EXPIRY_DAYS,
+    MS_PER_DAY,
+    OPEN_LISTING_STATUSES,
+} from '@common/enums';
+import {
+    assertConnectionAccepted,
+    assertConnectionParty,
+} from '@common/access';
 
 @Injectable()
 export class OffersService {
+    private readonly logger = new Logger(OffersService.name);
+
     constructor(
         private offerRepo: OfferRepo,
         private connectionRepo: ConnectionRepo,
+        private propertyRepo: PropertyRepo,
         private emailService: SendGridEmailService,
         private smsService: TwilioService,
         private notificationsService: NotificationsService,
@@ -29,7 +48,7 @@ export class OffersService {
         const connection = await this.connectionRepo.findUnique({
             where: { id: createDto.connectionId },
             include: {
-                property: { select: { id: true, title: true } },
+                property: { select: { id: true, title: true, status: true } },
                 seller: { select: { email: true, phoneNumber: true } },
                 buyer: { select: { fullName: true } },
             },
@@ -40,10 +59,21 @@ export class OffersService {
             throw new ForbiddenException('Only buyers can make offers');
         }
 
+        assertConnectionAccepted(connection);
+        this.assertListingOpen(connection.property.status);
+
         const expiresAt = new Date(createDto.expiresAt);
+        const horizon = new Date(
+            Date.now() + MAX_OFFER_EXPIRY_DAYS * MS_PER_DAY,
+        );
         if (isNaN(expiresAt.getTime()) || expiresAt <= new Date()) {
             throw new BadRequestException(
                 'Expiration date must be in the future',
+            );
+        }
+        if (expiresAt > horizon) {
+            throw new BadRequestException(
+                'Expiration date is too far in the future',
             );
         }
 
@@ -83,6 +113,7 @@ export class OffersService {
     async acceptCounter(offerId: string, userId: string) {
         const offer = await this.offerRepo.findUnique({
             where: { id: offerId },
+            include: { property: { select: { id: true, status: true } } },
         });
         if (!offer) throw new NotFoundException('Offer not found');
 
@@ -98,7 +129,10 @@ export class OffersService {
             );
         }
 
-        return this.offerRepo.update({
+        this.assertOfferOpen(offer.expiresAt);
+        this.assertListingOpen(offer.property.status);
+
+        const accepted = await this.offerRepo.update({
             where: { id: offerId },
             data: {
                 status: OfferStatus.ACCEPTED,
@@ -113,6 +147,9 @@ export class OffersService {
                 property: { select: { id: true, title: true } },
             },
         });
+
+        await this.lockAcceptedDeal(offer.propertyId, offerId);
+        return accepted;
     }
 
     async respondToOffer(
@@ -124,6 +161,7 @@ export class OffersService {
             where: { id: offerId },
             include: {
                 connection: { select: { sellerId: true } },
+                property: { select: { id: true, status: true } },
             },
         });
         if (!offer) throw new NotFoundException('Offer not found');
@@ -139,6 +177,9 @@ export class OffersService {
                 'This offer has already been responded to',
             );
         }
+
+        this.assertOfferOpen(offer.expiresAt);
+        this.assertListingOpen(offer.property.status);
 
         if (
             respondDto.status === OfferStatus.COUNTERED &&
@@ -178,6 +219,10 @@ export class OffersService {
             }),
         ]);
 
+        if (updated.status === OfferStatus.ACCEPTED) {
+            await this.lockAcceptedDeal(offer.property.id, offerId);
+        }
+
         return updated;
     }
 
@@ -187,9 +232,7 @@ export class OffersService {
         });
         if (!connection) throw new NotFoundException('Connection not found');
 
-        if (connection.buyerId !== userId && connection.sellerId !== userId) {
-            throw new ForbiddenException('You are not part of this connection');
-        }
+        assertConnectionParty(connection, userId);
 
         return this.offerRepo.findMany({
             where: { connectionId },
@@ -201,7 +244,7 @@ export class OffersService {
         });
     }
 
-    async getOne(offerId: string) {
+    async getOne(offerId: string, userId: string, role: UserRole) {
         const offer = await this.offerRepo.findUnique({
             where: { id: offerId },
             include: {
@@ -216,7 +259,39 @@ export class OffersService {
             },
         });
         if (!offer) throw new NotFoundException('Offer not found');
+        if (role !== UserRole.ADMIN) {
+            assertConnectionParty(offer.connection, userId);
+        }
         return offer;
+    }
+
+    private assertListingOpen(status: PropertyStatus) {
+        if (!OPEN_LISTING_STATUSES.includes(status)) {
+            throw new BadRequestException(
+                'Offers can only be made on available listings',
+            );
+        }
+    }
+
+    private assertOfferOpen(expiresAt: Date) {
+        if (expiresAt <= new Date()) {
+            throw new BadRequestException('This offer has expired');
+        }
+    }
+
+    private async lockAcceptedDeal(propertyId: string, acceptedOfferId: string) {
+        await this.offerRepo.updateMany({
+            where: {
+                propertyId,
+                id: { not: acceptedOfferId },
+                status: { in: [...LIVE_OFFER_STATUSES] },
+            },
+            data: { status: OfferStatus.REJECTED, respondedAt: new Date() },
+        });
+        await this.propertyRepo.update({
+            where: { id: propertyId },
+            data: { status: PropertyStatus.PENDING },
+        });
     }
 
     private async notifySellerOfOffer(
@@ -242,7 +317,9 @@ export class OffersService {
                 );
             }
         } catch (error) {
-            console.error('Failed to send offer notification:', error);
+            this.logger.error(
+                `Failed to send offer notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
         }
     }
 
@@ -270,7 +347,9 @@ export class OffersService {
         `,
             });
         } catch (error) {
-            console.error('Failed to notify buyer:', error);
+            this.logger.error(
+                `Failed to notify buyer: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
         }
     }
 }

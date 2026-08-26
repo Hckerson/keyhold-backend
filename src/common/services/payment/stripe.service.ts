@@ -97,6 +97,18 @@ export class StripeService {
         }
     }
 
+    constructEvent(payload: Buffer, signature: string): Stripe.Event {
+        const secret = this.configService.get<string>(
+            'externalServices.stripe.webhookSecret',
+        );
+        if (!secret) {
+            throw new ServiceUnavailableException(
+                'Payment webhooks are not configured on this environment',
+            );
+        }
+        return this.stripe.webhooks.constructEvent(payload, signature, secret);
+    }
+
     async getPaymentIntent(
         paymentIntentId: string,
     ): Promise<Stripe.PaymentIntent> {
