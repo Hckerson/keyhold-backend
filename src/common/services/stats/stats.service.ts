@@ -57,6 +57,12 @@ const averageDaysToClose = (sales: Settled[]) => {
     return Math.round(total / closed.length);
 };
 
+const averageRating = (reviews: { rating: number }[]) => {
+    if (reviews.length === 0) return 0;
+    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
+    return Number((total / reviews.length).toFixed(1));
+};
+
 const averageSaleToList = (sales: Settled[]) => {
     const priced = sales.filter((sale) => sale.property.price.gt(0));
     if (!priced.length) return 0;
@@ -329,34 +335,44 @@ export class StatsService {
     async fetchAgentAnalytics(sellerId: string) {
         const startDate = this.getStartDate(TimeFilter.MONTH);
 
-        const [sales, listings, platformSales] = await Promise.all([
-            this.prisma.transaction.findMany({
-                where: {
-                    sellerId,
-                    status: TransactionStatus.COMPLETED,
-                    completedAt: { gte: startDate },
-                },
-                select: {
-                    completedAt: true,
-                    createdAt: true,
-                    finalPrice: true,
-                    property: { select: { price: true, createdAt: true } },
-                },
-            }),
-            this.prisma.property.count({ where: { sellerId } }),
-            this.prisma.transaction.findMany({
-                where: { status: TransactionStatus.COMPLETED },
-                select: {
-                    createdAt: true,
-                    completedAt: true,
-                    finalPrice: true,
-                    property: { select: { price: true } },
-                },
-            }),
-        ]);
+        const [sales, listings, platformSales, ratings, platformRatings] =
+            await Promise.all([
+                this.prisma.transaction.findMany({
+                    where: {
+                        sellerId,
+                        status: TransactionStatus.COMPLETED,
+                        completedAt: { gte: startDate },
+                    },
+                    select: {
+                        completedAt: true,
+                        createdAt: true,
+                        finalPrice: true,
+                        property: { select: { price: true, createdAt: true } },
+                    },
+                }),
+                this.prisma.property.count({ where: { sellerId } }),
+                this.prisma.transaction.findMany({
+                    where: { status: TransactionStatus.COMPLETED },
+                    select: {
+                        createdAt: true,
+                        completedAt: true,
+                        finalPrice: true,
+                        property: { select: { price: true } },
+                    },
+                }),
+                this.prisma.review.findMany({
+                    where: { revieweeId: sellerId },
+                    select: { rating: true },
+                }),
+                this.prisma.review.findMany({ select: { rating: true } }),
+            ]);
 
         const volume = toNumber(
             sumDecimal(sales.map((sale) => sale.finalPrice)),
+        );
+        const platformVolume = platformSales.reduce(
+            (total, sale) => total + sale.finalPrice,
+            0,
         );
 
         return {
@@ -371,11 +387,22 @@ export class StatsService {
                 (sale) => sale.completedAt,
                 (sale) => toNumber(sale.finalPrice),
             ),
+            monthlyDeals: bucketBy(
+                sales,
+                (sale) => sale.completedAt,
+                () => 1,
+            ),
             benchmarks: {
                 daysToClose: averageDaysToClose(sales),
                 platformDaysToClose: averageDaysToClose(platformSales),
                 saleToList: averageSaleToList(sales),
                 platformSaleToList: averageSaleToList(platformSales),
+                averagePrice: sales.length ? volume / sales.length : 0,
+                platformAveragePrice: platformSales.length
+                    ? platformVolume / platformSales.length
+                    : 0,
+                rating: averageRating(ratings),
+                platformRating: averageRating(platformRatings),
             },
         };
     }

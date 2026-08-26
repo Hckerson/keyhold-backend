@@ -16,6 +16,9 @@ import { NotificationsService } from '@modules/notifications/notifications.servi
 import { NotificationType } from '@generated/prisma/enums';
 import { CreateConnectionDto } from './dto';
 
+const THREAD_PREVIEW = 1;
+const BOOK_DEPTH = 20;
+
 const listInclude = (viewerId: string) =>
     ({
         property: {
@@ -49,9 +52,9 @@ const listInclude = (viewerId: string) =>
                 agencyName: true,
             },
         },
-        messages: { orderBy: { createdAt: 'desc' }, take: 1 },
-        offers: { orderBy: { createdAt: 'desc' }, take: 1 },
-        viewings: { orderBy: { createdAt: 'desc' }, take: 1 },
+        messages: { orderBy: { createdAt: 'desc' }, take: THREAD_PREVIEW },
+        offers: { orderBy: { createdAt: 'desc' }, take: BOOK_DEPTH },
+        viewings: { orderBy: { createdAt: 'desc' }, take: BOOK_DEPTH },
         _count: {
             select: {
                 messages: { where: { receiverId: viewerId, isRead: false } },

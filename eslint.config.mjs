@@ -25,12 +25,7 @@ export default tseslint.config(
             sourceType: 'module',
             parserOptions: {
                 projectService: {
-                    allowDefaultProject: [
-                        '*.mjs',
-                        '*.ts',
-                        '*.tsx',
-                        'prisma/*.ts',
-                    ],
+                    allowDefaultProject: ['*.mjs', '*.ts', '*.tsx'],
                 },
                 tsconfigRootDir: import.meta.dirname,
             },

@@ -12,14 +12,15 @@
         "start:dev": "nest start --watch",
         "start:prod": "node dist/main",
         "format": "prettier --write .",
-        "lint": "eslint \"{src,test}/**/*.ts\" --fix",
+        "lint": "eslint \"{src,test,prisma}/**/*.ts\" --fix",
         "type-check": "tsc --noEmit",
         "test": "jest",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "db:generate": "prisma generate",
         "db:push": "prisma db push",
         "db:seed": "tsx prisma/seed.ts",
-        "db:setup": "prisma db push && tsx prisma/seed.ts"
+        "db:reseed": "tsx prisma/seed.ts --reset",
+        "db:setup": "prisma db push && tsx prisma/seed.ts --reset"
     },
     "dependencies": {
         "@nestjs/common": "^11.0.1",
@@ -91,6 +92,14 @@
         ],
         "rootDir": "src",
         "testRegex": ".*\\.spec\\.ts$",
+        "moduleNameMapper": {
+            "^@core/(.*)$": "<rootDir>/modules/core/$1",
+            "^@modules/(.*)$": "<rootDir>/modules/$1",
+            "^@common/(.*)$": "<rootDir>/common/$1",
+            "^@prisma-db/(.*)$": "<rootDir>/common/database/$1",
+            "^@generated/(.*)$": "<rootDir>/../generated/$1",
+            "^generated/(.*)$": "<rootDir>/../generated/$1"
+        },
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
         },

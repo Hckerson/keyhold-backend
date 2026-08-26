@@ -91,11 +91,20 @@ export class SavedSearchesService {
         private propertyRepo: PropertyRepo,
     ) {}
 
+    private shape(search: SavedSearchRecord) {
+        return {
+            ...search,
+            minPrice: toNumber(search.minPrice),
+            maxPrice: toNumber(search.maxPrice),
+        };
+    }
+
     async findAll(buyerId: string) {
-        return this.savedSearchRepo.findMany({
+        const searches = await this.savedSearchRepo.findMany({
             where: { buyerId },
             orderBy: { createdAt: 'desc' },
         });
+        return searches.map((search) => this.shape(search));
     }
 
     async findOne(buyerId: string, id: string) {
@@ -109,7 +118,7 @@ export class SavedSearchesService {
     }
 
     async create(buyerId: string, dto: CreateSavedSearchDto) {
-        return this.savedSearchRepo.create({
+        const created = await this.savedSearchRepo.create({
             data: {
                 buyerId,
                 name: dto.name,
@@ -129,11 +138,12 @@ export class SavedSearchesService {
                 notify: dto.notify,
             },
         });
+        return this.shape(created);
     }
 
     async update(buyerId: string, id: string, dto: UpdateSavedSearchDto) {
         await this.findOne(buyerId, id);
-        return this.savedSearchRepo.update({
+        const updated = await this.savedSearchRepo.update({
             where: { id },
             data: {
                 name: dto.name,
@@ -153,11 +163,13 @@ export class SavedSearchesService {
                 notify: dto.notify,
             },
         });
+        return this.shape(updated);
     }
 
     async remove(buyerId: string, id: string) {
         await this.findOne(buyerId, id);
-        return this.savedSearchRepo.delete({ where: { id } });
+        const removed = await this.savedSearchRepo.delete({ where: { id } });
+        return this.shape(removed);
     }
 
     async matches(buyerId: string, id: string) {

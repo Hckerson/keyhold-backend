@@ -47,6 +47,8 @@ export class ViewingsService {
                 requestedById,
                 proposedByid,
                 proposedTimes: createDto.proposedTimes,
+                mode: createDto.mode,
+                durationMinutes: createDto.durationMinutes,
                 status: ViewingStatus.PENDING,
             },
             include: {
@@ -213,6 +215,41 @@ export class ViewingsService {
         return this.viewingRepo.update({
             where: { id: viewingId },
             data: { status },
+        });
+    }
+
+    async reschedule(
+        viewingId: string,
+        userId: string,
+        proposedTimes: string[],
+    ) {
+        const viewing = await this.viewingRepo.findUnique({
+            where: { id: viewingId },
+            include: {
+                connection: { select: { buyerId: true, sellerId: true } },
+            },
+        });
+        if (!viewing) throw new NotFoundException('Viewing not found');
+
+        if (
+            viewing.connection.buyerId !== userId &&
+            viewing.connection.sellerId !== userId
+        ) {
+            throw new ForbiddenException('You are not part of this connection');
+        }
+
+        if (viewing.status === ViewingStatus.CANCELLED) {
+            throw new BadRequestException('This viewing has been cancelled');
+        }
+
+        return this.viewingRepo.update({
+            where: { id: viewingId },
+            data: {
+                proposedTimes,
+                confirmedTime: null,
+                confirmedById: null,
+                status: ViewingStatus.PENDING,
+            },
         });
     }
 
