@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '@core/users/users.service';
-import { PrismaService } from '@common/database/prisma.service';
+import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import type { AuthUser, JwtPayload } from '../types/auth.types';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 
@@ -11,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
         private readonly configService: ConfigService,
         private readonly usersService: UsersService,
-        private readonly prisma: PrismaService,
+        private readonly suspensionsService: SuspensionsService,
     ) {
         const secret = configService.get<string>('JWT_SECRET');
         if (!secret) {
@@ -30,6 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     async validate(payload: JwtPayload): Promise<AuthUser> {
         const user = await this.usersService.findOne(payload.sub);
         if (!user) throw new UnauthorizedException();
+        await this.suspensionsService.ensureActive(user.id, user.status);
         return {
             id: user.id,
             role: user.role,
