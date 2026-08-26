@@ -20,6 +20,7 @@
         "db:push": "prisma db push",
         "db:seed": "tsx prisma/seed.ts",
         "db:reseed": "tsx prisma/seed.ts --reset",
+        "db:purge": "tsx prisma/purge.ts",
         "db:setup": "prisma db push && tsx prisma/seed.ts --reset"
     },
     "dependencies": {
