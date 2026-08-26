@@ -1,6 +1,9 @@
+import { AsyncLocalStorage } from 'async_hooks';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from 'generated/prisma/client';
+import { Prisma, PrismaClient } from 'generated/prisma/client';
 import { Injectable, OnModuleInit } from '@nestjs/common';
+
+const txStore = new AsyncLocalStorage<Prisma.TransactionClient>();
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
@@ -9,6 +12,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
             connectionString: process.env.DATABASE_URL,
         });
         super({ adapter });
+    }
+
+    get tx(): PrismaClient | Prisma.TransactionClient {
+        return txStore.getStore() ?? this;
+    }
+
+    runTransaction<T>(fn: () => Promise<T>): Promise<T> {
+        return this.$transaction((tx) => txStore.run(tx, fn));
     }
 
     async onModuleInit() {

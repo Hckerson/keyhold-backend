@@ -11,7 +11,7 @@ export class EscrowRepo {
         params: T,
     ): Promise<Prisma.EscrowGetPayload<T> | null> {
         try {
-            return (await this.prisma.escrow.findUnique(
+            return (await this.prisma.tx.escrow.findUnique(
                 params,
             )) as Prisma.EscrowGetPayload<T> | null;
         } catch (error) {
@@ -23,7 +23,7 @@ export class EscrowRepo {
         params: T,
     ): Promise<Prisma.EscrowGetPayload<T> | null> {
         try {
-            return (await this.prisma.escrow.findFirst(
+            return (await this.prisma.tx.escrow.findFirst(
                 params,
             )) as Prisma.EscrowGetPayload<T> | null;
         } catch (error) {
@@ -35,7 +35,7 @@ export class EscrowRepo {
         params: T,
     ): Promise<Prisma.EscrowGetPayload<T>[]> {
         try {
-            return (await this.prisma.escrow.findMany(
+            return (await this.prisma.tx.escrow.findMany(
                 params,
             )) as Prisma.EscrowGetPayload<T>[];
         } catch (error) {
@@ -47,7 +47,7 @@ export class EscrowRepo {
         params: T,
     ): Promise<Prisma.EscrowGetPayload<T>> {
         try {
-            return (await this.prisma.escrow.create(
+            return (await this.prisma.tx.escrow.create(
                 params,
             )) as Prisma.EscrowGetPayload<T>;
         } catch (error) {
@@ -57,7 +57,7 @@ export class EscrowRepo {
 
     async createMany(params: Prisma.EscrowCreateManyArgs) {
         try {
-            return await this.prisma.escrow.createMany(params);
+            return await this.prisma.tx.escrow.createMany(params);
         } catch (error) {
             throw new RepoError('Failed to create escrows', error);
         }
@@ -67,7 +67,7 @@ export class EscrowRepo {
         params: T,
     ): Promise<Prisma.EscrowGetPayload<T>> {
         try {
-            return (await this.prisma.escrow.update(
+            return (await this.prisma.tx.escrow.update(
                 params,
             )) as Prisma.EscrowGetPayload<T>;
         } catch (error) {
@@ -77,7 +77,7 @@ export class EscrowRepo {
 
     async updateMany(params: Prisma.EscrowUpdateManyArgs) {
         try {
-            return await this.prisma.escrow.updateMany(params);
+            return await this.prisma.tx.escrow.updateMany(params);
         } catch (error) {
             throw new RepoError('Failed to update escrows', error);
         }
@@ -87,7 +87,7 @@ export class EscrowRepo {
         params: T,
     ): Promise<Prisma.EscrowGetPayload<T>> {
         try {
-            return (await this.prisma.escrow.delete(
+            return (await this.prisma.tx.escrow.delete(
                 params,
             )) as Prisma.EscrowGetPayload<T>;
         } catch (error) {
@@ -97,7 +97,7 @@ export class EscrowRepo {
 
     async deleteMany(params: Prisma.EscrowDeleteManyArgs) {
         try {
-            return await this.prisma.escrow.deleteMany(params);
+            return await this.prisma.tx.escrow.deleteMany(params);
         } catch (error) {
             throw new RepoError('Failed to delete escrows', error);
         }
@@ -105,7 +105,7 @@ export class EscrowRepo {
 
     async count(params?: Prisma.EscrowCountArgs): Promise<number> {
         try {
-            return await this.prisma.escrow.count(params);
+            return await this.prisma.tx.escrow.count(params);
         } catch (error) {
             throw new RepoError('Failed to count escrows', error);
         }

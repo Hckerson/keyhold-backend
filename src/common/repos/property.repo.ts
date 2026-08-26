@@ -11,7 +11,7 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T> | null> {
         try {
-            return (await this.prisma.property.findUnique(
+            return (await this.prisma.tx.property.findUnique(
                 params,
             )) as Prisma.PropertyGetPayload<T> | null;
         } catch (error) {
@@ -23,7 +23,7 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T> | null> {
         try {
-            return (await this.prisma.property.findFirst(
+            return (await this.prisma.tx.property.findFirst(
                 params,
             )) as Prisma.PropertyGetPayload<T> | null;
         } catch (error) {
@@ -35,7 +35,7 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>[]> {
         try {
-            return (await this.prisma.property.findMany(
+            return (await this.prisma.tx.property.findMany(
                 params,
             )) as Prisma.PropertyGetPayload<T>[];
         } catch (error) {
@@ -47,7 +47,7 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>> {
         try {
-            return (await this.prisma.property.create(
+            return (await this.prisma.tx.property.create(
                 params,
             )) as Prisma.PropertyGetPayload<T>;
         } catch (error) {
@@ -57,7 +57,7 @@ export class PropertyRepo {
 
     async createMany(params: Prisma.PropertyCreateManyArgs) {
         try {
-            return await this.prisma.property.createMany(params);
+            return await this.prisma.tx.property.createMany(params);
         } catch (error) {
             throw new RepoError('Failed to create properties', error);
         }
@@ -67,7 +67,7 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>> {
         try {
-            return (await this.prisma.property.update(
+            return (await this.prisma.tx.property.update(
                 params,
             )) as Prisma.PropertyGetPayload<T>;
         } catch (error) {
@@ -77,7 +77,7 @@ export class PropertyRepo {
 
     async updateMany(params: Prisma.PropertyUpdateManyArgs) {
         try {
-            return await this.prisma.property.updateMany(params);
+            return await this.prisma.tx.property.updateMany(params);
         } catch (error) {
             throw new RepoError('Failed to update properties', error);
         }
@@ -87,7 +87,7 @@ export class PropertyRepo {
         params: T,
     ): Promise<Prisma.PropertyGetPayload<T>> {
         try {
-            return (await this.prisma.property.delete(
+            return (await this.prisma.tx.property.delete(
                 params,
             )) as Prisma.PropertyGetPayload<T>;
         } catch (error) {
@@ -97,7 +97,7 @@ export class PropertyRepo {
 
     async deleteMany(params: Prisma.PropertyDeleteManyArgs) {
         try {
-            return await this.prisma.property.deleteMany(params);
+            return await this.prisma.tx.property.deleteMany(params);
         } catch (error) {
             throw new RepoError('Failed to delete properties', error);
         }
@@ -105,7 +105,7 @@ export class PropertyRepo {
 
     async count(params?: Prisma.PropertyCountArgs): Promise<number> {
         try {
-            return await this.prisma.property.count(params);
+            return await this.prisma.tx.property.count(params);
         } catch (error) {
             throw new RepoError('Failed to count properties', error);
         }
