@@ -1,7 +1,7 @@
 {
-    "name": "nest-setup",
+    "name": "keyhold-backend",
     "version": "0.0.1",
-    "description": "Reusable NestJS backend starter with an opinionated, layered architecture",
+    "description": "Keyhold — peer-to-peer property marketplace API",
     "author": "",
     "private": true,
     "license": "UNLICENSED",
