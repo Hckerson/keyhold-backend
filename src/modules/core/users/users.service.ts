@@ -1,11 +1,16 @@
-import { UserDto } from './dto';
-import { Injectable } from '@nestjs/common';
+import { CreateUserDto, UpdateProfileDto, UpdateUserDto, UserDto } from './dto';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from 'generated/prisma/client';
 import { Prisma } from 'generated/prisma/client';
-import { TransactionStatus, UserTier } from '@generated/prisma/enums';
+import {
+    TransactionStatus,
+    UserRole,
+    UserTier,
+} from '@generated/prisma/enums';
 import { toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
+import { PasswordUtil } from '@core/auth/utils/password.util';
 
 interface UserCreateData {
     email: string;
@@ -36,10 +41,29 @@ export class UsersService {
     ) {}
 
     async create(data: UserCreateData): Promise<UserDto> {
+        const existing = await this.userRepo.findUnique({
+            where: { email: data.email },
+        });
+        if (existing) {
+            throw new ConflictException(
+                'An account with this email already exists',
+            );
+        }
+
         const user = await this.userRepo.create({
             data: data as Prisma.UserCreateInput,
         });
         return this.toDto(user);
+    }
+
+    async createFromAdmin(dto: CreateUserDto): Promise<UserDto> {
+        return this.create({
+            email: dto.email,
+            fullName: dto.fullName,
+            phoneNumber: dto.phoneNumber,
+            role: dto.role,
+            passwordHash: await PasswordUtil.hash(dto.password),
+        });
     }
 
     async findAll(): Promise<UserDto[]> {
@@ -59,6 +83,17 @@ export class UsersService {
 
         const settlements = await this.settlementsByUser(id);
         return this.toDto(user, settlements.get(id) ?? EMPTY_SETTLEMENT);
+    }
+
+    async findVisible(
+        id: string,
+        actorId: string,
+        actorRole: UserRole,
+    ): Promise<UserDto | ReturnType<UsersService['toPublicDto']>> {
+        const user = await this.findOne(id);
+        if (!user) throw new NotFoundException('User not found');
+        if (actorId === id || actorRole === UserRole.ADMIN) return user;
+        return this.toPublicDto(user);
     }
 
     async findByEmail(email: string): Promise<UserDto | null> {
@@ -91,6 +126,36 @@ export class UsersService {
             data,
         });
         return this.toDto(user);
+    }
+
+    async updateProfile(id: string, dto: UpdateProfileDto): Promise<UserDto> {
+        return this.update(id, {
+            fullName: dto.fullName,
+            phoneNumber: dto.phoneNumber,
+            bio: dto.bio,
+            avatar: dto.avatar,
+            jobTitle: dto.jobTitle,
+            agencyName: dto.agencyName,
+            licenseNumber: dto.licenseNumber,
+        });
+    }
+
+    async updateFromAdmin(id: string, dto: UpdateUserDto): Promise<UserDto> {
+        const data: Prisma.UserUpdateInput = {
+            fullName: dto.fullName,
+            email: dto.email,
+            phoneNumber: dto.phoneNumber,
+            bio: dto.bio,
+            role: dto.role,
+            avatar: dto.avatar,
+            jobTitle: dto.jobTitle,
+            agencyName: dto.agencyName,
+            licenseNumber: dto.licenseNumber,
+        };
+        if (dto.password) {
+            data.passwordHash = await PasswordUtil.hash(dto.password);
+        }
+        return this.update(id, data);
     }
 
     async remove(id: string): Promise<UserDto> {
@@ -177,5 +242,21 @@ export class UsersService {
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         } satisfies UserDto;
+    }
+
+    private toPublicDto(user: UserDto) {
+        return {
+            id: user.id,
+            fullName: user.fullName,
+            avatar: user.avatar,
+            role: user.role,
+            bio: user.bio,
+            jobTitle: user.jobTitle,
+            agencyName: user.agencyName,
+            licenseNumber: user.licenseNumber,
+            transactions: user.transactions,
+            volume: user.volume,
+            createdAt: user.createdAt,
+        };
     }
 }

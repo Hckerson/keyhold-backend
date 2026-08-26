@@ -51,6 +51,16 @@ export class UserRepo {
                 params,
             )) as Prisma.UserGetPayload<T>;
         } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2002'
+            ) {
+                throw new RepoError(
+                    'An account with this email already exists',
+                    error,
+                    409,
+                );
+            }
             throw new RepoError('Failed to create user', error);
         }
     }
