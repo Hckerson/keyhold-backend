@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
+import { toNumber } from '@common/money';
 import { NotificationRepo } from '@common/repos/notification.repo';
 import { NotificationPreferenceRepo } from '@common/repos/notification-preference.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
@@ -20,7 +21,7 @@ const PROPERTY_SELECT = {
     address: true,
     locality: true,
     price: true,
-    images: { orderBy: { order: 'asc' }, take: 1 },
+    images: { select: { url: true }, orderBy: { order: 'asc' }, take: 1 },
 } satisfies Prisma.PropertySelect;
 
 export interface NotificationProperty {
@@ -173,19 +174,16 @@ export class NotificationsService {
                 : [],
         ]);
 
-        const shape = (property: {
-            id: string;
-            title: string;
-            address: string;
-            locality: string;
-            price: number;
-            images: { url: string }[];
-        }): NotificationProperty => ({
+        const shape = (
+            property: Prisma.PropertyGetPayload<{
+                select: typeof PROPERTY_SELECT;
+            }>,
+        ): NotificationProperty => ({
             id: property.id,
             title: property.title,
             address: property.address,
             locality: property.locality,
-            price: property.price,
+            price: toNumber(property.price),
             image: property.images[0]?.url ?? null,
         });
 

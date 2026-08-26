@@ -10,7 +10,7 @@ import { PropertyRepo } from '@common/repos/property.repo';
 import { UserRepo } from '@common/repos/user.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import { ConnectionStatus } from '@generated/prisma/enums';
+import { ConnectionStatus, PropertyStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
@@ -89,6 +89,12 @@ export class ConnectionsService {
             );
         }
 
+        if (property.status !== PropertyStatus.AVAILABLE) {
+            throw new BadRequestException(
+                'You can only enquire on available listings',
+            );
+        }
+
         const existing = await this.connectionRepo.findUnique({
             where: {
                 buyerId_propertyId: {
@@ -159,6 +165,12 @@ export class ConnectionsService {
             );
         }
 
+        if (connection.status !== ConnectionStatus.PENDING) {
+            throw new BadRequestException(
+                'This enquiry has already been responded to',
+            );
+        }
+
         const updated = await this.connectionRepo.update({
             where: { id: connectionId },
             data: { status: ConnectionStatus.ACCEPTED },
@@ -200,6 +212,12 @@ export class ConnectionsService {
         if (connection.seller.id !== userId) {
             throw new ForbiddenException(
                 'Only the seller can reject this connection',
+            );
+        }
+
+        if (connection.status !== ConnectionStatus.PENDING) {
+            throw new BadRequestException(
+                'This enquiry has already been responded to',
             );
         }
 

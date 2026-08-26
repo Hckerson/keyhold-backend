@@ -76,9 +76,10 @@ export class PropertiesController {
     }
 
     @Get(':id')
+    @UseGuards(OptionalJwtAuthGuard)
     @ApiOperation({ summary: 'Get property by ID' })
-    async getOne(@Param('id') id: string) {
-        return this.propertiesService.findOne(id);
+    async getOne(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+        return this.propertiesService.findOne(id, user);
     }
 
     @Post(':id/view')
@@ -89,7 +90,8 @@ export class PropertiesController {
     }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
+    @Roles(UserRole.SELLER, UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Create a new property listing' })
     async create(

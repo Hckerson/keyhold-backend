@@ -39,8 +39,8 @@ export class ViewingsController {
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get viewing details' })
-    async getOne(@Param('id') id: string) {
-        return this.viewingsService.getOne(id);
+    async getOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+        return this.viewingsService.getOne(id, user.id);
     }
 
     @Get('connection/:connectionId')

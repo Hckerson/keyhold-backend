@@ -1,13 +1,13 @@
-import {
-    Injectable,
-    NotFoundException,
-    ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { MessageRepo } from '@common/repos/message.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
 import { CreateMessageDto } from './dto';
+import {
+    assertConnectionAccepted,
+    assertConnectionParty,
+} from '@common/access';
 
 @Injectable()
 export class MessagesService {
@@ -23,9 +23,8 @@ export class MessagesService {
         });
         if (!connection) throw new NotFoundException('Connection not found');
 
-        if (connection.buyerId !== userId && connection.sellerId !== userId) {
-            throw new ForbiddenException('You are not part of this connection');
-        }
+        assertConnectionParty(connection, userId);
+        assertConnectionAccepted(connection);
 
         const receiverId =
             connection.buyerId === userId
@@ -63,9 +62,7 @@ export class MessagesService {
         });
         if (!connection) throw new NotFoundException('Connection not found');
 
-        if (connection.buyerId !== userId && connection.sellerId !== userId) {
-            throw new ForbiddenException('You are not part of this connection');
-        }
+        assertConnectionParty(connection, userId);
 
         await this.messageRepo.updateMany({
             where: {

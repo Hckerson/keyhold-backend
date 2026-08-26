@@ -20,7 +20,21 @@ import {
 } from './dto';
 import { FlagsService } from '@modules/flags/flags.service';
 import { FlagType } from '@generated/prisma/enums';
-import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
+import {
+    OfferStatus,
+    PropertyStatus,
+    PropertyType,
+    TransactionStatus,
+    UserRole,
+} from '@generated/prisma/enums';
+import { OfferRepo } from '@common/repos/offer.repo';
+import { TransactionRepo } from '@common/repos/transaction.repo';
+import {
+    LIVE_OFFER_STATUSES,
+    LIVE_TRANSACTION_STATUSES,
+    PUBLIC_PROPERTY_STATUSES,
+} from '@common/enums';
+import type { AuthUser } from '@core/auth/types/auth.types';
 
 const LIST_INCLUDE = {
     images: { orderBy: { order: 'asc' } },
@@ -78,6 +92,8 @@ export class PropertiesService {
         private cloudinaryService: CloudinaryService,
         private prisma: PrismaService,
         private flagsService: FlagsService,
+        private offerRepo: OfferRepo,
+        private transactionRepo: TransactionRepo,
     ) {}
 
     private statusClause(
@@ -223,7 +239,7 @@ export class PropertiesService {
         >;
     }
 
-    async findOne(id: string) {
+    async findOne(id: string, viewer?: AuthUser) {
         const property = await this.propertyRepo.findUnique({
             where: { id },
             include: DETAIL_INCLUDE,
@@ -231,10 +247,32 @@ export class PropertiesService {
         if (!property) {
             throw new NotFoundException(`Property with ID ${id} not found`);
         }
+
+        const privileged =
+            viewer?.id === property.sellerId ||
+            viewer?.role === UserRole.ADMIN;
+        if (
+            !privileged &&
+            !PUBLIC_PROPERTY_STATUSES.includes(property.status)
+        ) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
+        }
+
         return property;
     }
 
     async recordView(id: string) {
+        const property = await this.propertyRepo.findUnique({
+            where: { id },
+            select: { id: true, status: true },
+        });
+        if (
+            !property ||
+            !PUBLIC_PROPERTY_STATUSES.includes(property.status)
+        ) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
+        }
+
         await this.propertyRepo.updateMany({
             where: { id },
             data: { viewsCount: { increment: 1 } },
@@ -267,9 +305,12 @@ export class PropertiesService {
             );
         }
 
+        const data = { ...updateDto };
+        delete data.status;
+
         return this.propertyRepo.update({
             where: { id },
-            data: updateDto,
+            data,
             include: DETAIL_INCLUDE,
         });
     }
@@ -319,6 +360,34 @@ export class PropertiesService {
         if (property.sellerId !== userId) {
             throw new ForbiddenException(
                 'You can only delete your own properties',
+            );
+        }
+
+        const [liveOffers, liveTransactions] = await Promise.all([
+            this.offerRepo.count({
+                where: {
+                    propertyId: id,
+                    status: {
+                        in: [...LIVE_OFFER_STATUSES, OfferStatus.ACCEPTED],
+                    },
+                },
+            }),
+            this.transactionRepo.count({
+                where: {
+                    propertyId: id,
+                    status: {
+                        in: [
+                            ...LIVE_TRANSACTION_STATUSES,
+                            TransactionStatus.COMPLETED,
+                        ],
+                    },
+                },
+            }),
+        ]);
+
+        if (liveOffers > 0 || liveTransactions > 0) {
+            throw new BadRequestException(
+                'This listing has live offers or transactions and cannot be deleted',
             );
         }
 

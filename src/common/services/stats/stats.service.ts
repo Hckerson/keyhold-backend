@@ -68,7 +68,8 @@ const averageSaleToList = (sales: Settled[]) => {
     if (!priced.length) return 0;
 
     const total = priced.reduce(
-        (sum, sale) => sum + sale.finalPrice.div(sale.property.price).toNumber(),
+        (sum, sale) =>
+            sum + sale.finalPrice.div(sale.property.price).toNumber(),
         0,
     );
 
@@ -370,9 +371,8 @@ export class StatsService {
         const volume = toNumber(
             sumDecimal(sales.map((sale) => sale.finalPrice)),
         );
-        const platformVolume = platformSales.reduce(
-            (total, sale) => total + sale.finalPrice,
-            0,
+        const platformVolume = toNumber(
+            sumDecimal(platformSales.map((sale) => sale.finalPrice)),
         );
 
         return {

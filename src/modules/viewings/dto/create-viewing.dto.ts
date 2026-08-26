@@ -1,6 +1,7 @@
 import {
     IsString,
     IsArray,
+    ArrayMinSize,
     IsISO8601,
     IsOptional,
     IsEnum,
@@ -16,6 +17,7 @@ export class CreateViewingDto {
     connectionId: string;
 
     @IsArray()
+    @ArrayMinSize(1)
     @IsISO8601({}, { each: true })
     proposedTimes: string[];
 

@@ -8,6 +8,7 @@ import { ReviewRepo } from '@common/repos/review.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { PrismaService } from '@common/database/prisma.service';
 import { CreateReviewDto } from './dto';
+import { TransactionStatus } from '@generated/prisma/enums';
 
 @Injectable()
 export class ReviewsService {
@@ -30,6 +31,12 @@ export class ReviewsService {
         if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
             throw new ForbiddenException(
                 'You are not part of this transaction',
+            );
+        }
+
+        if (transaction.status !== TransactionStatus.COMPLETED) {
+            throw new BadRequestException(
+                'Reviews are only allowed after settlement',
             );
         }
 
