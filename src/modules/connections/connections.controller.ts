@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ConnectionsService } from './connections.service';
-import { CreateConnectionDto } from './dto';
+import { CreateConnectionDto, CreateLeadDto } from './dto';
 import { JwtAuthGuard } from '@modules/core/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth.types';
@@ -62,6 +62,19 @@ export class ConnectionsController {
         @Body() createDto: CreateConnectionDto,
     ) {
         return this.connectionsService.expressInterest(user.id, createDto);
+    }
+
+    @Post('leads')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({
+        summary: 'Record a buyer enquiry against your own listing',
+    })
+    async recordLead(
+        @CurrentUser() user: AuthUser,
+        @Body() createDto: CreateLeadDto,
+    ) {
+        return this.connectionsService.recordLead(user.id, createDto);
     }
 
     @Patch(':id/accept')

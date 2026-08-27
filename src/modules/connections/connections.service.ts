@@ -3,6 +3,7 @@ import {
     BadRequestException,
     NotFoundException,
     ForbiddenException,
+    Logger,
 } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import { ConnectionRepo } from '@common/repos/connection.repo';
@@ -14,7 +15,7 @@ import { ConnectionStatus, PropertyStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
-import { CreateConnectionDto } from './dto';
+import { CreateConnectionDto, CreateLeadDto } from './dto';
 
 const THREAD_PREVIEW = 1;
 const BOOK_DEPTH = 20;
@@ -66,6 +67,8 @@ const listInclude = (viewerId: string) =>
 
 @Injectable()
 export class ConnectionsService {
+    private readonly logger = new Logger(ConnectionsService.name);
+
     constructor(
         private connectionRepo: ConnectionRepo,
         private propertyRepo: PropertyRepo,
@@ -139,6 +142,80 @@ export class ConnectionsService {
                 entityId: connection.id,
             }),
         ]);
+
+        return connection;
+    }
+
+    async recordLead(sellerId: string, createDto: CreateLeadDto) {
+        const property = await this.propertyRepo.findUnique({
+            where: { id: createDto.propertyId },
+        });
+        if (!property) {
+            throw new NotFoundException('Property not found');
+        }
+
+        if (property.sellerId !== sellerId) {
+            throw new ForbiddenException(
+                'You can only record leads against your own listings',
+            );
+        }
+
+        const buyer = await this.userRepo.findUnique({
+            where: { email: createDto.buyerEmail },
+        });
+        if (!buyer) {
+            throw new NotFoundException(
+                'No registered account uses that email address',
+            );
+        }
+
+        if (buyer.id === sellerId) {
+            throw new BadRequestException(
+                'You cannot record yourself as a lead',
+            );
+        }
+
+        const existing = await this.connectionRepo.findUnique({
+            where: {
+                buyerId_propertyId: {
+                    buyerId: buyer.id,
+                    propertyId: createDto.propertyId,
+                },
+            },
+        });
+
+        if (existing) {
+            throw new BadRequestException(
+                'That buyer is already on this listing',
+            );
+        }
+
+        const connection = await this.connectionRepo.create({
+            data: {
+                buyerId: buyer.id,
+                propertyId: createDto.propertyId,
+                sellerId,
+                status: ConnectionStatus.ACCEPTED,
+            },
+            include: {
+                buyer: {
+                    select: { id: true, fullName: true, email: true },
+                },
+                seller: {
+                    select: { id: true, fullName: true, email: true },
+                },
+                property: { select: { id: true, title: true } },
+            },
+        });
+
+        await this.notificationsService.notify({
+            userId: buyer.id,
+            type: NotificationType.CONNECTION_REQUEST,
+            title: 'An agent opened a thread with you',
+            body: `${connection.seller.fullName} added you to ${connection.property.title}`,
+            entityType: 'CONNECTION',
+            entityId: connection.id,
+        });
 
         return connection;
     }
@@ -288,8 +365,10 @@ export class ConnectionsService {
                     connection.property.title,
                 );
             }
-        } catch (error) {
-            console.error('Failed to send notifications:', error);
+        } catch (error: unknown) {
+            this.logger.error(
+                `Failed to notify seller: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
         }
     }
 
@@ -302,8 +381,10 @@ export class ConnectionsService {
                 connection.property.title,
                 connection.seller.fullName,
             );
-        } catch (error) {
-            console.error('Failed to send buyer notification:', error);
+        } catch (error: unknown) {
+            this.logger.error(
+                `Failed to notify buyer: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
         }
     }
 }
