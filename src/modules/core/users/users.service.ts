@@ -1,12 +1,12 @@
 import { CreateUserDto, UpdateProfileDto, UpdateUserDto, UserDto } from './dto';
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { User } from 'generated/prisma/client';
 import { Prisma } from 'generated/prisma/client';
-import {
-    TransactionStatus,
-    UserRole,
-    UserTier,
-} from '@generated/prisma/enums';
+import { TransactionStatus, UserRole, UserTier } from '@generated/prisma/enums';
 import { toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
@@ -83,6 +83,24 @@ export class UsersService {
 
         const settlements = await this.settlementsByUser(id);
         return this.toDto(user, settlements.get(id) ?? EMPTY_SETTLEMENT);
+    }
+
+    async findIdentity(
+        id: string,
+    ): Promise<Pick<
+        UserDto,
+        'id' | 'email' | 'fullName' | 'role' | 'status'
+    > | null> {
+        return this.userRepo.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                email: true,
+                fullName: true,
+                role: true,
+                status: true,
+            },
+        });
     }
 
     async findVisible(

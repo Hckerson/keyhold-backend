@@ -10,6 +10,8 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from 'generated/prisma/enums';
 import {
+    E164_MESSAGE,
+    E164_PATTERN,
     MIN_PASSWORD_LENGTH,
     PASSWORD_PATTERN,
     PUBLIC_REGISTER_ROLES,
@@ -38,8 +40,9 @@ export class RegisterDto {
     @IsIn(PUBLIC_REGISTER_ROLES)
     role: UserRole;
 
-    @ApiProperty({ example: '+1234567890', required: false })
+    @ApiProperty({ example: '+14155552671', required: false })
     @IsOptional()
     @IsString()
+    @Matches(E164_PATTERN, { message: E164_MESSAGE })
     phoneNumber?: string;
 }

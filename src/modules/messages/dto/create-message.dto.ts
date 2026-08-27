@@ -5,7 +5,7 @@ export class CreateMessageDto {
     @IsString()
     connectionId: string;
 
-    @Transform(({ value }) =>
+    @Transform(({ value }: { value: unknown }) =>
         typeof value === 'string' ? value.trim() : value,
     )
     @IsString()

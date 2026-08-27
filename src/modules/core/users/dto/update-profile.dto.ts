@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, Matches } from 'class-validator';
+import { E164_MESSAGE, E164_PATTERN } from '@common/enums';
 
 export class UpdateProfileDto {
     @ApiProperty({ required: false })
@@ -7,9 +8,10 @@ export class UpdateProfileDto {
     @IsString()
     fullName?: string;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ example: '+14155552671', required: false })
     @IsOptional()
     @IsString()
+    @Matches(E164_PATTERN, { message: E164_MESSAGE })
     phoneNumber?: string;
 
     @ApiProperty({ required: false })

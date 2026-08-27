@@ -16,6 +16,7 @@ import { SettingsService } from '@modules/settings/settings.service';
 import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import type { AuthResponse, JwtPayload } from './types/auth.types';
 import {
+    DEFAULT_FRONTEND_URL,
     LOGIN_MAX_ATTEMPTS,
     LOGIN_WINDOW_MS,
     SETTING_MAINTENANCE,
@@ -37,6 +38,7 @@ const GENERIC_RESET_MESSAGE =
 import {
     ForbiddenException,
     Injectable,
+    Logger,
     NotFoundException,
     ServiceUnavailableException,
     UnauthorizedException,
@@ -44,6 +46,8 @@ import {
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
@@ -126,15 +130,36 @@ export class AuthService {
                 },
             });
 
-            const resetUrl = `${this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000'}/reset-password?token=${token}`;
-            await this.emailService.sendPasswordResetEmail(
+            const frontendUrl =
+                this.configService.get<string>('FRONTEND_URL') ??
+                DEFAULT_FRONTEND_URL;
+
+            await this.sendResetEmail(
                 user.email,
                 user.fullName,
-                resetUrl,
+                `${frontendUrl}/reset-password?token=${token}`,
             );
         }
 
         return { message: GENERIC_RESET_MESSAGE };
+    }
+
+    private async sendResetEmail(
+        email: string,
+        fullName: string,
+        resetUrl: string,
+    ): Promise<void> {
+        try {
+            await this.emailService.sendPasswordResetEmail(
+                email,
+                fullName,
+                resetUrl,
+            );
+        } catch (error: unknown) {
+            this.logger.error(
+                `Failed to send password reset email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
     }
 
     async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
