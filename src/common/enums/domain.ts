@@ -38,6 +38,36 @@ export const LIVE_TRANSACTION_STATUSES: TransactionStatus[] = [
 
 export const DEFAULT_CURRENCY = 'usd';
 export const CENTS_PER_UNIT = 100;
+export const ZERO_DECIMAL_CURRENCIES = [
+    'bif',
+    'clp',
+    'djf',
+    'gnf',
+    'jpy',
+    'kmf',
+    'krw',
+    'mga',
+    'pyg',
+    'rwf',
+    'ugx',
+    'vnd',
+    'vuv',
+    'xaf',
+    'xof',
+    'xpf',
+];
+export const DEFAULT_FRONTEND_URL = 'http://localhost:3000';
+export const DEFAULT_PORT = 5000;
+export const DEFAULT_JWT_EXPIRATION = '24h';
+export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
+export const E164_MESSAGE =
+    'phoneNumber must be in E.164 format, for example +14155552671';
+
+export enum NodeEnv {
+    DEVELOPMENT = 'development',
+    TEST = 'test',
+    PRODUCTION = 'production',
+}
 export const MAX_OFFER_EXPIRY_DAYS = 90;
 export const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export const MIN_PASSWORD_LENGTH = 8;

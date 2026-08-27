@@ -7,15 +7,18 @@ const txStore = new AsyncLocalStorage<Prisma.TransactionClient>();
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+    private readonly root: PrismaClient;
+
     constructor() {
         const adapter = new PrismaPg({
             connectionString: process.env.DATABASE_URL,
         });
         super({ adapter });
+        this.root = this;
     }
 
     get tx(): PrismaClient | Prisma.TransactionClient {
-        return txStore.getStore() ?? this;
+        return txStore.getStore() ?? this.root;
     }
 
     runTransaction<T>(fn: () => Promise<T>): Promise<T> {

@@ -9,6 +9,7 @@ import { RepoModule } from '@common/repos/repo.module';
 import { PrismaModule } from '@common/database/prisma.module';
 import { ServicesModule } from '@common/services/services.module';
 import { externalServicesConfig } from '@common/config/external-services.config';
+import { validateEnv } from '@common/config/env.validation';
 import { AuditLogService } from '@common/services/audit-log.service';
 import { AuditLogInterceptor } from '@common/interceptors/audit-log.interceptor';
 import { PropertiesModule } from '@modules/properties/properties.module';
@@ -38,6 +39,7 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
         ConfigModule.forRoot({
             isGlobal: true,
             load: [externalServicesConfig],
+            validate: validateEnv,
         }),
         PrismaModule,
         RepoModule,
