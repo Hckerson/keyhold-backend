@@ -19,6 +19,10 @@ import { JwtAuthGuard, RolesGuard } from '@modules/core/auth/guards';
 import { Roles } from '@modules/core/auth/decorators/roles.decorator';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth.types';
+import {
+    DOCUMENT_MIME_TYPES,
+    uploadOptions,
+} from '@common/config/upload.config';
 
 const MAX_FILES = 2;
 
@@ -30,7 +34,9 @@ export class KycController {
     constructor(private readonly kycService: KycService) {}
 
     @Post()
-    @UseInterceptors(AnyFilesInterceptor({ limits: { files: MAX_FILES } }))
+    @UseInterceptors(
+        AnyFilesInterceptor(uploadOptions(MAX_FILES, DOCUMENT_MIME_TYPES)),
+    )
     @ApiOperation({ summary: 'Submit an identity document for review' })
     async submit(
         @CurrentUser() user: AuthUser,

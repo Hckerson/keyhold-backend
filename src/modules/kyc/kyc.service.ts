@@ -6,7 +6,10 @@ import {
 import { Prisma } from 'generated/prisma/client';
 import { IdentityDocumentRepo } from '@common/repos/kyc-document.repo';
 import { UserRepo } from '@common/repos/user.repo';
-import { CloudinaryService } from '@common/services/storage/cloudinary.service';
+import {
+    CloudinaryService,
+    UploadResponse,
+} from '@common/services/storage/cloudinary.service';
 import { VerificationStatus } from '@generated/prisma/enums';
 import { QueryKycDto, RejectKycDto, SubmitKycDto } from './dto';
 
@@ -67,30 +70,38 @@ export class KycService {
 
         const face = files.find((file) => file.fieldname === FACE_FIELD);
 
-        const [documentUpload, faceUpload] = await Promise.all([
-            this.cloudinaryService.uploadDocument(
-                document.buffer,
-                `kyc-${userId}-document`,
-            ),
-            face
-                ? this.cloudinaryService.uploadDocument(
-                      face.buffer,
-                      `kyc-${userId}-face`,
-                  )
-                : Promise.resolve(null),
-        ]);
+        const documentUpload = await this.cloudinaryService.uploadDocument(
+            document.buffer,
+            `kyc-${userId}-document`,
+        );
+        let faceUpload: UploadResponse | null = null;
 
-        return this.identityDocumentRepo.create({
-            data: {
-                userId,
-                documentType: submitDto.documentType,
-                documentNumber: submitDto.documentNumber,
-                issuerCountry: submitDto.issuerCountry,
-                documentImageUrl: documentUpload.url,
-                faceImageUrl: faceUpload?.url,
-                status: VerificationStatus.PENDING,
-            },
-        });
+        try {
+            if (face) {
+                faceUpload = await this.cloudinaryService.uploadDocument(
+                    face.buffer,
+                    `kyc-${userId}-face`,
+                );
+            }
+
+            return await this.identityDocumentRepo.create({
+                data: {
+                    userId,
+                    documentType: submitDto.documentType,
+                    documentNumber: submitDto.documentNumber,
+                    issuerCountry: submitDto.issuerCountry,
+                    documentImageUrl: documentUpload.url,
+                    faceImageUrl: faceUpload?.url,
+                    status: VerificationStatus.PENDING,
+                },
+            });
+        } catch (error: unknown) {
+            await this.cloudinaryService.deleteImage(documentUpload.publicId);
+            if (faceUpload) {
+                await this.cloudinaryService.deleteImage(faceUpload.publicId);
+            }
+            throw error;
+        }
     }
 
     async findMine(userId: string) {

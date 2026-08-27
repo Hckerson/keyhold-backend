@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import {
     Injectable,
     BadRequestException,
@@ -11,19 +12,27 @@ import {
     UploadApiResponse,
 } from 'cloudinary';
 
-type CloudinaryUploadResult = UploadApiResponse;
+const PROPERTY_FOLDER = 'properties';
+const DOCUMENT_FOLDER = 'documents';
+const PUBLIC_ID_SUFFIX_BYTES = 8;
+const PUBLIC_ID_STEM_LENGTH = 64;
+const FALLBACK_STEM = 'file';
 
-interface UploadResponse {
+export interface UploadResponse {
     url: string;
     publicId: string;
 }
 
-interface UploadSignatureResponse {
-    timestamp: number;
-    signature: string;
-    cloudName: string;
-    apiKey: string;
-}
+const publicIdFor = (filename: string): string => {
+    const stem =
+        filename
+            .replace(/\.[^./\\]+$/, '')
+            .replace(/[^a-zA-Z0-9_-]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, PUBLIC_ID_STEM_LENGTH) || FALLBACK_STEM;
+
+    return `${stem}-${randomBytes(PUBLIC_ID_SUFFIX_BYTES).toString('hex')}`;
+};
 
 @Injectable()
 export class CloudinaryService {
@@ -56,129 +65,78 @@ export class CloudinaryService {
         }
     }
 
-    private assertEnabled() {
+    private upload(
+        fileBuffer: Buffer,
+        filename: string,
+        folder: string,
+    ): Promise<UploadResponse> {
         if (!this.enabled) {
             throw new ServiceUnavailableException(
                 'Media storage is not configured on this environment',
             );
         }
+
+        return new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder,
+                    resource_type: 'auto',
+                    public_id: publicIdFor(filename),
+                    overwrite: false,
+                },
+                (
+                    error: UploadApiErrorResponse | undefined,
+                    result: UploadApiResponse | undefined,
+                ) => {
+                    if (error) {
+                        reject(
+                            new BadRequestException(
+                                `Upload failed: ${error.message}`,
+                            ),
+                        );
+                        return;
+                    }
+                    if (!result) {
+                        reject(
+                            new BadRequestException(
+                                'Upload failed: no result returned',
+                            ),
+                        );
+                        return;
+                    }
+                    resolve({
+                        url: result.secure_url,
+                        publicId: result.public_id,
+                    });
+                },
+            );
+
+            uploadStream.end(fileBuffer);
+        });
     }
 
     async uploadPropertyImage(
         fileBuffer: Buffer,
         filename: string,
     ): Promise<UploadResponse> {
-        this.assertEnabled();
-        return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'properties',
-                    resource_type: 'auto',
-                    public_id: filename.split('.')[0],
-                },
-                (
-                    error: UploadApiErrorResponse | undefined,
-                    result: CloudinaryUploadResult | undefined,
-                ) => {
-                    if (error) {
-                        const message =
-                            'message' in error
-                                ? error.message
-                                : 'Upload failed';
-                        reject(
-                            new BadRequestException(
-                                `Upload failed: ${message}`,
-                            ),
-                        );
-                    } else if (result) {
-                        resolve({
-                            url: result.secure_url,
-                            publicId: result.public_id,
-                        });
-                    }
-                },
-            );
-
-            uploadStream.end(fileBuffer);
-        });
-    }
-
-    async deleteImage(publicId: string): Promise<void> {
-        this.assertEnabled();
-        try {
-            await cloudinary.uploader.destroy(publicId);
-        } catch (error: unknown) {
-            throw new BadRequestException(
-                `Failed to delete image: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-        }
+        return this.upload(fileBuffer, filename, PROPERTY_FOLDER);
     }
 
     async uploadDocument(
         fileBuffer: Buffer,
         filename: string,
     ): Promise<UploadResponse> {
-        this.assertEnabled();
-        return new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'documents',
-                    resource_type: 'auto',
-                    public_id: filename.split('.')[0],
-                },
-                (
-                    error: UploadApiErrorResponse | undefined,
-                    result: CloudinaryUploadResult | undefined,
-                ) => {
-                    if (error) {
-                        const message =
-                            'message' in error
-                                ? error.message
-                                : 'Upload failed';
-                        reject(
-                            new BadRequestException(
-                                `Upload failed: ${message}`,
-                            ),
-                        );
-                    } else if (result) {
-                        resolve({
-                            url: result.secure_url,
-                            publicId: result.public_id,
-                        });
-                    }
-                },
-            );
-
-            uploadStream.end(fileBuffer);
-        });
+        return this.upload(fileBuffer, filename, DOCUMENT_FOLDER);
     }
 
-    getUploadSignature(): UploadSignatureResponse {
-        this.assertEnabled();
-        const timestamp = Math.floor(Date.now() / 1000);
-        const apiSecret = this.configService.get<string>(
-            'externalServices.cloudinary.apiSecret',
-        );
-        const cloudName = this.configService.get<string>(
-            'externalServices.cloudinary.cloudName',
-        );
-        const apiKey = this.configService.get<string>(
-            'externalServices.cloudinary.apiKey',
-        );
-
-        const signature = cloudinary.utils.api_sign_request(
-            {
-                timestamp,
-                folder: 'properties',
-            },
-            apiSecret || '',
-        );
-
-        return {
-            timestamp,
-            signature,
-            cloudName: cloudName || '',
-            apiKey: apiKey || '',
-        };
+    async deleteImage(publicId: string): Promise<void> {
+        if (!this.enabled) return;
+        try {
+            await cloudinary.uploader.destroy(publicId);
+        } catch (error: unknown) {
+            this.logger.error(
+                `Failed to delete ${publicId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
     }
 }
