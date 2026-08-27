@@ -1,7 +1,4 @@
-import {
-    BadRequestException,
-    ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { OfferRepo } from '@common/repos/offer.repo';
@@ -31,7 +28,10 @@ describe('TransactionsService', () => {
         create: jest.Mock;
         update: jest.Mock;
     };
-    let stripeService: { createPaymentIntent: jest.Mock; confirmPayment: jest.Mock };
+    let stripeService: {
+        createPaymentIntent: jest.Mock;
+        confirmPayment: jest.Mock;
+    };
     let escrowService: { hold: jest.Mock };
 
     beforeEach(async () => {

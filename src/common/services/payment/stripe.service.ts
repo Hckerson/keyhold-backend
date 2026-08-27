@@ -6,11 +6,23 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import {
+    CENTS_PER_UNIT,
+    DEFAULT_CURRENCY,
+    ZERO_DECIMAL_CURRENCIES,
+} from '@common/enums';
+
+const STRIPE_API_VERSION: Stripe.LatestApiVersion = '2023-10-16';
 
 interface PaymentIntentResponse {
     success: boolean;
     paymentIntent: Stripe.PaymentIntent;
 }
+
+const smallestUnit = (amount: number, currency: string): number =>
+    ZERO_DECIMAL_CURRENCIES.includes(currency.toLowerCase())
+        ? Math.round(amount)
+        : Math.round(amount * CENTS_PER_UNIT);
 
 @Injectable()
 export class StripeService {
@@ -21,7 +33,9 @@ export class StripeService {
         const apiKey = this.configService.get<string>(
             'externalServices.stripe.apiKey',
         );
-        this.client = apiKey ? new Stripe(apiKey) : null;
+        this.client = apiKey
+            ? new Stripe(apiKey, { apiVersion: STRIPE_API_VERSION })
+            : null;
 
         if (!this.client) {
             this.logger.warn(
@@ -41,15 +55,19 @@ export class StripeService {
 
     async createPaymentIntent(
         amount: number,
-        currency: string = 'usd',
+        currency: string = DEFAULT_CURRENCY,
         metadata: Record<string, string> = {},
+        idempotencyKey?: string,
     ): Promise<Stripe.PaymentIntent> {
         try {
-            return await this.stripe.paymentIntents.create({
-                amount: Math.round(amount * 100),
-                currency,
-                metadata,
-            });
+            return await this.stripe.paymentIntents.create(
+                {
+                    amount: smallestUnit(amount, currency),
+                    currency,
+                    metadata,
+                },
+                idempotencyKey ? { idempotencyKey } : undefined,
+            );
         } catch (error: unknown) {
             throw new BadRequestException(
                 `Failed to create payment intent: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -106,7 +124,18 @@ export class StripeService {
                 'Payment webhooks are not configured on this environment',
             );
         }
-        return this.stripe.webhooks.constructEvent(payload, signature, secret);
+
+        try {
+            return this.stripe.webhooks.constructEvent(
+                payload,
+                signature,
+                secret,
+            );
+        } catch (error: unknown) {
+            throw new BadRequestException(
+                `Webhook signature verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
     }
 
     async getPaymentIntent(

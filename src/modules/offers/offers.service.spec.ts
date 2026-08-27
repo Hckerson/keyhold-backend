@@ -1,7 +1,4 @@
-import {
-    BadRequestException,
-    ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
@@ -15,6 +12,7 @@ import {
     PropertyStatus,
     UserRole,
 } from '@generated/prisma/enums';
+import { Prisma } from 'generated/prisma/client';
 import { OffersService } from './offers.service';
 
 const BUYER = 'usr_buyer';
@@ -36,12 +34,14 @@ describe('OffersService', () => {
         offerRepo = {
             findUnique: jest.fn(),
             create: jest.fn(),
-            update: jest.fn().mockImplementation(({ data }) => ({
-                id: 'off_1',
-                offererId: BUYER,
-                propertyId: 'prop_1',
-                ...data,
-            })),
+            update: jest
+                .fn()
+                .mockImplementation(({ data }: Prisma.OfferUpdateArgs) => ({
+                    id: 'off_1',
+                    offererId: BUYER,
+                    propertyId: 'prop_1',
+                    ...data,
+                })),
             updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         };
         connectionRepo = { findUnique: jest.fn() };

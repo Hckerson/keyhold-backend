@@ -19,6 +19,7 @@ import {
     TransactionStatus,
     UserRole,
 } from '@generated/prisma/enums';
+import { Prisma } from 'generated/prisma/client';
 import { EscrowService } from './escrow.service';
 
 const BUYER = 'usr_buyer';
@@ -36,7 +37,7 @@ const aTransaction = () => ({
     buyerId: BUYER,
     sellerId: SELLER,
     propertyId: 'prop_1',
-    finalPrice: 1_150_000,
+    finalPrice: new Prisma.Decimal(1_150_000),
     terms: 'Cash, thirty-day close',
     stripePaymentIntentId: 'pi_1',
     buyer: { id: BUYER, fullName: 'Ada Okonjo', email: 'ada@example.com' },
@@ -46,7 +47,7 @@ const aTransaction = () => ({
         title: 'Cypress Point',
         address: '18 Cypress Point',
         locality: 'Carmel',
-        price: 1_250_000,
+        price: new Prisma.Decimal(1_250_000),
     },
 });
 
@@ -58,7 +59,7 @@ const anEscrow = (
     }> = {},
 ) => ({
     id: 'esc_1',
-    amount: 1_200_000,
+    amount: new Prisma.Decimal(1_200_000),
     status: EscrowStatus.HELD,
     inspectionEndDate: WINDOW_OPEN,
     transaction: aTransaction(),
@@ -94,10 +95,12 @@ describe('EscrowService.release', () => {
     beforeEach(async () => {
         escrowRepo = {
             findUnique: jest.fn(),
-            update: jest.fn().mockImplementation(({ data }) => ({
-                id: 'esc_1',
-                ...data,
-            })),
+            update: jest
+                .fn()
+                .mockImplementation(({ data }: Prisma.EscrowUpdateArgs) => ({
+                    id: 'esc_1',
+                    ...data,
+                })),
             updateMany: jest.fn().mockResolvedValue({ count: 1 }),
         };
         transactionRepo = { update: jest.fn().mockResolvedValue(undefined) };
@@ -126,8 +129,14 @@ describe('EscrowService.release', () => {
                 { provide: PDFService, useValue: pdfService },
                 { provide: CloudinaryService, useValue: cloudinaryService },
                 { provide: SendGridEmailService, useValue: emailService },
-                { provide: StripeService, useValue: { refundPayment: jest.fn() } },
-                { provide: SettingsService, useValue: { findValue: jest.fn() } },
+                {
+                    provide: StripeService,
+                    useValue: { refundPayment: jest.fn() },
+                },
+                {
+                    provide: SettingsService,
+                    useValue: { findValue: jest.fn() },
+                },
                 {
                     provide: DbTransaction,
                     useValue: { run: (fn: () => Promise<unknown>) => fn() },

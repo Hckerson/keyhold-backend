@@ -183,9 +183,7 @@ export class DisputesService {
             dispute.initiatorId !== actorId &&
             !this.isCounterparty(dispute, actorId)
         ) {
-            throw new ForbiddenException(
-                'Only the parties can add evidence',
-            );
+            throw new ForbiddenException('Only the parties can add evidence');
         }
 
         if (dispute.resolvedAt) {

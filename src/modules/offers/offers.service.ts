@@ -12,11 +12,7 @@ import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { SendGridEmailService } from '@common/services/email/sendgrid.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import {
-    OfferStatus,
-    PropertyStatus,
-    UserRole,
-} from '@generated/prisma/enums';
+import { OfferStatus, PropertyStatus, UserRole } from '@generated/prisma/enums';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
 import { CreateOfferDto, RespondOfferDto } from './dto';
@@ -279,7 +275,10 @@ export class OffersService {
         }
     }
 
-    private async lockAcceptedDeal(propertyId: string, acceptedOfferId: string) {
+    private async lockAcceptedDeal(
+        propertyId: string,
+        acceptedOfferId: string,
+    ) {
         await this.offerRepo.updateMany({
             where: {
                 propertyId,
@@ -335,7 +334,7 @@ export class OffersService {
                     ? 'ACCEPTED'
                     : offer.status === OfferStatus.REJECTED
                       ? 'REJECTED'
-                      : `COUNTERED with $${offer.responsePrice}`;
+                      : `COUNTERED with $${toNumber(offer.responsePrice).toLocaleString()}`;
 
             await this.emailService.sendEmail({
                 to: offer.offerer.email,

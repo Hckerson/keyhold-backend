@@ -153,6 +153,7 @@ export class TransactionsService {
                 propertyId: transaction.propertyId,
                 buyerId: transaction.buyerId,
             },
+            transaction.id,
         );
 
         await this.transactionRepo.update({
