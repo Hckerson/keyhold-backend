@@ -14,8 +14,6 @@ export function assertConnectionAccepted(connection: {
     status: ConnectionStatus;
 }) {
     if (connection.status !== ConnectionStatus.ACCEPTED) {
-        throw new BadRequestException(
-            'This connection must be accepted first',
-        );
+        throw new BadRequestException('This connection must be accepted first');
     }
 }
