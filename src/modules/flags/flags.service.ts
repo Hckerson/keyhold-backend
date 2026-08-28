@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
+import { toNumber } from '@common/money';
 import { Prisma } from 'generated/prisma/client';
 import { FlagRepo } from '@common/repos/flag.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
@@ -27,10 +32,15 @@ export interface FlagPropertyTarget {
     price: number;
     status: PropertyStatus;
     image: string | null;
+    images: string[];
+    description: string;
+    sqFt: number | null;
     sellerId: string;
     sellerName: string;
     sellerEmail: string;
     sellerPhone: string | null;
+    sellerLicensed: boolean;
+    sellerVerified: boolean;
 }
 
 export interface FlagUserTarget {
@@ -67,6 +77,21 @@ export class FlagsService {
 
     async create(creatorId: string, createDto: CreateFlagDto) {
         await this.assertTargetExists(createDto.type, createDto.targetId);
+        await this.assertNotSelf(creatorId, createDto.type, createDto.targetId);
+
+        const duplicate = await this.flagRepo.findFirst({
+            where: {
+                creatorId,
+                type: createDto.type,
+                targetId: createDto.targetId,
+                status: FlagStatus.ACTIVE,
+            },
+        });
+        if (duplicate) {
+            throw new BadRequestException(
+                'You have already flagged this target',
+            );
+        }
 
         return this.flagRepo.create({
             data: {
@@ -172,6 +197,10 @@ export class FlagsService {
         const flag = await this.flagRepo.findUnique({ where: { id } });
         if (!flag) throw new NotFoundException('Flag not found');
 
+        if (flag.status !== FlagStatus.ACTIVE) {
+            throw new BadRequestException('This flag has already been settled');
+        }
+
         return this.flagRepo.update({
             where: { id },
             data: {
@@ -201,6 +230,38 @@ export class FlagsService {
                 resolvedAt: new Date(),
             },
         });
+    }
+
+    private async assertNotSelf(
+        creatorId: string,
+        type: FlagType,
+        targetId: string,
+    ) {
+        if (type === FlagType.USER && targetId === creatorId) {
+            throw new BadRequestException('You cannot flag yourself');
+        }
+        if (type === FlagType.PROPERTY) {
+            const property = await this.propertyRepo.findUnique({
+                where: { id: targetId },
+                select: { sellerId: true },
+            });
+            if (property?.sellerId === creatorId) {
+                throw new BadRequestException(
+                    'You cannot flag your own listing',
+                );
+            }
+        }
+        if (type === FlagType.MESSAGE) {
+            const message = await this.messageRepo.findUnique({
+                where: { id: targetId },
+                select: { senderId: true },
+            });
+            if (message?.senderId === creatorId) {
+                throw new BadRequestException(
+                    'You cannot flag your own message',
+                );
+            }
+        }
     }
 
     private async assertTargetExists(type: FlagType, targetId: string) {
@@ -259,13 +320,17 @@ export class FlagsService {
                           locality: true,
                           price: true,
                           status: true,
-                          images: { orderBy: { order: 'asc' }, take: 1 },
+                          description: true,
+                          sqFt: true,
+                          images: { orderBy: { order: 'asc' } },
                           seller: {
                               select: {
                                   id: true,
                                   fullName: true,
                                   email: true,
                                   phoneNumber: true,
+                                  licenseNumber: true,
+                                  kycVerified: true,
                               },
                           },
                       },
@@ -305,13 +370,18 @@ export class FlagsService {
                 title: property.title,
                 address: property.address,
                 locality: property.locality,
-                price: property.price,
+                price: toNumber(property.price),
                 status: property.status,
                 image: property.images[0]?.url ?? null,
+                images: property.images.map((image) => image.url),
+                description: property.description,
+                sqFt: property.sqFt,
                 sellerId: property.seller.id,
                 sellerName: property.seller.fullName,
                 sellerEmail: property.seller.email,
                 sellerPhone: property.seller.phoneNumber,
+                sellerLicensed: Boolean(property.seller.licenseNumber),
+                sellerVerified: property.seller.kycVerified,
             });
         }
 

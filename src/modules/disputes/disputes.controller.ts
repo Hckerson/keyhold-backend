@@ -82,12 +82,14 @@ export class DisputesController {
     @ApiOperation({ summary: 'Resolve a dispute in favour of an outcome' })
     async resolve(
         @Param('id') id: string,
+        @CurrentUser() user: AuthUser,
         @Body() resolveDto: ResolveDisputeDto,
     ) {
         return this.disputesService.settle(
             id,
             DisputeStatus.RESOLVED,
             resolveDto,
+            user.id,
         );
     }
 
@@ -97,12 +99,14 @@ export class DisputesController {
     @ApiOperation({ summary: 'Dismiss a dispute with no action' })
     async dismiss(
         @Param('id') id: string,
+        @CurrentUser() user: AuthUser,
         @Body() resolveDto: ResolveDisputeDto,
     ) {
         return this.disputesService.settle(
             id,
             DisputeStatus.DISMISSED,
             resolveDto,
+            user.id,
         );
     }
 }

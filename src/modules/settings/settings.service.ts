@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PlatformSettingRepo } from '@common/repos/platform-setting.repo';
 import { SettingCategory } from '@generated/prisma/enums';
 import { UpdateSettingsDto } from './dto';
@@ -76,6 +76,18 @@ export class SettingsService {
     }
 
     async update(updatedById: string, updateDto: UpdateSettingsDto) {
+        const allowed = new Set(
+            SETTING_DEFAULTS.map((fallback) => fallback.key),
+        );
+        const unknown = updateDto.settings.find(
+            (setting) => !allowed.has(setting.key),
+        );
+        if (unknown) {
+            throw new BadRequestException(
+                `Unknown setting key: ${unknown.key}`,
+            );
+        }
+
         await Promise.all(
             updateDto.settings.map((setting) =>
                 this.settingRepo.upsert({

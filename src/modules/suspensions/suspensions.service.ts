@@ -2,11 +2,13 @@ import {
     BadRequestException,
     Injectable,
     NotFoundException,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import { UserSuspensionRepo } from '@common/repos/user-suspension.repo';
 import { UserRepo } from '@common/repos/user.repo';
-import { UserAccountStatus } from '@generated/prisma/enums';
+import { UserAccountStatus, UserRole } from '@generated/prisma/enums';
+import { MS_PER_DAY } from '@common/enums';
 import { CreateSuspensionDto, QuerySuspensionDto } from './dto';
 
 const DEFAULT_LIMIT = 20;
@@ -34,9 +36,13 @@ export class SuspensionsService {
     async create(createDto: CreateSuspensionDto) {
         const user = await this.userRepo.findUnique({
             where: { id: createDto.userId },
-            select: { id: true, status: true },
+            select: { id: true, status: true, role: true },
         });
         if (!user) throw new NotFoundException('User not found');
+
+        if (user.role === UserRole.ADMIN) {
+            throw new BadRequestException('Admin accounts cannot be suspended');
+        }
 
         if (user.status === UserAccountStatus.SUSPENDED) {
             throw new BadRequestException('This account is already suspended');
@@ -121,5 +127,33 @@ export class SuspensionsService {
         ]);
 
         return lifted;
+    }
+
+    async ensureActive(userId: string, status: UserAccountStatus) {
+        if (status !== UserAccountStatus.SUSPENDED) return;
+
+        const active = await this.suspensionRepo.findFirst({
+            where: { userId, liftedAt: null },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        if (!active) {
+            await this.userRepo.update({
+                where: { id: userId },
+                data: { status: UserAccountStatus.ACTIVE },
+            });
+            return;
+        }
+
+        if (
+            active.duration &&
+            active.createdAt.getTime() + active.duration * MS_PER_DAY <=
+                Date.now()
+        ) {
+            await this.lift(active.id);
+            return;
+        }
+
+        throw new UnauthorizedException('Account is suspended');
     }
 }

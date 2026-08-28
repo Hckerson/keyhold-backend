@@ -1,17 +1,21 @@
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { DEFAULT_FRONTEND_URL, DEFAULT_PORT } from '@common/enums';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const app = await NestFactory.create(AppModule, { rawBody: true });
 
     app.setGlobalPrefix('api');
 
+    const config = app.get(ConfigService);
+
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: config.get<string>('FRONTEND_URL') ?? DEFAULT_FRONTEND_URL,
         credentials: true,
     });
 
@@ -36,13 +40,18 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup('api/docs', app, document);
 
-    const port = process.env.PORT ?? 5000;
+    const port = config.get<number>('PORT') ?? DEFAULT_PORT;
     await app.listen(port);
-    console.log(`🚀 API running on http://localhost:${port}/api`);
-    console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
+
+    const logger = new Logger('Bootstrap');
+    logger.log(`API running on http://localhost:${port}/api`);
+    logger.log(`Swagger docs at http://localhost:${port}/api/docs`);
 }
 
-bootstrap().catch((error) => {
-    console.error('Failed to bootstrap application:', error);
+bootstrap().catch((error: unknown) => {
+    new Logger('Bootstrap').error(
+        `Failed to bootstrap application: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+    );
     process.exit(1);
 });

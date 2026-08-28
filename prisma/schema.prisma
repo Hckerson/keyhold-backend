@@ -82,6 +82,12 @@ enum ConnectionStatus {
   REJECTED
 }
 
+enum ViewingMode {
+  IN_PERSON
+  VIRTUAL
+  OPEN_HOUSE
+}
+
 enum ViewingStatus {
   PENDING
   CONFIRMED
@@ -302,7 +308,7 @@ model DisputeEvidence {
 model Escrow {
   // Scalars
   id                String       @id @default(uuid())
-  amount            Float
+  amount            Decimal      @db.Decimal(14, 2)
   inspectionEndDate DateTime
   stripeTransferId  String?
   stripeAccountId   String?
@@ -455,9 +461,9 @@ model NotificationPreference {
 model Offer {
   // Scalars
   id               String  @id @default(uuid())
-  offeredPrice     Float
+  offeredPrice     Decimal  @db.Decimal(14, 2)
   offeredTerms     String
-  responsePrice    Float?
+  responsePrice    Decimal? @db.Decimal(14, 2)
   responseFeedback String?
 
   // Enums
@@ -543,7 +549,7 @@ model Property {
   country     String   @default("US")
   latitude    Float?
   longitude   Float?
-  price       Float
+  price       Decimal     @db.Decimal(14, 2)
   bedrooms    Int
   bathrooms   Int
   sqFt        Float?
@@ -551,6 +557,7 @@ model Property {
   yearBuilt   Int?
   walkScore   Int?
   viewsCount  Int      @default(0)
+  featuredUntil DateTime?
   amenities   String[] // JSON array
   features    String[] // JSON array
 
@@ -580,6 +587,7 @@ model Property {
   @@index([locality])
   @@index([type])
   @@index([price])
+  @@index([featuredUntil])
 }
 
 model PropertyImage {
@@ -648,7 +656,7 @@ model SavedProperty {
 model Transaction {
   // Scalars
   id                    String  @id @default(uuid())
-  finalPrice            Float
+  finalPrice            Decimal   @db.Decimal(14, 2)
   terms                 String
   agreementDocUrl       String?
   stripePaymentIntentId String?
@@ -811,12 +819,14 @@ model VerificationToken {
 
 model Viewing {
   // Scalars
-  id            String   @id @default(uuid())
-  proposedTimes String[] // JSON array of ISO timestamps
-  notes         String?
+  id              String   @id @default(uuid())
+  proposedTimes   String[] // JSON array of ISO timestamps
+  notes           String?
+  durationMinutes Int      @default(30)
 
   // Enums
   status ViewingStatus @default(PENDING)
+  mode   ViewingMode   @default(IN_PERSON)
 
   // Foreign Keys
   connectionId  String

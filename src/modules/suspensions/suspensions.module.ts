@@ -5,5 +5,6 @@ import { SuspensionsController } from './suspensions.controller';
 @Module({
     providers: [SuspensionsService],
     controllers: [SuspensionsController],
+    exports: [SuspensionsService],
 })
 export class SuspensionsModule {}

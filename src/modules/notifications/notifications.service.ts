@@ -1,11 +1,37 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
+import { toNumber } from '@common/money';
 import { NotificationRepo } from '@common/repos/notification.repo';
 import { NotificationPreferenceRepo } from '@common/repos/notification-preference.repo';
+import { ConnectionRepo } from '@common/repos/connection.repo';
+import { OfferRepo } from '@common/repos/offer.repo';
+import { ViewingRepo } from '@common/repos/viewing.repo';
 import { NotificationChannel, NotificationType } from '@generated/prisma/enums';
 import { QueryNotificationDto, UpdatePreferencesDto } from './dto';
 
 const DEFAULT_LIMIT = 20;
+
+const CONNECTION_ENTITY = 'CONNECTION';
+const OFFER_ENTITY = 'OFFER';
+const VIEWING_ENTITY = 'VIEWING';
+
+const PROPERTY_SELECT = {
+    id: true,
+    title: true,
+    address: true,
+    locality: true,
+    price: true,
+    images: { select: { url: true }, orderBy: { order: 'asc' }, take: 1 },
+} satisfies Prisma.PropertySelect;
+
+export interface NotificationProperty {
+    id: string;
+    title: string;
+    address: string;
+    locality: string;
+    price: number;
+    image: string | null;
+}
 
 export interface NotifyParams {
     userId: string;
@@ -28,6 +54,9 @@ export class NotificationsService {
     constructor(
         private notificationRepo: NotificationRepo,
         private preferenceRepo: NotificationPreferenceRepo,
+        private connectionRepo: ConnectionRepo,
+        private offerRepo: OfferRepo,
+        private viewingRepo: ViewingRepo,
     ) {}
 
     async notify(params: NotifyParams) {
@@ -72,13 +101,114 @@ export class NotificationsService {
             this.notificationRepo.count({ where }),
         ]);
 
+        const properties = await this.resolveProperties(items);
+
         return {
-            items,
+            items: items.map((item) => ({
+                ...item,
+                property:
+                    properties.get(`${item.entityType}:${item.entityId}`) ??
+                    null,
+            })),
             total,
             page,
             limit,
             pageCount: Math.max(1, Math.ceil(total / limit)),
         };
+    }
+
+    private async resolveProperties(
+        notifications: { entityType: string | null; entityId: string | null }[],
+    ) {
+        const idsOf = (entityType: string) => [
+            ...new Set(
+                notifications
+                    .filter(
+                        (notification) =>
+                            notification.entityType === entityType &&
+                            notification.entityId,
+                    )
+                    .map((notification) => notification.entityId as string),
+            ),
+        ];
+
+        const connectionIds = idsOf(CONNECTION_ENTITY);
+        const offerIds = idsOf(OFFER_ENTITY);
+        const viewingIds = idsOf(VIEWING_ENTITY);
+
+        const [connections, offers, viewings] = await Promise.all([
+            connectionIds.length
+                ? this.connectionRepo.findMany({
+                      where: { id: { in: connectionIds } },
+                      select: {
+                          id: true,
+                          property: { select: PROPERTY_SELECT },
+                      },
+                  })
+                : [],
+            offerIds.length
+                ? this.offerRepo.findMany({
+                      where: { id: { in: offerIds } },
+                      select: {
+                          id: true,
+                          connection: {
+                              select: {
+                                  property: { select: PROPERTY_SELECT },
+                              },
+                          },
+                      },
+                  })
+                : [],
+            viewingIds.length
+                ? this.viewingRepo.findMany({
+                      where: { id: { in: viewingIds } },
+                      select: {
+                          id: true,
+                          connection: {
+                              select: {
+                                  property: { select: PROPERTY_SELECT },
+                              },
+                          },
+                      },
+                  })
+                : [],
+        ]);
+
+        const shape = (
+            property: Prisma.PropertyGetPayload<{
+                select: typeof PROPERTY_SELECT;
+            }>,
+        ): NotificationProperty => ({
+            id: property.id,
+            title: property.title,
+            address: property.address,
+            locality: property.locality,
+            price: toNumber(property.price),
+            image: property.images[0]?.url ?? null,
+        });
+
+        const properties = new Map<string, NotificationProperty>();
+
+        for (const connection of connections) {
+            properties.set(
+                `${CONNECTION_ENTITY}:${connection.id}`,
+                shape(connection.property),
+            );
+        }
+        for (const offer of offers) {
+            properties.set(
+                `${OFFER_ENTITY}:${offer.id}`,
+                shape(offer.connection.property),
+            );
+        }
+        for (const viewing of viewings) {
+            properties.set(
+                `${VIEWING_ENTITY}:${viewing.id}`,
+                shape(viewing.connection.property),
+            );
+        }
+
+        return properties;
     }
 
     async unreadCount(userId: string) {

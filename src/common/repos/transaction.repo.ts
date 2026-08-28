@@ -11,7 +11,7 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T> | null> {
         try {
-            return (await this.prisma.transaction.findUnique(
+            return (await this.prisma.tx.transaction.findUnique(
                 params,
             )) as Prisma.TransactionGetPayload<T> | null;
         } catch (error) {
@@ -23,7 +23,7 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T> | null> {
         try {
-            return (await this.prisma.transaction.findFirst(
+            return (await this.prisma.tx.transaction.findFirst(
                 params,
             )) as Prisma.TransactionGetPayload<T> | null;
         } catch (error) {
@@ -35,7 +35,7 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>[]> {
         try {
-            return (await this.prisma.transaction.findMany(
+            return (await this.prisma.tx.transaction.findMany(
                 params,
             )) as Prisma.TransactionGetPayload<T>[];
         } catch (error) {
@@ -47,7 +47,7 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>> {
         try {
-            return (await this.prisma.transaction.create(
+            return (await this.prisma.tx.transaction.create(
                 params,
             )) as Prisma.TransactionGetPayload<T>;
         } catch (error) {
@@ -57,7 +57,7 @@ export class TransactionRepo {
 
     async createMany(params: Prisma.TransactionCreateManyArgs) {
         try {
-            return await this.prisma.transaction.createMany(params);
+            return await this.prisma.tx.transaction.createMany(params);
         } catch (error) {
             throw new RepoError('Failed to create transactions', error);
         }
@@ -67,7 +67,7 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>> {
         try {
-            return (await this.prisma.transaction.update(
+            return (await this.prisma.tx.transaction.update(
                 params,
             )) as Prisma.TransactionGetPayload<T>;
         } catch (error) {
@@ -77,7 +77,7 @@ export class TransactionRepo {
 
     async updateMany(params: Prisma.TransactionUpdateManyArgs) {
         try {
-            return await this.prisma.transaction.updateMany(params);
+            return await this.prisma.tx.transaction.updateMany(params);
         } catch (error) {
             throw new RepoError('Failed to update transactions', error);
         }
@@ -87,7 +87,7 @@ export class TransactionRepo {
         params: T,
     ): Promise<Prisma.TransactionGetPayload<T>> {
         try {
-            return (await this.prisma.transaction.delete(
+            return (await this.prisma.tx.transaction.delete(
                 params,
             )) as Prisma.TransactionGetPayload<T>;
         } catch (error) {
@@ -97,7 +97,7 @@ export class TransactionRepo {
 
     async deleteMany(params: Prisma.TransactionDeleteManyArgs) {
         try {
-            return await this.prisma.transaction.deleteMany(params);
+            return await this.prisma.tx.transaction.deleteMany(params);
         } catch (error) {
             throw new RepoError('Failed to delete transactions', error);
         }
@@ -107,7 +107,7 @@ export class TransactionRepo {
         params: Omit<Prisma.TransactionGroupByArgs, 'skip' | 'take'>,
     ) {
         try {
-            return await this.prisma.transaction.groupBy(params);
+            return await this.prisma.tx.transaction.groupBy(params);
         } catch (error) {
             throw new RepoError('Failed to group transactions', error);
         }
@@ -115,7 +115,7 @@ export class TransactionRepo {
 
     async count(params?: Prisma.TransactionCountArgs): Promise<number> {
         try {
-            return await this.prisma.transaction.count(params);
+            return await this.prisma.tx.transaction.count(params);
         } catch (error) {
             throw new RepoError('Failed to count transactions', error);
         }

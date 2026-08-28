@@ -1,5 +1,6 @@
 import {
     Injectable,
+    Logger,
     NotFoundException,
     ForbiddenException,
     BadRequestException,
@@ -12,9 +13,16 @@ import { ViewingStatus } from '@generated/prisma/enums';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
 import { CreateViewingDto } from './dto';
+import { OPEN_LISTING_STATUSES } from '@common/enums';
+import {
+    assertConnectionAccepted,
+    assertConnectionParty,
+} from '@common/access';
 
 @Injectable()
 export class ViewingsService {
+    private readonly logger = new Logger(ViewingsService.name);
+
     constructor(
         private viewingRepo: ViewingRepo,
         private connectionRepo: ConnectionRepo,
@@ -26,13 +34,20 @@ export class ViewingsService {
     async requestViewing(userId: string, createDto: CreateViewingDto) {
         const connection = await this.connectionRepo.findUnique({
             where: { id: createDto.connectionId },
-            include: { property: { select: { id: true } } },
+            include: { property: { select: { id: true, status: true } } },
         });
         if (!connection) throw new NotFoundException('Connection not found');
 
-        if (connection.buyerId !== userId && connection.sellerId !== userId) {
-            throw new ForbiddenException('You are not part of this connection');
+        assertConnectionParty(connection, userId);
+        assertConnectionAccepted(connection);
+
+        if (!OPEN_LISTING_STATUSES.includes(connection.property.status)) {
+            throw new BadRequestException(
+                'Viewings can only be booked on available listings',
+            );
         }
+
+        this.assertFutureTimes(createDto.proposedTimes);
 
         const requestedById = userId;
         const proposedByid =
@@ -47,6 +62,8 @@ export class ViewingsService {
                 requestedById,
                 proposedByid,
                 proposedTimes: createDto.proposedTimes,
+                mode: createDto.mode,
+                durationMinutes: createDto.durationMinutes,
                 status: ViewingStatus.PENDING,
             },
             include: {
@@ -77,11 +94,12 @@ export class ViewingsService {
         });
         if (!viewing) throw new NotFoundException('Viewing not found');
 
-        if (
-            viewing.connection.buyerId !== userId &&
-            viewing.connection.sellerId !== userId
-        ) {
-            throw new ForbiddenException('You are not part of this connection');
+        assertConnectionParty(viewing.connection, userId);
+
+        if (viewing.status !== ViewingStatus.PENDING) {
+            throw new BadRequestException(
+                'Only a pending viewing can be confirmed',
+            );
         }
 
         const confirmedDate = new Date(confirmedTime);
@@ -89,9 +107,29 @@ export class ViewingsService {
             throw new BadRequestException('Invalid date format');
         }
 
-        if (!viewing.proposedTimes.includes(confirmedTime)) {
+        if (confirmedDate <= new Date()) {
+            throw new BadRequestException('Cannot confirm a time in the past');
+        }
+
+        const proposedMatch = viewing.proposedTimes.some(
+            (slot) => new Date(slot).getTime() === confirmedDate.getTime(),
+        );
+        if (!proposedMatch) {
             throw new BadRequestException(
                 'Selected time is not in proposed times',
+            );
+        }
+
+        const overlap = await this.viewingRepo.findFirst({
+            where: {
+                propertyId: viewing.propertyId,
+                status: ViewingStatus.CONFIRMED,
+                confirmedTime: confirmedDate,
+            },
+        });
+        if (overlap) {
+            throw new BadRequestException(
+                'This time is already booked for the listing',
             );
         }
 
@@ -144,9 +182,7 @@ export class ViewingsService {
         });
         if (!connection) throw new NotFoundException('Connection not found');
 
-        if (connection.buyerId !== userId && connection.sellerId !== userId) {
-            throw new ForbiddenException('You are not part of this connection');
-        }
+        assertConnectionParty(connection, userId);
 
         return this.viewingRepo.findMany({
             where: { connectionId },
@@ -158,7 +194,7 @@ export class ViewingsService {
         });
     }
 
-    async getOne(viewingId: string) {
+    async getOne(viewingId: string, userId: string) {
         const viewing = await this.viewingRepo.findUnique({
             where: { id: viewingId },
             include: {
@@ -186,6 +222,7 @@ export class ViewingsService {
             },
         });
         if (!viewing) throw new NotFoundException('Viewing not found');
+        assertConnectionParty(viewing.connection, userId);
         return viewing;
     }
 
@@ -216,6 +253,38 @@ export class ViewingsService {
         });
     }
 
+    async reschedule(
+        viewingId: string,
+        userId: string,
+        proposedTimes: string[],
+    ) {
+        const viewing = await this.viewingRepo.findUnique({
+            where: { id: viewingId },
+            include: {
+                connection: { select: { buyerId: true, sellerId: true } },
+            },
+        });
+        if (!viewing) throw new NotFoundException('Viewing not found');
+
+        assertConnectionParty(viewing.connection, userId);
+
+        if (viewing.status === ViewingStatus.CANCELLED) {
+            throw new BadRequestException('This viewing has been cancelled');
+        }
+
+        this.assertFutureTimes(proposedTimes);
+
+        return this.viewingRepo.update({
+            where: { id: viewingId },
+            data: {
+                proposedTimes,
+                confirmedTime: null,
+                confirmedById: null,
+                status: ViewingStatus.PENDING,
+            },
+        });
+    }
+
     private async notifyProposedTimes(viewing: {
         proposedBy: { email: string };
         requestedBy: { fullName: string };
@@ -228,7 +297,9 @@ export class ViewingsService {
                 viewing.property.title,
             );
         } catch (error) {
-            console.error('Failed to send viewing notification:', error);
+            this.logger.error(
+                `Failed to send viewing notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
         }
     }
 
@@ -257,7 +328,22 @@ export class ViewingsService {
                 );
             }
         } catch (error) {
-            console.error('Failed to send confirmation:', error);
+            this.logger.error(
+                `Failed to send confirmation: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }
+
+    private assertFutureTimes(times: string[]) {
+        const now = Date.now();
+        const invalid = times.some((slot) => {
+            const date = new Date(slot);
+            return isNaN(date.getTime()) || date.getTime() <= now;
+        });
+        if (invalid) {
+            throw new BadRequestException(
+                'Viewing times must be in the future',
+            );
         }
     }
 }

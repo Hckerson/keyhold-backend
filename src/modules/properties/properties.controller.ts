@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { IMAGE_MIME_TYPES, uploadOptions } from '@common/config/upload.config';
 import { PropertiesService } from './properties.service';
 import {
     CreatePropertyDto,
@@ -22,6 +23,7 @@ import {
     QueryPropertyDto,
     FacetsPropertyDto,
     ModeratePropertyDto,
+    PromotePropertyDto,
 } from './dto';
 import {
     JwtAuthGuard,
@@ -32,6 +34,9 @@ import { Roles } from '@modules/core/auth/decorators/roles.decorator';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
 import type { AuthUser } from '@core/auth/types/auth.types';
 import { UserRole } from '@generated/prisma/enums';
+
+const IMAGE_FIELD = 'files';
+const MAX_PROPERTY_IMAGES = 10;
 
 @ApiTags('properties')
 @Controller('properties')
@@ -76,9 +81,10 @@ export class PropertiesController {
     }
 
     @Get(':id')
+    @UseGuards(OptionalJwtAuthGuard)
     @ApiOperation({ summary: 'Get property by ID' })
-    async getOne(@Param('id') id: string) {
-        return this.propertiesService.findOne(id);
+    async getOne(@Param('id') id: string, @CurrentUser() user?: AuthUser) {
+        return this.propertiesService.findOne(id, user);
     }
 
     @Post(':id/view')
@@ -89,7 +95,8 @@ export class PropertiesController {
     }
 
     @Post()
-    @UseGuards(JwtAuthGuard)
+    @Roles(UserRole.SELLER, UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Create a new property listing' })
     async create(
@@ -135,7 +142,13 @@ export class PropertiesController {
     @Post(':id/images')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
-    @UseInterceptors(FilesInterceptor('files', 10))
+    @UseInterceptors(
+        FilesInterceptor(
+            IMAGE_FIELD,
+            MAX_PROPERTY_IMAGES,
+            uploadOptions(MAX_PROPERTY_IMAGES, IMAGE_MIME_TYPES),
+        ),
+    )
     @ApiOperation({ summary: 'Upload property images' })
     async uploadImages(
         @Param('id') propertyId: string,
@@ -143,6 +156,18 @@ export class PropertiesController {
         @UploadedFiles() files: Express.Multer.File[],
     ) {
         return this.propertiesService.uploadImages(propertyId, user.id, files);
+    }
+
+    @Patch(':id/promote')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Feature a listing for a number of days' })
+    async promote(
+        @Param('id') id: string,
+        @CurrentUser() user: AuthUser,
+        @Body() promoteDto: PromotePropertyDto,
+    ) {
+        return this.propertiesService.promote(id, user.id, promoteDto.days);
     }
 
     @Patch(':id/mark-sold')

@@ -7,7 +7,7 @@ export const externalServicesConfig = registerAs('externalServices', () => ({
     },
     sendgrid: {
         apiKey: process.env.SENDGRID_API_KEY,
-        fromEmail: process.env.SENDGRID_FROM_EMAIL || 'noreply@realestate.com',
+        fromEmail: process.env.SENDGRID_FROM_EMAIL,
     },
     cloudinary: {
         cloudName: process.env.CLOUDINARY_CLOUD_NAME,

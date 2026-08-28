@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import { ConciergeRequestStatus } from '@generated/prisma/enums';
+import { toNumber } from '@common/money';
 import { ConciergeClientRepo } from '@common/repos/concierge-client.repo';
 import { ConciergeServiceRepo } from '@common/repos/concierge-service.repo';
 import { ConciergeServiceRequestRepo } from '@common/repos/concierge-service-request.repo';
@@ -29,8 +30,6 @@ const TIER_RANK: Record<string, number> = {
     VIP: 2,
     PREMIUM: 1,
 };
-
-const toNumber = (value: Prisma.Decimal) => value.toNumber();
 
 const allocationPercent = (record: ConciergeClientRecord) => {
     const budget = toNumber(record.budget);

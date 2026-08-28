@@ -41,8 +41,8 @@ export class EscrowController {
 
     @Get(':id')
     @ApiOperation({ summary: 'Get one escrow hold' })
-    async findOne(@Param('id') id: string) {
-        return this.escrowService.findOne(id);
+    async findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+        return this.escrowService.findOne(id, user.id, user.role);
     }
 
     @Patch(':id/release')

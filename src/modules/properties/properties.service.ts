@@ -5,7 +5,10 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { PropertyRepo } from '@common/repos/property.repo';
-import { CloudinaryService } from '@common/services/storage/cloudinary.service';
+import {
+    CloudinaryService,
+    UploadResponse,
+} from '@common/services/storage/cloudinary.service';
 import { PrismaService } from '@common/database/prisma.service';
 import { Prisma } from 'generated/prisma/client';
 import {
@@ -20,7 +23,21 @@ import {
 } from './dto';
 import { FlagsService } from '@modules/flags/flags.service';
 import { FlagType } from '@generated/prisma/enums';
-import { PropertyStatus, PropertyType } from '@generated/prisma/enums';
+import {
+    OfferStatus,
+    PropertyStatus,
+    PropertyType,
+    TransactionStatus,
+    UserRole,
+} from '@generated/prisma/enums';
+import { OfferRepo } from '@common/repos/offer.repo';
+import { TransactionRepo } from '@common/repos/transaction.repo';
+import {
+    LIVE_OFFER_STATUSES,
+    LIVE_TRANSACTION_STATUSES,
+    PUBLIC_PROPERTY_STATUSES,
+} from '@common/enums';
+import type { AuthUser } from '@core/auth/types/auth.types';
 
 const LIST_INCLUDE = {
     images: { orderBy: { order: 'asc' } },
@@ -58,6 +75,7 @@ const ORDER_BY: Record<PropertySort, Prisma.PropertyOrderByWithRelationInput> =
     };
 
 const DEFAULT_LIMIT = 20;
+const MILLISECONDS_PER_DAY = 86_400_000;
 
 const MODERATION_STATUS: Record<ModerationDecision, PropertyStatus> = {
     [ModerationDecision.APPROVE]: PropertyStatus.AVAILABLE,
@@ -78,6 +96,8 @@ export class PropertiesService {
         private cloudinaryService: CloudinaryService,
         private prisma: PrismaService,
         private flagsService: FlagsService,
+        private offerRepo: OfferRepo,
+        private transactionRepo: TransactionRepo,
     ) {}
 
     private statusClause(
@@ -97,7 +117,7 @@ export class PropertiesService {
         );
     }
 
-    private priceClause(ranges: string[]): Prisma.FloatFilter[] {
+    private priceClause(ranges: string[]): Prisma.DecimalFilter[] {
         return ranges.map((range) => {
             const [min, max] = range.split('-');
             return max
@@ -223,7 +243,7 @@ export class PropertiesService {
         >;
     }
 
-    async findOne(id: string) {
+    async findOne(id: string, viewer?: AuthUser) {
         const property = await this.propertyRepo.findUnique({
             where: { id },
             include: DETAIL_INCLUDE,
@@ -231,10 +251,28 @@ export class PropertiesService {
         if (!property) {
             throw new NotFoundException(`Property with ID ${id} not found`);
         }
+
+        const privileged =
+            viewer?.id === property.sellerId || viewer?.role === UserRole.ADMIN;
+        if (
+            !privileged &&
+            !PUBLIC_PROPERTY_STATUSES.includes(property.status)
+        ) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
+        }
+
         return property;
     }
 
     async recordView(id: string) {
+        const property = await this.propertyRepo.findUnique({
+            where: { id },
+            select: { id: true, status: true },
+        });
+        if (!property || !PUBLIC_PROPERTY_STATUSES.includes(property.status)) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
+        }
+
         await this.propertyRepo.updateMany({
             where: { id },
             data: { viewsCount: { increment: 1 } },
@@ -267,9 +305,12 @@ export class PropertiesService {
             );
         }
 
+        const data = { ...updateDto };
+        delete data.status;
+
         return this.propertyRepo.update({
             where: { id },
-            data: updateDto,
+            data,
             include: DETAIL_INCLUDE,
         });
     }
@@ -322,6 +363,34 @@ export class PropertiesService {
             );
         }
 
+        const [liveOffers, liveTransactions] = await Promise.all([
+            this.offerRepo.count({
+                where: {
+                    propertyId: id,
+                    status: {
+                        in: [...LIVE_OFFER_STATUSES, OfferStatus.ACCEPTED],
+                    },
+                },
+            }),
+            this.transactionRepo.count({
+                where: {
+                    propertyId: id,
+                    status: {
+                        in: [
+                            ...LIVE_TRANSACTION_STATUSES,
+                            TransactionStatus.COMPLETED,
+                        ],
+                    },
+                },
+            }),
+        ]);
+
+        if (liveOffers > 0 || liveTransactions > 0) {
+            throw new BadRequestException(
+                'This listing has live offers or transactions and cannot be deleted',
+            );
+        }
+
         return this.propertyRepo.delete({ where: { id } });
     }
 
@@ -370,39 +439,66 @@ export class PropertiesService {
             throw new BadRequestException('No files provided');
         }
 
-        const uploadedImages: Array<{
-            id: string;
-            propertyId: string;
-            url: string;
-            order: number;
-            createdAt: Date;
-            updatedAt: Date;
-        }> = [];
-
         const maxOrder = await this.prisma.propertyImage.aggregate({
             where: { propertyId },
             _max: { order: true },
         });
-        let order = maxOrder._max.order || 0;
+        const firstOrder = (maxOrder._max.order || 0) + 1;
 
-        for (const file of files) {
-            const { url } = await this.cloudinaryService.uploadPropertyImage(
-                file.buffer,
-                file.originalname,
-            );
+        const uploads: UploadResponse[] = [];
 
-            const image = await this.prisma.propertyImage.create({
-                data: {
+        try {
+            for (const file of files) {
+                uploads.push(
+                    await this.cloudinaryService.uploadPropertyImage(
+                        file.buffer,
+                        file.originalname,
+                    ),
+                );
+            }
+
+            return await this.prisma.propertyImage.createManyAndReturn({
+                data: uploads.map((upload, index) => ({
                     propertyId,
-                    url,
-                    order: ++order,
-                },
+                    url: upload.url,
+                    order: firstOrder + index,
+                })),
             });
+        } catch (error: unknown) {
+            await Promise.all(
+                uploads.map((upload) =>
+                    this.cloudinaryService.deleteImage(upload.publicId),
+                ),
+            );
+            throw error;
+        }
+    }
 
-            uploadedImages.push(image);
+    async promote(id: string, userId: string, days: number) {
+        const property = await this.propertyRepo.findUnique({ where: { id } });
+        if (!property) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
         }
 
-        return uploadedImages;
+        if (property.sellerId !== userId) {
+            throw new ForbiddenException(
+                'You can only promote your own properties',
+            );
+        }
+
+        const from =
+            property.featuredUntil && property.featuredUntil > new Date()
+                ? property.featuredUntil
+                : new Date();
+
+        const featuredUntil = new Date(
+            from.getTime() + days * MILLISECONDS_PER_DAY,
+        );
+
+        return this.propertyRepo.update({
+            where: { id },
+            data: { featuredUntil },
+        });
     }
 
     async markAsSold(id: string, userId: string) {

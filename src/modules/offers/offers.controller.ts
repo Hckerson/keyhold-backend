@@ -34,8 +34,8 @@ export class OffersController {
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get offer details' })
-    async getOne(@Param('id') id: string) {
-        return this.offersService.getOne(id);
+    async getOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+        return this.offersService.getOne(id, user.id, user.role);
     }
 
     @Get('connection/:connectionId')

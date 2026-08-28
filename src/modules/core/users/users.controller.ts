@@ -1,6 +1,11 @@
 import { UsersService } from './users.service';
 import { UserRole } from 'generated/prisma/enums';
-import { CreateUserDto, UpdateUserDto, SetUserTierDto } from './dto';
+import {
+    CreateUserDto,
+    UpdateUserDto,
+    UpdateProfileDto,
+    SetUserTierDto,
+} from './dto';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
 import { CurrentUser } from '@core/auth/decorators/current-user.decorator';
@@ -18,7 +23,6 @@ import {
     Delete,
     UseGuards,
 } from '@nestjs/common';
-import { metricBuilder } from 'src/lib/metric-builder';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -31,8 +35,7 @@ export class UsersController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiOperation({ summary: 'Create a new user (Admin only)' })
     create(@Body() createUserDto: CreateUserDto) {
-        const data = metricBuilder(createUserDto);
-        return this.usersService.create(data);
+        return this.usersService.createFromAdmin(createUserDto);
     }
 
     @Get()
@@ -50,18 +53,14 @@ export class UsersController {
         return this.usersService.findOne(user.id);
     }
 
-    @Get(':id')
+    @Patch('me')
     @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Get user by ID' })
-    findOne(@Param('id') id: string) {
-        return this.usersService.findOne(id);
-    }
-
-    @Patch(':id')
-    @UseGuards(JwtAuthGuard)
-    @ApiOperation({ summary: 'Update user profile' })
-    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-        return this.usersService.update(id, updateUserDto);
+    @ApiOperation({ summary: 'Update current user profile' })
+    updateMe(
+        @CurrentUser() user: AuthUser,
+        @Body() updateProfileDto: UpdateProfileDto,
+    ) {
+        return this.usersService.updateProfile(user.id, updateProfileDto);
     }
 
     @Get('tiers/distribution')
@@ -70,6 +69,21 @@ export class UsersController {
     @ApiOperation({ summary: 'Membership tier distribution (Admin only)' })
     tierDistribution() {
         return this.usersService.tierDistribution();
+    }
+
+    @Get(':id')
+    @UseGuards(JwtAuthGuard)
+    @ApiOperation({ summary: 'Get user by ID' })
+    findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+        return this.usersService.findVisible(id, user.id, user.role);
+    }
+
+    @Patch(':id')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @ApiOperation({ summary: 'Update user (Admin only)' })
+    update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+        return this.usersService.updateFromAdmin(id, updateUserDto);
     }
 
     @Patch(':id/tier')
