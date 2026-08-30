@@ -19,13 +19,33 @@ const COMPONENTS = Object.keys(COMPONENT_LABELS) as ServiceComponent[];
 const round = (value: number, precision: number) =>
     Math.round(value * precision) / precision;
 
-const median = (values: number[]) => {
-    if (values.length === 0) return 0;
+const P95 = 0.95;
+const P99 = 0.99;
+
+const EMPTY_LATENCY = { latencyMs: 0, latencyP95: 0, latencyP99: 0 };
+
+const nearestRank = (sorted: number[], fraction: number) =>
+    sorted[
+        Math.min(
+            sorted.length - 1,
+            Math.max(0, Math.ceil(fraction * sorted.length) - 1),
+        )
+    ];
+
+const latencyOf = (values: number[]) => {
+    if (values.length === 0) return EMPTY_LATENCY;
+
     const sorted = [...values].sort((a, b) => a - b);
     const middle = Math.floor(sorted.length / 2);
-    return sorted.length % 2 === 0
-        ? Math.round((sorted[middle - 1] + sorted[middle]) / 2)
-        : sorted[middle];
+
+    return {
+        latencyMs:
+            sorted.length % 2 === 0
+                ? Math.round((sorted[middle - 1] + sorted[middle]) / 2)
+                : sorted[middle],
+        latencyP95: nearestRank(sorted, P95),
+        latencyP99: nearestRank(sorted, P99),
+    };
 };
 
 export interface ServiceHealthRow {
@@ -35,6 +55,8 @@ export interface ServiceHealthRow {
     uptime: number;
     errorRate: number;
     latencyMs: number;
+    latencyP95: number;
+    latencyP99: number;
     samples: number;
 }
 
@@ -85,7 +107,7 @@ export class ServiceHealthService {
                               PERCENT_PRECISION,
                           ),
                 errorRate: round(errorRate * 100, PERCENT_PRECISION),
-                latencyMs: median(rows.map((metric) => metric.latencyMs)),
+                ...latencyOf(rows.map((metric) => metric.latencyMs)),
                 samples: rows.length,
             };
         });

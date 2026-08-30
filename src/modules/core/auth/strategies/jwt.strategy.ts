@@ -5,25 +5,20 @@ import { UsersService } from '@core/users/users.service';
 import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import type { AuthUser, JwtPayload } from '../types/auth.types';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JWT_ALGORITHM, publicKeyFrom } from '@common/config/jwt-keys';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
-        private readonly configService: ConfigService,
+        configService: ConfigService,
         private readonly usersService: UsersService,
         private readonly suspensionsService: SuspensionsService,
     ) {
-        const secret = configService.get<string>('JWT_SECRET');
-        if (!secret) {
-            throw new Error(
-                'JWT_SECRET is not defined in environment variables',
-            );
-        }
-
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: secret,
+            secretOrKey: publicKeyFrom(configService),
+            algorithms: [JWT_ALGORITHM],
         });
     }
 

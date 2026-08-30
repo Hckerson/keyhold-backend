@@ -1,4 +1,9 @@
 import { JwtModule } from '@nestjs/jwt';
+import {
+    JWT_ALGORITHM,
+    privateKeyFrom,
+    publicKeyFrom,
+} from '@common/config/jwt-keys';
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ConfigService } from '@nestjs/config';
@@ -20,15 +25,14 @@ import { SuspensionsModule } from '@modules/suspensions/suspensions.module';
         JwtModule.registerAsync({
             inject: [ConfigService],
             useFactory: (config: ConfigService) => {
-                const secret = config.get<string>('JWT_SECRET');
-                if (!secret) {
-                    throw new Error(
-                        'JWT_SECRET is not defined in environment variables',
-                    );
-                }
                 return {
-                    secret: secret,
-                    signOptions: { expiresIn: '7d' },
+                    privateKey: privateKeyFrom(config),
+                    publicKey: publicKeyFrom(config),
+                    signOptions: {
+                        algorithm: JWT_ALGORITHM,
+                        expiresIn: '7d',
+                    },
+                    verifyOptions: { algorithms: [JWT_ALGORITHM] },
                 };
             },
         }),

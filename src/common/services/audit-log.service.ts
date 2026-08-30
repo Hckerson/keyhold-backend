@@ -34,7 +34,7 @@ export interface AuditLogParams {
     resourceType: string;
     resourceId: string;
     action: AuditActionType;
-    actorId: string;
+    actorId: string | null;
     transactionId?: string;
     request?: Request;
     actionDetails?: AuditActionDetailsDto;

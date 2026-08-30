@@ -56,7 +56,8 @@ const optionalSecret = z.preprocess(
 const envSchema = z
     .object({
         DATABASE_URL: z.string().min(1),
-        JWT_SECRET: z.string().min(1),
+        JWT_PRIVATE_KEY: z.string().min(1),
+        JWT_PUBLIC_KEY: z.string().min(1),
         JWT_EXPIRATION: z.preprocess(
             blankAsAbsent,
             z.string().min(1).default(DEFAULT_JWT_EXPIRATION),
