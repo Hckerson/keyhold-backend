@@ -1,7 +1,7 @@
 {
     "name": "keyhold-backend",
     "version": "0.0.1",
-    "description": "Keyhold — peer-to-peer property marketplace API",
+    "description": "Keyhold \u2014 peer-to-peer property marketplace API",
     "author": "",
     "private": true,
     "license": "UNLICENSED",
@@ -16,12 +16,18 @@
         "type-check": "tsc --noEmit",
         "test": "jest",
         "test:e2e": "jest --config ./test/jest-e2e.json",
+        "db:dev": "prisma dev --name real-estate-dev",
+        "db:dev:start": "prisma dev start real-estate-dev",
+        "db:dev:stop": "prisma dev stop real-estate-dev",
+        "db:dev:status": "prisma dev ls",
         "db:generate": "prisma generate",
         "db:push": "prisma db push",
         "db:seed": "tsx prisma/seed.ts",
         "db:reseed": "tsx prisma/seed.ts --reset",
         "db:purge": "tsx prisma/purge.ts",
-        "db:setup": "prisma db push && tsx prisma/seed.ts --reset"
+        "db:setup": "prisma migrate deploy && tsx prisma/seed.ts --reset",
+        "db:deploy": "prisma migrate deploy",
+        "db:status": "prisma migrate status"
     },
     "dependencies": {
         "@nestjs/common": "^11.0.1",

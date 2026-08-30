@@ -50,6 +50,7 @@ enum UserAccountStatus {
   ACTIVE
   PENDING
   SUSPENDED
+  DELETED
 }
 
 // ============================================================================
@@ -197,6 +198,9 @@ enum AuditActionType {
   DISPUTE_RESOLVED
   LOGIN
   LOGOUT
+  LOGIN_SUCCEEDED
+  LOGIN_FAILED
+  PERMISSION_DENIED
 }
 
 // ============================================================================
@@ -214,8 +218,8 @@ model AuditLog {
   userAgent  String?
 
   // Foreign Keys
-  actorId String
-  actor   User   @relation("AuditActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actorId String?
+  actor   User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -460,7 +464,7 @@ model NotificationPreference {
 
 model Offer {
   // Scalars
-  id               String  @id @default(uuid())
+  id               String   @id @default(uuid())
   offeredPrice     Decimal  @db.Decimal(14, 2)
   offeredTerms     String
   responsePrice    Decimal? @db.Decimal(14, 2)
@@ -539,27 +543,27 @@ model PlatformSetting {
 
 model Property {
   // Scalars
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  address     String
-  locality    String
-  region      String
-  postalCode  String
-  country     String   @default("US")
-  latitude    Float?
-  longitude   Float?
-  price       Decimal     @db.Decimal(14, 2)
-  bedrooms    Int
-  bathrooms   Int
-  sqFt        Float?
-  lotSqFt     Float?
-  yearBuilt   Int?
-  walkScore   Int?
-  viewsCount  Int      @default(0)
+  id            String    @id @default(uuid())
+  title         String
+  description   String
+  address       String
+  locality      String
+  region        String
+  postalCode    String
+  country       String    @default("US")
+  latitude      Float?
+  longitude     Float?
+  price         Decimal   @db.Decimal(14, 2)
+  bedrooms      Int
+  bathrooms     Int
+  sqFt          Float?
+  lotSqFt       Float?
+  yearBuilt     Int?
+  walkScore     Int?
+  viewsCount    Int       @default(0)
   featuredUntil DateTime?
-  amenities   String[] // JSON array
-  features    String[] // JSON array
+  amenities     String[] // JSON array
+  features      String[] // JSON array
 
   // Enums
   type   PropertyType
@@ -656,7 +660,7 @@ model SavedProperty {
 model Transaction {
   // Scalars
   id                    String  @id @default(uuid())
-  finalPrice            Decimal   @db.Decimal(14, 2)
+  finalPrice            Decimal @db.Decimal(14, 2)
   terms                 String
   agreementDocUrl       String?
   stripePaymentIntentId String?
@@ -731,9 +735,11 @@ model User {
   kycRejected   Boolean @default(false)
 
   // Timestamps
-  lastActive DateTime? @default(now())
-  updatedAt  DateTime  @updatedAt
-  createdAt  DateTime  @default(now())
+  lastActive      DateTime? @default(now())
+  tokensValidFrom DateTime?
+  deletedAt       DateTime?
+  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
 
   // Relations
   propertiesOwned         Property[]               @relation("SellerProperties")
@@ -1060,5 +1066,20 @@ model ServiceMetric {
 
   // Constraints
   @@index([component, createdAt])
+  @@index([createdAt])
+}
+
+model IdempotencyRecord {
+  // Scalars
+  key      String @id
+  userId   String
+  method   String
+  path     String
+  response String
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  // Constraints
   @@index([createdAt])
 }

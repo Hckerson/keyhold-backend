@@ -1,0 +1,13 @@
+-- AlterTable
+ALTER TABLE "Escrow" ALTER COLUMN "amount" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Offer" ALTER COLUMN "offeredPrice" SET DATA TYPE DECIMAL(14,2),
+ALTER COLUMN "responsePrice" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Property" ALTER COLUMN "price" SET DATA TYPE DECIMAL(14,2);
+
+-- AlterTable
+ALTER TABLE "Transaction" ALTER COLUMN "finalPrice" SET DATA TYPE DECIMAL(14,2);
+
