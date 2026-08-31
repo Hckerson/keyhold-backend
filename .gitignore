@@ -22,3 +22,5 @@ lerna-debug.log*
 # temp directory
 .temp
 .tmp
+# Database dumps — never commit a copy of production
+backups/
