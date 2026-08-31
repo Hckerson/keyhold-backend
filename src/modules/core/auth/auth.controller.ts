@@ -42,9 +42,15 @@ export class AuthController {
     private issueSession(
         result: AuthResponse,
         response: ExpressResponse,
+        remember = true,
     ): { user: AuthResponse['user'] } {
         if (result.accessToken) {
-            setSessionCookie(response, result.accessToken, result.expiresAt);
+            setSessionCookie(
+                response,
+                result.accessToken,
+                result.expiresAt,
+                remember,
+            );
         }
         return { user: result.user };
     }
@@ -76,7 +82,11 @@ export class AuthController {
         @Body() dto: LoginDto,
         @Res({ passthrough: true }) response: ExpressResponse,
     ) {
-        return this.issueSession(await this.authService.login(dto), response);
+        return this.issueSession(
+            await this.authService.login(dto),
+            response,
+            dto.remember ?? true,
+        );
     }
 
     // ─── Password Management ──────────────────────────────────────────────────

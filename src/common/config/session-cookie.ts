@@ -15,10 +15,12 @@ export const setSessionCookie = (
     response: Response,
     token: string,
     expiresAtSeconds: number | undefined,
+    remember = true,
 ) => {
-    const expires = expiresAtSeconds
-        ? new Date(expiresAtSeconds * MS_PER_SECOND)
-        : undefined;
+    const expires =
+        remember && expiresAtSeconds
+            ? new Date(expiresAtSeconds * MS_PER_SECOND)
+            : undefined;
 
     response.cookie(SESSION_COOKIE, token, { ...baseOptions(), expires });
 };
