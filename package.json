@@ -12,7 +12,7 @@
         "start:dev": "nest start --watch",
         "start:prod": "node dist/main",
         "format": "prettier --write .",
-        "lint": "eslint \"{src,test,prisma}/**/*.ts\" --fix",
+        "lint": "eslint \"{src,test,prisma,scripts}/**/*.ts\" --fix",
         "type-check": "tsc --noEmit",
         "test": "jest",
         "test:e2e": "jest --config ./test/jest-e2e.json",
@@ -27,7 +27,8 @@
         "db:purge": "tsx prisma/purge.ts",
         "db:setup": "prisma migrate deploy && tsx prisma/seed.ts --reset",
         "db:deploy": "prisma migrate deploy",
-        "db:status": "prisma migrate status"
+        "db:status": "prisma migrate status",
+        "keys:generate": "tsx scripts/generate-keys.ts"
     },
     "dependencies": {
         "@nestjs/common": "^11.0.1",

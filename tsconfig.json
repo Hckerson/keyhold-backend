@@ -31,5 +31,11 @@
         "types": ["node", "jest"]
     },
     "files": ["src/common/types/express.d.ts"],
-    "include": ["src/**/*", "generated/**/*", "test/**/*", "prisma/**/*"]
+    "include": [
+        "src/**/*",
+        "generated/**/*",
+        "test/**/*",
+        "prisma/**/*",
+        "scripts/**/*"
+    ]
 }
