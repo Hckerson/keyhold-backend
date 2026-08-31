@@ -26,6 +26,9 @@ export class UserDto {
     @ApiProperty()
     status: UserAccountStatus;
 
+    @ApiProperty({ required: false })
+    tokensValidFrom?: Date | null;
+
     @ApiProperty({ enum: UserTier })
     tier: UserTier;
 

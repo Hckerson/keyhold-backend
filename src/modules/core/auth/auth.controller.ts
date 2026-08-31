@@ -69,6 +69,15 @@ export class AuthController {
 
     // ─── Onboarding ──────────────────────────────────────────────────────────
 
+    @Post('logout')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'End every session for the current user' })
+    async logout(@Request() req: ExpressRequest) {
+        return this.authService.logout(req.user?.id);
+    }
+
     @Post('onboarding')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()

@@ -34,6 +34,7 @@ import { SavedSearchesModule } from '@modules/saved-searches/saved-searches.modu
 import { ServiceHealthModule } from '@modules/service-health/service-health.module';
 import { HealthModule } from '@modules/health/health.module';
 import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
+import { IdempotencyInterceptor } from '@common/interceptors/idempotency.interceptor';
 import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.interceptor';
 
 @Module({
@@ -75,6 +76,10 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
         {
             provide: APP_FILTER,
             useClass: AllExceptionsFilter,
+        },
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: IdempotencyInterceptor,
         },
         AppService,
         AuditLogService,

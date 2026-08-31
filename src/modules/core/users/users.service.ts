@@ -85,11 +85,18 @@ export class UsersService {
         return this.toDto(user, settlements.get(id) ?? EMPTY_SETTLEMENT);
     }
 
+    async revokeTokens(id: string): Promise<void> {
+        await this.userRepo.update({
+            where: { id },
+            data: { tokensValidFrom: new Date() },
+        });
+    }
+
     async findIdentity(
         id: string,
     ): Promise<Pick<
         UserDto,
-        'id' | 'email' | 'fullName' | 'role' | 'status'
+        'id' | 'email' | 'fullName' | 'role' | 'status' | 'tokensValidFrom'
     > | null> {
         return this.userRepo.findUnique({
             where: { id },
@@ -99,6 +106,7 @@ export class UsersService {
                 fullName: true,
                 role: true,
                 status: true,
+                tokensValidFrom: true,
             },
         });
     }

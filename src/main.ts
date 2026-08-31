@@ -1,3 +1,4 @@
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
@@ -10,6 +11,13 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, { rawBody: true });
 
     app.setGlobalPrefix('api');
+
+    app.use(
+        helmet({
+            contentSecurityPolicy: false,
+            crossOriginResourcePolicy: { policy: 'cross-origin' },
+        }),
+    );
 
     const config = app.get(ConfigService);
 

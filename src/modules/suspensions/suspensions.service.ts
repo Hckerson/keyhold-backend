@@ -60,7 +60,10 @@ export class SuspensionsService {
             }),
             this.userRepo.update({
                 where: { id: createDto.userId },
-                data: { status: UserAccountStatus.SUSPENDED },
+                data: {
+                    status: UserAccountStatus.SUSPENDED,
+                    tokensValidFrom: new Date(),
+                },
             }),
         ]);
 

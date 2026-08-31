@@ -6,6 +6,7 @@ import { ViewingRepo } from './viewing.repo';
 import { OfferRepo } from './offer.repo';
 import { TransactionRepo } from './transaction.repo';
 import { ReviewRepo } from './review.repo';
+import { IdempotencyRecordRepo } from './idempotency-record.repo';
 import { EmailVerificationRepo } from './email-verification.repo';
 import { PhoneVerificationRepo } from './phone-verification.repo';
 import { IdentityDocumentRepo } from './kyc-document.repo';
@@ -38,6 +39,7 @@ const repos = [
     OfferRepo,
     TransactionRepo,
     ReviewRepo,
+    IdempotencyRecordRepo,
     // MVP 1.5 repositories (Phase 1)
     EmailVerificationRepo,
     PhoneVerificationRepo,

@@ -190,6 +190,12 @@ export class AuthService {
         return { message: 'Password reset successful.' };
     }
 
+    async logout(userId: string | undefined) {
+        if (!userId) throw new UnauthorizedException();
+        await this.usersService.revokeTokens(userId);
+        return { success: true };
+    }
+
     async onboarding(
         userId: string | undefined,
         dto: OnboardingDto,

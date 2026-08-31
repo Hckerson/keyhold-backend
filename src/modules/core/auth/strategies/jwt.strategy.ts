@@ -7,6 +7,17 @@ import type { AuthUser, JwtPayload } from '../types/auth.types';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JWT_ALGORITHM, publicKeyFrom } from '@common/config/jwt-keys';
 
+const MS_PER_SECOND = 1000;
+
+const issuedBefore = (
+    issuedAt: number | undefined,
+    validFrom?: Date | null,
+) => {
+    if (!validFrom) return false;
+    if (issuedAt === undefined) return true;
+    return issuedAt * MS_PER_SECOND < validFrom.getTime();
+};
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
@@ -26,6 +37,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         const user = await this.usersService.findIdentity(payload.sub);
         if (!user) throw new UnauthorizedException();
         await this.suspensionsService.ensureActive(user.id, user.status);
+
+        if (issuedBefore(payload.iat, user.tokensValidFrom)) {
+            throw new UnauthorizedException('This session has been ended');
+        }
+
         return {
             id: user.id,
             role: user.role,
