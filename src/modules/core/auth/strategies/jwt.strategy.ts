@@ -1,6 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import type { Request } from 'express';
+import { sessionCookieFrom } from '@common/config/session-cookie';
 import { UsersService } from '@core/users/users.service';
 import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import type { AuthUser, JwtPayload } from '../types/auth.types';
@@ -26,7 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         private readonly suspensionsService: SuspensionsService,
     ) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                (request: Request) => sessionCookieFrom(request),
+                ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ]),
             ignoreExpiration: false,
             secretOrKey: publicKeyFrom(configService),
             algorithms: [JWT_ALGORITHM],

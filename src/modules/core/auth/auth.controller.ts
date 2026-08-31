@@ -1,11 +1,20 @@
-import { type Request as ExpressRequest } from 'express';
+import {
+    type Request as ExpressRequest,
+    type Response as ExpressResponse,
+} from 'express';
+import {
+    clearSessionCookie,
+    setSessionCookie,
+} from '@common/config/session-cookie';
 import { JwtAuthGuard } from './guards';
 import { AuthService } from './auth.service';
+import type { AuthResponse } from './types/auth.types';
 
 import {
     Post,
     Body,
     Request,
+    Res,
     HttpCode,
     UseGuards,
     Controller,
@@ -30,6 +39,16 @@ import {
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
+    private issueSession(
+        result: AuthResponse,
+        response: ExpressResponse,
+    ): { user: AuthResponse['user'] } {
+        if (result.accessToken) {
+            setSessionCookie(response, result.accessToken, result.expiresAt);
+        }
+        return { user: result.user };
+    }
+
     @Post('register')
     @ApiOperation({ summary: 'Register a new user' })
     @ApiResponse({
@@ -38,8 +57,14 @@ export class AuthController {
             'User successfully registered. Returns user + accessToken.',
     })
     @ApiResponse({ status: 409, description: 'User already exists' })
-    async register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto);
+    async register(
+        @Body() dto: RegisterDto,
+        @Res({ passthrough: true }) response: ExpressResponse,
+    ) {
+        return this.issueSession(
+            await this.authService.register(dto),
+            response,
+        );
     }
 
     @Post('login')
@@ -47,8 +72,11 @@ export class AuthController {
     @ApiOperation({ summary: 'Login and get JWT token' })
     @ApiResponse({ status: 200, description: 'Login successful' })
     @ApiResponse({ status: 401, description: 'Invalid credentials' })
-    async login(@Body() dto: LoginDto) {
-        return this.authService.login(dto);
+    async login(
+        @Body() dto: LoginDto,
+        @Res({ passthrough: true }) response: ExpressResponse,
+    ) {
+        return this.issueSession(await this.authService.login(dto), response);
     }
 
     // ─── Password Management ──────────────────────────────────────────────────
@@ -74,7 +102,11 @@ export class AuthController {
     @ApiBearerAuth()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'End every session for the current user' })
-    async logout(@Request() req: ExpressRequest) {
+    async logout(
+        @Request() req: ExpressRequest,
+        @Res({ passthrough: true }) response: ExpressResponse,
+    ) {
+        clearSessionCookie(response);
         return this.authService.logout(req.user?.id);
     }
 

@@ -85,7 +85,11 @@ export class AuthService {
             role: user.role,
         });
 
-        return { user: this.toAuthUser(user), accessToken };
+        return {
+            user: this.toAuthUser(user),
+            accessToken,
+            expiresAt: this.expiryOf(accessToken),
+        };
     }
 
     async login(dto: LoginDto): Promise<AuthResponse> {
@@ -104,7 +108,11 @@ export class AuthService {
             data: { lastActive: new Date() },
         });
 
-        return { user: this.toAuthUser(user), accessToken };
+        return {
+            user: this.toAuthUser(user),
+            accessToken,
+            expiresAt: this.expiryOf(accessToken),
+        };
     }
 
     async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string }> {
@@ -223,6 +231,19 @@ export class AuthService {
             email: user.email,
             role: user.role,
         };
+    }
+
+    private expiryOf(token: string): number | undefined {
+        const decoded: unknown = this.jwtService.decode(token);
+        if (
+            typeof decoded === 'object' &&
+            decoded !== null &&
+            'exp' in decoded &&
+            typeof decoded.exp === 'number'
+        ) {
+            return decoded.exp;
+        }
+        return undefined;
     }
 
     private generateToken(user: {
