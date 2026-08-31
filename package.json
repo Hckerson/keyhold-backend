@@ -15,7 +15,7 @@
         "lint": "eslint \"{src,test,prisma,scripts}/**/*.ts\" --fix",
         "type-check": "tsc --noEmit",
         "test": "jest",
-        "test:e2e": "jest --config ./test/jest-e2e.json",
+        "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-e2e.json",
         "db:dev": "prisma dev --name real-estate-dev",
         "db:dev:start": "prisma dev start real-estate-dev",
         "db:dev:stop": "prisma dev stop real-estate-dev",
@@ -28,7 +28,9 @@
         "db:setup": "prisma migrate deploy && tsx prisma/seed.ts --reset",
         "db:deploy": "prisma migrate deploy",
         "db:status": "prisma migrate status",
-        "keys:generate": "tsx scripts/generate-keys.ts"
+        "keys:generate": "tsx scripts/generate-keys.ts",
+        "db:backup": "tsx scripts/backup.ts",
+        "db:restore": "tsx scripts/restore.ts"
     },
     "dependencies": {
         "@nestjs/common": "^11.0.1",
@@ -116,6 +118,11 @@
             "**/*.(t|j)s"
         ],
         "coverageDirectory": "../coverage",
-        "testEnvironment": "node"
+        "testEnvironment": "node",
+        "roots": [
+            "<rootDir>",
+            "<rootDir>/../scripts",
+            "<rootDir>/../prisma"
+        ]
     }
 }
