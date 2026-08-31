@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -34,6 +34,7 @@ import { SavedSearchesModule } from '@modules/saved-searches/saved-searches.modu
 import { ServiceHealthModule } from '@modules/service-health/service-health.module';
 import { HealthModule } from '@modules/health/health.module';
 import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
+import { RequestIdMiddleware } from '@common/middleware/request-id.middleware';
 import { IdempotencyInterceptor } from '@common/interceptors/idempotency.interceptor';
 import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.interceptor';
 
@@ -93,4 +94,8 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
         },
     ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(RequestIdMiddleware).forRoutes('*');
+    }
+}

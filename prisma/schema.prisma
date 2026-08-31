@@ -218,8 +218,9 @@ model AuditLog {
   userAgent  String?
 
   // Foreign Keys
-  actorId String?
-  actor   User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  requestId String?
+  actorId   String?
+  actor     User?   @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   // Timestamps
   createdAt DateTime @default(now())
@@ -1057,6 +1058,7 @@ model ServiceMetric {
   statusCode Int
   latencyMs  Int
   failed     Boolean @default(false)
+  requestId  String?
 
   // Enums
   component ServiceComponent @default(API)

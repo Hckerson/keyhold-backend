@@ -9,6 +9,7 @@ import { seedDeals } from './seed-steps/deals';
 import { ADMIN_EMAIL, BUYER_EMAIL, seedPeople } from './seed-steps/people';
 import { seedPlatform } from './seed-steps/platform';
 import { resetSeed } from './seed-steps/reset';
+import { assertSeedTarget } from './seed-guard';
 
 const DEMO_PASSWORD = 'password123';
 const BCRYPT_ROUNDS = 10;
@@ -22,6 +23,9 @@ const prisma = new PrismaClient({ adapter });
 const report = (message: string) => process.stdout.write(`${message}\n`);
 
 const main = async () => {
+    const host = assertSeedTarget(process.env['DATABASE_URL']);
+    report(`Seeding ${host}.`);
+
     const shouldReset = process.argv.includes('--reset');
     const now = new Date();
 

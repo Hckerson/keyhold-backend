@@ -85,6 +85,7 @@ export class AuditLogService {
                     changes: changesJson,
                     ipAddress,
                     userAgent,
+                    requestId: params.request?.requestId ?? null,
                     actorId: params.actorId,
                 },
             });

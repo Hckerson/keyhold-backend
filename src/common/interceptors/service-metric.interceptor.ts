@@ -57,6 +57,7 @@ export class ServiceMetricInterceptor implements NestInterceptor {
                 .create({
                     data: {
                         route,
+                        requestId: request.requestId ?? null,
                         statusCode,
                         latencyMs: Date.now() - startedAt,
                         failed: statusCode >= SERVER_ERROR_FLOOR,
