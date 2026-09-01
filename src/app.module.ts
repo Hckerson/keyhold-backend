@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
@@ -34,6 +34,11 @@ import { SavedSearchesModule } from '@modules/saved-searches/saved-searches.modu
 import { ServiceHealthModule } from '@modules/service-health/service-health.module';
 import { HealthModule } from '@modules/health/health.module';
 import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import {
+    THROTTLE_LIMIT,
+    THROTTLE_WINDOW_MS,
+} from '@common/config/throttle.config';
 import { RequestIdMiddleware } from '@common/middleware/request-id.middleware';
 import { IdempotencyInterceptor } from '@common/interceptors/idempotency.interceptor';
 import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.interceptor';
@@ -45,6 +50,9 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
             load: [externalServicesConfig],
             validate: validateEnv,
         }),
+        ThrottlerModule.forRoot([
+            { ttl: THROTTLE_WINDOW_MS, limit: THROTTLE_LIMIT },
+        ]),
         PrismaModule,
         RepoModule,
         ServicesModule,
@@ -74,6 +82,10 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
     ],
     controllers: [AppController],
     providers: [
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+        },
         {
             provide: APP_FILTER,
             useClass: AllExceptionsFilter,

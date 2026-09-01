@@ -1,7 +1,7 @@
 {
     "name": "keyhold-backend",
     "version": "0.0.1",
-    "description": "Keyhold \u2014 peer-to-peer property marketplace API",
+    "description": "Keyhold — peer-to-peer property marketplace API",
     "author": "",
     "private": true,
     "license": "UNLICENSED",
@@ -40,6 +40,7 @@
         "@nestjs/passport": "^11.0.5",
         "@nestjs/platform-express": "^11.0.1",
         "@nestjs/swagger": "^11.2.6",
+        "@nestjs/throttler": "^6.5.0",
         "@prisma/adapter-pg": "^7.8.0",
         "@prisma/client": "^7.8.0",
         "@prisma/config": "^7.8.0",

@@ -1,3 +1,5 @@
+import { Throttle } from '@nestjs/throttler';
+import { authThrottle } from '@common/config/throttle.config';
 import {
     type Request as ExpressRequest,
     type Response as ExpressResponse,
@@ -73,6 +75,7 @@ export class AuthController {
         );
     }
 
+    @Throttle(authThrottle)
     @Post('login')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login and get JWT token' })
@@ -91,6 +94,7 @@ export class AuthController {
 
     // ─── Password Management ──────────────────────────────────────────────────
 
+    @Throttle(authThrottle)
     @Post('forgot-password')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Request a password reset' })
@@ -98,6 +102,7 @@ export class AuthController {
         return this.authService.forgotPassword(dto);
     }
 
+    @Throttle(authThrottle)
     @Post('reset-password')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Reset password' })
