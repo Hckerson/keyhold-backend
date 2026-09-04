@@ -12,7 +12,7 @@
         "resolvePackageJsonExports": true,
         "esModuleInterop": true,
         "isolatedModules": true,
-        "declaration": true,
+        "declaration": false,
         "removeComments": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
@@ -22,6 +22,7 @@
         "outDir": "./dist",
         "baseUrl": "./",
         "incremental": true,
+        "tsBuildInfoFile": "./node_modules/.cache/tsbuild.json",
         "skipLibCheck": true,
         "strictNullChecks": true,
         "forceConsistentCasingInFileNames": true,
@@ -37,5 +38,11 @@
         "test/**/*",
         "prisma/**/*",
         "scripts/**/*"
-    ]
+    ],
+    "watchOptions": {
+        "watchFile": "useFsEvents",
+        "watchDirectory": "useFsEvents",
+        "fallbackPolling": "dynamicPriority",
+        "excludeDirectories": ["**/node_modules", "dist"]
+    }
 }
