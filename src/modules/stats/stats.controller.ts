@@ -1,8 +1,14 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+    ApiTags,
+    ApiOperation,
+    ApiBearerAuth,
+    ApiQuery,
+} from '@nestjs/swagger';
 import type { AuthUser } from '@core/auth/types/auth.types';
 import { StatsService } from '@common/services/stats/stats.service';
 import { TimeFilter } from '@common/enums/filter';
+import type { TimeFilterValue } from '@common/enums/filter';
 import { UserRole } from '@generated/prisma/enums';
 import { JwtAuthGuard, RolesGuard } from '@modules/core/auth/guards';
 import { Roles } from '@modules/core/auth/decorators/roles.decorator';
@@ -49,7 +55,8 @@ export class StatsController {
     @Roles(UserRole.ADMIN)
     @UseGuards(RolesGuard)
     @ApiOperation({ summary: 'Monthly GMV, deals, signups and new listings' })
-    async trend(@Query('filter') filter?: TimeFilter) {
+    @ApiQuery({ name: 'filter', enum: TimeFilter, required: false })
+    async trend(@Query('filter') filter?: TimeFilterValue) {
         return this.statsService.fetchTrend(filter ?? TimeFilter.MONTH);
     }
 
@@ -65,7 +72,8 @@ export class StatsController {
     @Roles(UserRole.ADMIN)
     @UseGuards(RolesGuard)
     @ApiOperation({ summary: 'Time-series signup counts' })
-    async dashboard(@Query('filter') filter?: TimeFilter) {
+    @ApiQuery({ name: 'filter', enum: TimeFilter, required: false })
+    async dashboard(@Query('filter') filter?: TimeFilterValue) {
         const resolved = filter ?? TimeFilter.MONTH;
         return this.statsService.fetchDashboardStats(
             resolved,

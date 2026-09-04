@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 import { TimeFilter } from '@common/enums/filter';
+import type { TimeFilterValue } from '@common/enums/filter';
 import { sumDecimal, toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { PrismaService } from '@common/database/prisma.service';
@@ -83,7 +84,7 @@ export class StatsService {
         private prisma: PrismaService,
     ) {}
 
-    private getStartDate(filter: TimeFilter, month: boolean = true) {
+    private getStartDate(filter: TimeFilterValue, month: boolean = true) {
         const now = new Date();
 
         return filter === TimeFilter.DAY
@@ -99,9 +100,9 @@ export class StatsService {
                   );
     }
 
-    async fetchDashboardStats(filter: TimeFilter, month: boolean = true) {
+    async fetchDashboardStats(filter: TimeFilterValue, month: boolean = true) {
         const startDate = this.getStartDate(filter, month);
-        const actualFilter: TimeFilter = month
+        const actualFilter: TimeFilterValue = month
             ? TimeFilter.MONTH
             : TimeFilter.DAY;
 
@@ -288,7 +289,7 @@ export class StatsService {
             .sort((a, b) => b.volume - a.volume);
     }
 
-    async fetchTrend(filter: TimeFilter) {
+    async fetchTrend(filter: TimeFilterValue) {
         const startDate = this.getStartDate(filter);
 
         const [sales, signups, listings] = await Promise.all([
