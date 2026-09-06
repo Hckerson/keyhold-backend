@@ -1,11 +1,29 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import twilio, { Twilio } from 'twilio';
+import twilio, { Twilio, validateRequest } from 'twilio';
 
 interface SMSResponse {
     success: boolean;
     messageId: string;
 }
+
+interface BridgedCallParams {
+    agentPhone: string;
+    leadPhone: string;
+    announcement: string;
+}
+
+interface CallResponse {
+    success: boolean;
+    callSid: string;
+}
+
+const STATUS_CALLBACK_EVENTS = [
+    'initiated',
+    'ringing',
+    'answered',
+    'completed',
+];
 
 @Injectable()
 export class TwilioService {
@@ -80,5 +98,70 @@ export class TwilioService {
     ): Promise<SMSResponse> {
         const message = `You've received a new offer of $${offerAmount.toLocaleString()}. Check your app for details.`;
         return this.sendSMS(phoneNumber, message);
+    }
+
+    get voiceEnabled(): boolean {
+        return Boolean(
+            this.client &&
+            this.configService.get<string>(
+                'externalServices.twilio.fromNumber',
+            ),
+        );
+    }
+
+    async createBridgedCall(params: BridgedCallParams): Promise<CallResponse> {
+        const fromNumber = this.configService.get<string>(
+            'externalServices.twilio.fromNumber',
+        );
+
+        if (!this.client || !fromNumber) {
+            throw new BadRequestException(
+                'Calling is not configured on this environment',
+            );
+        }
+
+        const response = new twilio.twiml.VoiceResponse();
+        response.say(params.announcement);
+        response
+            .dial({ callerId: fromNumber, answerOnBridge: true })
+            .number(params.leadPhone);
+
+        const statusCallback = this.configService.get<string>(
+            'externalServices.twilio.statusCallbackUrl',
+        );
+
+        try {
+            const call = await this.client.calls.create({
+                to: params.agentPhone,
+                from: fromNumber,
+                twiml: response.toString(),
+                ...(statusCallback
+                    ? {
+                          statusCallback,
+                          statusCallbackEvent: STATUS_CALLBACK_EVENTS,
+                          statusCallbackMethod: 'POST',
+                      }
+                    : {}),
+            });
+
+            return { success: true, callSid: call.sid };
+        } catch (error: unknown) {
+            throw new BadRequestException(
+                `Failed to place call: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }
+
+    verifyWebhookSignature(
+        signature: string,
+        url: string,
+        params: Record<string, string>,
+    ): boolean {
+        const authToken = this.configService.get<string>(
+            'externalServices.twilio.authToken',
+        );
+        if (!authToken) return false;
+
+        return validateRequest(authToken, signature, url, params);
     }
 }

@@ -27,6 +27,7 @@ import { ConciergePracticeRepo } from './concierge-practice.repo';
 import { ConciergePracticeCoverageRepo } from './concierge-practice-coverage.repo';
 import { SavedSearchRepo } from './saved-search.repo';
 import { ServiceMetricRepo } from './service-metric.repo';
+import { ContactActivityRepo } from './contact-activity.repo';
 import { Global, Module } from '@nestjs/common';
 
 const repos = [
@@ -62,6 +63,7 @@ const repos = [
     ConciergePracticeCoverageRepo,
     SavedSearchRepo,
     ServiceMetricRepo,
+    ContactActivityRepo,
 ];
 
 @Global()

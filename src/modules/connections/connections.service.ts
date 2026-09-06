@@ -56,6 +56,10 @@ const listInclude = (viewerId: string) =>
         messages: { orderBy: { createdAt: 'desc' }, take: THREAD_PREVIEW },
         offers: { orderBy: { createdAt: 'desc' }, take: BOOK_DEPTH },
         viewings: { orderBy: { createdAt: 'desc' }, take: BOOK_DEPTH },
+        contactActivities: {
+            orderBy: { occurredAt: 'desc' },
+            take: THREAD_PREVIEW,
+        },
         _count: {
             select: {
                 messages: { where: { receiverId: viewerId, isRead: false } },

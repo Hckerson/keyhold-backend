@@ -15,6 +15,7 @@ import { AuditLogInterceptor } from '@common/interceptors/audit-log.interceptor'
 import { PropertiesModule } from '@modules/properties/properties.module';
 import { ConnectionsModule } from '@modules/connections/connections.module';
 import { MessagesModule } from '@modules/messages/messages.module';
+import { ContactModule } from '@modules/contact/contact.module';
 import { ViewingsModule } from '@modules/viewings/viewings.module';
 import { OffersModule } from '@modules/offers/offers.module';
 import { TransactionsModule } from '@modules/transactions/transactions.module';
@@ -61,6 +62,7 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
         PropertiesModule,
         ConnectionsModule,
         MessagesModule,
+        ContactModule,
         ViewingsModule,
         OffersModule,
         TransactionsModule,

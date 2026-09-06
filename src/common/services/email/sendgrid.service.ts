@@ -5,6 +5,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 interface EmailOptions {
     to: string | string[];
     subject: string;
+    replyTo?: string;
     html?: string;
     text?: string;
     attachments?: Array<{
@@ -17,6 +18,23 @@ interface EmailOptions {
 interface EmailResponse {
     success: boolean;
 }
+
+const HTML_ESCAPES: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+};
+
+const escapeHtml = (value: string) =>
+    value.replace(/[&<>"']/g, (character) => HTML_ESCAPES[character]);
+
+const toParagraphs = (body: string) =>
+    body
+        .split(/\n{2,}/)
+        .map((block) => `<p>${escapeHtml(block).replace(/\n/g, '<br />')}</p>`)
+        .join('');
 
 @Injectable()
 export class SendGridEmailService {
@@ -58,6 +76,7 @@ export class SendGridEmailService {
             await sgMail.send({
                 to: options.to,
                 from: fromEmail,
+                replyTo: options.replyTo,
                 subject: options.subject,
                 html: options.html || options.text || options.subject,
                 attachments: options.attachments?.map((att) => ({
@@ -138,6 +157,27 @@ export class SendGridEmailService {
         <p>Your purchase of ${propertyTitle} is complete.</p>
         <p><strong>Final Price: $${finalPrice.toLocaleString()}</strong></p>
         <p>Thank you for using our platform. Please rate the seller.</p>
+      `,
+        });
+    }
+
+    async sendAgentOutreach(params: {
+        to: string;
+        replyTo: string;
+        subject: string;
+        body: string;
+        agentName: string;
+        propertyTitle: string;
+    }): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: params.to,
+            replyTo: params.replyTo,
+            subject: params.subject,
+            html: `
+        ${toParagraphs(params.body)}
+        <hr />
+        <p>${escapeHtml(params.agentName)} — regarding ${escapeHtml(params.propertyTitle)}</p>
+        <p>Reply to this email to reach them directly.</p>
       `,
         });
     }

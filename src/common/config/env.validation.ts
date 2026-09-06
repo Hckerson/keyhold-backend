@@ -87,6 +87,10 @@ const envSchema = z
             blankAsAbsent,
             z.string().regex(E164_PATTERN).optional(),
         ),
+        TWILIO_STATUS_CALLBACK_URL: z.preprocess(
+            blankAsAbsent,
+            z.url().optional(),
+        ),
     })
     .superRefine((env, ctx) => {
         const isProduction = env.NODE_ENV === NodeEnv.PRODUCTION;

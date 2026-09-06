@@ -83,6 +83,26 @@ enum ConnectionStatus {
   REJECTED
 }
 
+enum ContactChannel {
+  EMAIL
+  SMS
+  CALL
+}
+
+enum ContactDirection {
+  OUTBOUND
+  INBOUND
+}
+
+enum ContactStatus {
+  QUEUED
+  SENT
+  RINGING
+  COMPLETED
+  NO_ANSWER
+  FAILED
+}
+
 enum ViewingMode {
   IN_PERSON
   VIRTUAL
@@ -249,10 +269,11 @@ model Connection {
   seller     User     @relation("SellerConnections", fields: [sellerId], references: [id], onDelete: Cascade)
 
   // Relations
-  messages     Message[]
-  viewings     Viewing[]
-  offers       Offer[]
-  transactions Transaction[]
+  messages          Message[]
+  viewings          Viewing[]
+  offers            Offer[]
+  transactions      Transaction[]
+  contactActivities ContactActivity[]
 
   // Timestamps
   updatedAt DateTime @updatedAt
@@ -263,6 +284,36 @@ model Connection {
   @@index([buyerId])
   @@index([sellerId])
   @@index([status])
+}
+
+model ContactActivity {
+  // Scalars
+  id              String  @id @default(uuid())
+  subject         String?
+  body            String?
+  providerRef     String?
+  durationSeconds Int?
+
+  // Enums
+  channel   ContactChannel
+  direction ContactDirection @default(OUTBOUND)
+  status    ContactStatus    @default(QUEUED)
+
+  // Foreign Keys
+  connectionId String
+  connection   Connection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  actorId      String
+  actor        User       @relation("ActorContactActivities", fields: [actorId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  occurredAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+
+  // Constraints
+  @@index([connectionId, occurredAt])
+  @@index([actorId])
+  @@index([providerRef])
 }
 
 model Dispute {
@@ -773,6 +824,7 @@ model User {
   conciergeServices       ConciergeService[]       @relation("AgentConciergeServices")
   conciergePractices      ConciergePractice[]      @relation("AgentConciergePractices")
   savedSearches           SavedSearch[]            @relation("BuyerSavedSearches")
+  contactActivities       ContactActivity[]        @relation("ActorContactActivities")
 
   // Constraints
   @@index([email])
