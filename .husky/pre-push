@@ -1,0 +1,4 @@
+set -e
+
+pnpm type-check
+pnpm lint

@@ -7,7 +7,7 @@
     "license": "UNLICENSED",
     "scripts": {
         "postinstall": "prisma generate",
-        "build": "prisma generate && node -e \"const f=require('fs');f.rmSync('dist',{recursive:true,force:true});f.rmSync('node_modules/.cache/tsbuild.json',{force:true})\" && nest build -b tsc",
+        "build": "prisma generate && node -e \"require('fs').rmSync('node_modules/.cache/tsbuild.json',{force:true})\" && nest build",
         "start": "nest start",
         "start:dev": "nest start --watch",
         "start:prod": "node dist/src/main",
@@ -30,7 +30,17 @@
         "db:status": "prisma migrate status",
         "keys:generate": "tsx scripts/generate-keys.ts",
         "db:backup": "tsx scripts/backup.ts",
-        "db:restore": "tsx scripts/restore.ts"
+        "db:restore": "tsx scripts/restore.ts",
+        "prepare": "husky"
+    },
+    "lint-staged": {
+        "*.ts": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{js,mjs,json,md}": [
+            "prettier --write"
+        ]
     },
     "dependencies": {
         "@nestjs/common": "^11.0.1",
@@ -86,7 +96,9 @@
         "eslint-config-prettier": "^10.0.1",
         "eslint-plugin-prettier": "^5.2.2",
         "globals": "^17.0.0",
+        "husky": "^9.1.7",
         "jest": "^30.0.0",
+        "lint-staged": "^17.5.0",
         "prettier": "^3.4.2",
         "prisma": "^7.8.0",
         "source-map-support": "^0.5.21",
