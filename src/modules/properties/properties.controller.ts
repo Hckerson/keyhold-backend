@@ -24,6 +24,7 @@ import {
     FacetsPropertyDto,
     ModeratePropertyDto,
     PromotePropertyDto,
+    ReorderImagesDto,
 } from './dto';
 import {
     JwtAuthGuard,
@@ -156,6 +157,34 @@ export class PropertiesController {
         @UploadedFiles() files: Express.Multer.File[],
     ) {
         return this.propertiesService.uploadImages(propertyId, user.id, files);
+    }
+
+    @Patch(':id/images/order')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Reorder the images on a listing' })
+    async reorderImages(
+        @Param('id') propertyId: string,
+        @CurrentUser() user: AuthUser,
+        @Body() reorderDto: ReorderImagesDto,
+    ) {
+        return this.propertiesService.reorderImages(
+            propertyId,
+            user.id,
+            reorderDto.ids,
+        );
+    }
+
+    @Delete(':id/images/:imageId')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Remove one image from a listing' })
+    async deleteImage(
+        @Param('id') propertyId: string,
+        @Param('imageId') imageId: string,
+        @CurrentUser() user: AuthUser,
+    ) {
+        return this.propertiesService.deleteImage(propertyId, imageId, user.id);
     }
 
     @Patch(':id/promote')

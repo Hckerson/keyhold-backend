@@ -89,6 +89,12 @@ const PUBLIC_STATUSES: PropertyStatus[] = [
     PropertyStatus.SOLD,
 ];
 
+const SELLER_SETTABLE_STATUSES: PropertyStatus[] = [
+    PropertyStatus.DRAFT,
+    PropertyStatus.AVAILABLE,
+    PropertyStatus.PENDING,
+];
+
 @Injectable()
 export class PropertiesService {
     constructor(
@@ -305,12 +311,18 @@ export class PropertiesService {
             );
         }
 
-        const data = { ...updateDto };
-        delete data.status;
+        if (
+            updateDto.status !== undefined &&
+            !SELLER_SETTABLE_STATUSES.includes(updateDto.status)
+        ) {
+            throw new BadRequestException(
+                'That status can only be set by an administrator',
+            );
+        }
 
         return this.propertyRepo.update({
             where: { id },
-            data,
+            data: updateDto,
             include: DETAIL_INCLUDE,
         });
     }
@@ -415,14 +427,15 @@ export class PropertiesService {
         return this.findAll({ ...filters, sellerId }, privileged);
     }
 
-    async uploadImages(
+    private async ownedProperty(
         propertyId: string,
         userId: string,
-        files: Express.Multer.File[],
+        action: string,
     ) {
         const property = await this.propertyRepo.findUnique({
             where: { id: propertyId },
         });
+
         if (!property) {
             throw new NotFoundException(
                 `Property with ID ${propertyId} not found`,
@@ -431,9 +444,19 @@ export class PropertiesService {
 
         if (property.sellerId !== userId) {
             throw new ForbiddenException(
-                'You can only upload images for your own properties',
+                `You can only ${action} your own properties`,
             );
         }
+
+        return property;
+    }
+
+    async uploadImages(
+        propertyId: string,
+        userId: string,
+        files: Express.Multer.File[],
+    ) {
+        await this.ownedProperty(propertyId, userId, 'upload images for');
 
         if (!files || files.length === 0) {
             throw new BadRequestException('No files provided');
@@ -461,6 +484,7 @@ export class PropertiesService {
                 data: uploads.map((upload, index) => ({
                     propertyId,
                     url: upload.url,
+                    publicId: upload.publicId,
                     order: firstOrder + index,
                 })),
             });
@@ -472,6 +496,62 @@ export class PropertiesService {
             );
             throw error;
         }
+    }
+
+    async deleteImage(propertyId: string, imageId: string, userId: string) {
+        await this.ownedProperty(propertyId, userId, 'remove images from');
+
+        const image = await this.prisma.propertyImage.findUnique({
+            where: { id: imageId },
+        });
+
+        if (!image || image.propertyId !== propertyId) {
+            throw new NotFoundException(`Image with ID ${imageId} not found`);
+        }
+
+        await this.prisma.propertyImage.delete({ where: { id: imageId } });
+
+        if (image.publicId) {
+            await this.cloudinaryService.deleteImage(image.publicId);
+        }
+
+        return image;
+    }
+
+    async reorderImages(propertyId: string, userId: string, ids: string[]) {
+        await this.ownedProperty(propertyId, userId, 'reorder images for');
+
+        const held = await this.prisma.propertyImage.findMany({
+            where: { propertyId },
+            select: { id: true },
+        });
+
+        const known = new Set(held.map((image) => image.id));
+        const listed = new Set(ids);
+
+        if (
+            listed.size !== ids.length ||
+            listed.size !== known.size ||
+            ids.some((id) => !known.has(id))
+        ) {
+            throw new BadRequestException(
+                'The order must list every image on this listing exactly once',
+            );
+        }
+
+        await this.prisma.$transaction(
+            ids.map((id, order) =>
+                this.prisma.propertyImage.update({
+                    where: { id },
+                    data: { order },
+                }),
+            ),
+        );
+
+        return this.prisma.propertyImage.findMany({
+            where: { propertyId },
+            orderBy: { order: 'asc' },
+        });
     }
 
     async promote(id: string, userId: string, days: number) {

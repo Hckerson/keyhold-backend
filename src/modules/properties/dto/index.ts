@@ -4,3 +4,4 @@ export * from './query-property.dto';
 export * from './facets-property.dto';
 export * from './moderate-property.dto';
 export * from './promote-property.dto';
+export * from './reorder-images.dto';

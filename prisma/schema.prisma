@@ -597,9 +597,10 @@ model Property {
 
 model PropertyImage {
   // Scalars
-  id    String @id @default(uuid())
-  url   String
-  order Int
+  id       String  @id @default(uuid())
+  url      String
+  publicId String?
+  order    Int
 
   // Foreign Keys
   propertyId String
