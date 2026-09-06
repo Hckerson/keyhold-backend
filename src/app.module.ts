@@ -108,6 +108,6 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
-        consumer.apply(RequestIdMiddleware).forRoutes('*');
+        consumer.apply(RequestIdMiddleware).forRoutes('{*path}');
     }
 }
