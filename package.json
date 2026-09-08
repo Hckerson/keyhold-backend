@@ -24,6 +24,7 @@
         "db:seed": "tsx prisma/seed.ts",
         "db:reseed": "tsx prisma/seed.ts --reset",
         "db:purge": "tsx prisma/purge.ts",
+        "db:backfill-coordinates": "tsx prisma/backfill-coordinates.ts",
         "db:setup": "prisma migrate deploy && tsx prisma/seed.ts --reset",
         "db:migrate": "prisma migrate dev",
         "db:deploy": "prisma migrate deploy",

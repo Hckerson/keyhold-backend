@@ -132,6 +132,43 @@ export class PropertiesService {
         });
     }
 
+    private boundsClause(
+        filters: QueryPropertyDto,
+    ): Prisma.PropertyWhereInput | null {
+        const { south, north, west, east } = filters;
+
+        if (
+            south === undefined ||
+            north === undefined ||
+            west === undefined ||
+            east === undefined
+        ) {
+            return null;
+        }
+
+        if (south > north) {
+            throw new BadRequestException(
+                'Bounding box south edge must not exceed its north edge',
+            );
+        }
+
+        const latitude = { gte: south, lte: north };
+
+        return west <= east
+            ? { AND: [{ latitude }, { longitude: { gte: west, lte: east } }] }
+            : {
+                  AND: [
+                      { latitude },
+                      {
+                          OR: [
+                              { longitude: { gte: west } },
+                              { longitude: { lte: east } },
+                          ],
+                      },
+                  ],
+              };
+    }
+
     private buildWhere(
         filters: QueryPropertyDto & { sellerId?: string },
         privileged = false,
@@ -156,6 +193,9 @@ export class PropertiesService {
                 OR: this.countClause(baths).map((bathrooms) => ({ bathrooms })),
             });
         }
+
+        const bounds = this.boundsClause(filters);
+        if (bounds) and.push(bounds);
 
         if (q) {
             and.push({

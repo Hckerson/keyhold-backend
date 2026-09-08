@@ -7,6 +7,7 @@ import {
     IsOptional,
     IsString,
     Matches,
+    Max,
     Min,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -90,6 +91,41 @@ export class QueryPropertyDto {
     @IsOptional()
     @Min(0)
     minSqFt?: number;
+
+    @ApiPropertyOptional({
+        description:
+            'Bounding box south edge. All four edges must be sent together.',
+    })
+    @Type(() => Number)
+    @IsNumber()
+    @IsOptional()
+    @Min(-90)
+    @Max(90)
+    south?: number;
+
+    @ApiPropertyOptional({ description: 'Bounding box north edge' })
+    @Type(() => Number)
+    @IsNumber()
+    @IsOptional()
+    @Min(-90)
+    @Max(90)
+    north?: number;
+
+    @ApiPropertyOptional({ description: 'Bounding box west edge' })
+    @Type(() => Number)
+    @IsNumber()
+    @IsOptional()
+    @Min(-180)
+    @Max(180)
+    west?: number;
+
+    @ApiPropertyOptional({ description: 'Bounding box east edge' })
+    @Type(() => Number)
+    @IsNumber()
+    @IsOptional()
+    @Min(-180)
+    @Max(180)
+    east?: number;
 
     @ApiPropertyOptional({ enum: PropertySort })
     @IsEnum(PropertySort)

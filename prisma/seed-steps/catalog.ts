@@ -1,4 +1,5 @@
 import { Prisma, PropertyStatus } from '../../generated/prisma/client';
+import { coordinatesFor } from '../seed-data/coordinates';
 import { gallery } from '../seed-data/images';
 import { DAYS_PER_MONTH, daysAgo, seedId } from '../seed-data/ids';
 import {
@@ -77,6 +78,7 @@ export const seedCatalog = async (
             locality: seed.locality,
             region: seed.region,
             postalCode: seed.postalCode,
+            ...coordinatesFor(seed.locality, seed.key),
             price: seed.price,
             bedrooms: seed.bedrooms,
             bathrooms: seed.bathrooms,
