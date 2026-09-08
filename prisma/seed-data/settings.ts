@@ -60,6 +60,41 @@ export const PLATFORM_SETTINGS: readonly {
         value: 'true',
         category: SettingCategory.AVAILABILITY,
     },
+    {
+        key: 'reportingTimezone',
+        value: 'America/Los_Angeles',
+        category: SettingCategory.PLATFORM,
+    },
+    {
+        key: 'photoScanning',
+        value: 'true',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'agentLicenseVerification',
+        value: 'true',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'manualReviewThreshold',
+        value: 'true',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'autoSuspendRepeatRejections',
+        value: 'false',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'dailyHealthDigest',
+        value: 'true',
+        category: SettingCategory.PLATFORM,
+    },
+    {
+        key: 'payoutAutomation',
+        value: 'false',
+        category: SettingCategory.COMMERCE,
+    },
 ];
 
 export const SETTING_KEYS: readonly string[] = PLATFORM_SETTINGS.map(

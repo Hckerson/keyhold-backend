@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PlatformSettingRepo } from '@common/repos/platform-setting.repo';
+import { EmailVerificationRepo } from '@common/repos/email-verification.repo';
+import { PhoneVerificationRepo } from '@common/repos/phone-verification.repo';
 import { SettingCategory } from '@generated/prisma/enums';
 import { UpdateSettingsDto } from './dto';
 
@@ -10,6 +12,11 @@ export const SETTING_DEFAULTS: {
 }[] = [
     { key: 'platformName', value: '', category: SettingCategory.PLATFORM },
     { key: 'supportEmail', value: '', category: SettingCategory.PLATFORM },
+    {
+        key: 'reportingTimezone',
+        value: 'America/New_York',
+        category: SettingCategory.PLATFORM,
+    },
     { key: 'baseCurrency', value: 'USD', category: SettingCategory.COMMERCE },
     { key: 'commissionRate', value: '2.5', category: SettingCategory.COMMERCE },
     { key: 'platformFee', value: '495', category: SettingCategory.COMMERCE },
@@ -39,11 +46,45 @@ export const SETTING_DEFAULTS: {
         value: 'true',
         category: SettingCategory.AVAILABILITY,
     },
+    {
+        key: 'photoScanning',
+        value: 'true',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'agentLicenseVerification',
+        value: 'true',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'manualReviewThreshold',
+        value: 'true',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'autoSuspendRepeatRejections',
+        value: 'false',
+        category: SettingCategory.MODERATION,
+    },
+    {
+        key: 'dailyHealthDigest',
+        value: 'true',
+        category: SettingCategory.PLATFORM,
+    },
+    {
+        key: 'payoutAutomation',
+        value: 'false',
+        category: SettingCategory.COMMERCE,
+    },
 ];
 
 @Injectable()
 export class SettingsService {
-    constructor(private settingRepo: PlatformSettingRepo) {}
+    constructor(
+        private settingRepo: PlatformSettingRepo,
+        private emailVerificationRepo: EmailVerificationRepo,
+        private phoneVerificationRepo: PhoneVerificationRepo,
+    ) {}
 
     async findAll() {
         const stored = await this.settingRepo.findMany({
@@ -108,5 +149,34 @@ export class SettingsService {
         );
 
         return this.findAll();
+    }
+
+    async restoreDefaults(updatedById: string) {
+        await Promise.all(
+            SETTING_DEFAULTS.map((fallback) =>
+                this.settingRepo.upsert({
+                    where: { key: fallback.key },
+                    create: { ...fallback, updatedById },
+                    update: {
+                        value: fallback.value,
+                        category: fallback.category,
+                        updatedById,
+                    },
+                }),
+            ),
+        );
+
+        return this.findAll();
+    }
+
+    async purgeExpiredVerifications() {
+        const expiresAt = { lt: new Date() };
+
+        const [email, phone] = await Promise.all([
+            this.emailVerificationRepo.deleteMany({ where: { expiresAt } }),
+            this.phoneVerificationRepo.deleteMany({ where: { expiresAt } }),
+        ]);
+
+        return { purged: email.count + phone.count };
     }
 }

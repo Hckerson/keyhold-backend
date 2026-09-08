@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SettingsService } from './settings.service';
 import { UpdateSettingsDto } from './dto';
@@ -29,5 +29,17 @@ export class SettingsController {
         @Body() updateDto: UpdateSettingsDto,
     ) {
         return this.settingsService.update(user.id, updateDto);
+    }
+
+    @Post('restore-defaults')
+    @ApiOperation({ summary: 'Reset every platform setting to its default' })
+    async restoreDefaults(@CurrentUser() user: AuthUser) {
+        return this.settingsService.restoreDefaults(user.id);
+    }
+
+    @Post('purge-expired-verifications')
+    @ApiOperation({ summary: 'Delete expired email and phone verifications' })
+    async purgeExpiredVerifications() {
+        return this.settingsService.purgeExpiredVerifications();
     }
 }
