@@ -448,6 +448,9 @@ model Message {
   receiverId   String
   receiver     User       @relation("ReceiverMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 
+  // Relations
+  attachments MessageAttachment[]
+
   // Timestamps
   readAt    DateTime?
   updatedAt DateTime  @updatedAt
@@ -457,6 +460,27 @@ model Message {
   @@index([connectionId])
   @@index([senderId])
   @@index([receiverId])
+}
+
+model MessageAttachment {
+  // Scalars
+  id        String @id @default(uuid())
+  filename  String
+  url       String
+  publicId  String?
+  mimeType  String
+  sizeBytes Int
+
+  // Foreign Keys
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@index([messageId])
 }
 
 model Notification {
