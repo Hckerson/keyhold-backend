@@ -1,5 +1,5 @@
 import {
-    ArgumentsHost,
+    type ArgumentsHost,
     Catch,
     ExceptionFilter,
     HttpException,
@@ -10,6 +10,7 @@ import {
 import { Request, Response } from 'express';
 import { AuditActionType } from 'generated/prisma/client';
 import { AuditLogService } from '@common/services/audit-log.service';
+import { SentryExceptionCaptured } from '@sentry/nestjs';
 
 const GENERIC_MESSAGE = 'An unexpected error occurred';
 const AUTH_ENTITY = 'AUTH';
@@ -38,6 +39,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     constructor(private readonly auditLogService: AuditLogService) {}
 
+    @SentryExceptionCaptured()
     catch(exception: unknown, host: ArgumentsHost) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse<Response>();

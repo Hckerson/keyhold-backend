@@ -94,6 +94,11 @@ const envSchema = z
             blankAsAbsent,
             z.string().regex(E164_PATTERN).optional(),
         ),
+        SENTRY_DSN: z.preprocess(blankAsAbsent, z.url().optional()),
+        SENTRY_TRACES_SAMPLE_RATE: z.preprocess(
+            blankAsAbsent,
+            z.coerce.number().min(0).max(1).optional(),
+        ),
         TWILIO_STATUS_CALLBACK_URL: z.preprocess(
             blankAsAbsent,
             z.url().optional(),

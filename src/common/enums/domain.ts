@@ -62,6 +62,7 @@ export const GLOBAL_PREFIX = 'api';
 export const SWAGGER_PATH = `${GLOBAL_PREFIX}/docs`;
 export const DEFAULT_JWT_EXPIRATION = '24h';
 export const SMTP_SECURE_PORT = 465;
+export const DEFAULT_SENTRY_TRACES_SAMPLE_RATE = 0.1;
 export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
 export const E164_MESSAGE =
     'phoneNumber must be in E.164 format, for example +14155552671';

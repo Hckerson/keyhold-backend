@@ -1,3 +1,4 @@
+import './instrument';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
