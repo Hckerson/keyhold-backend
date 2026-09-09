@@ -3,11 +3,14 @@ import { Test } from '@nestjs/testing';
 import { OfferRepo } from '@common/repos/offer.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { DealMilestoneRepo } from '@common/repos/deal-milestone.repo';
+import { CloudinaryService } from '@common/services/storage/cloudinary.service';
+import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import {
     ConnectionStatus,
+    Contingency,
     OfferStatus,
     PropertyStatus,
     UserRole,
@@ -29,6 +32,7 @@ describe('OffersService', () => {
     };
     let connectionRepo: { findUnique: jest.Mock };
     let propertyRepo: { update: jest.Mock };
+    let milestoneRepo: { createMany: jest.Mock };
 
     beforeEach(async () => {
         offerRepo = {
@@ -46,6 +50,9 @@ describe('OffersService', () => {
         };
         connectionRepo = { findUnique: jest.fn() };
         propertyRepo = { update: jest.fn() };
+        milestoneRepo = {
+            createMany: jest.fn().mockResolvedValue({ count: 4 }),
+        };
 
         const moduleRef = await Test.createTestingModule({
             providers: [
@@ -53,8 +60,16 @@ describe('OffersService', () => {
                 { provide: OfferRepo, useValue: offerRepo },
                 { provide: ConnectionRepo, useValue: connectionRepo },
                 { provide: PropertyRepo, useValue: propertyRepo },
+                { provide: DealMilestoneRepo, useValue: milestoneRepo },
                 {
-                    provide: SendGridEmailService,
+                    provide: CloudinaryService,
+                    useValue: {
+                        uploadDocument: jest.fn(),
+                        deleteImage: jest.fn(),
+                    },
+                },
+                {
+                    provide: EmailService,
                     useValue: {
                         sendOfferNotification: jest.fn(),
                         sendEmail: jest.fn(),
@@ -123,6 +138,7 @@ describe('OffersService', () => {
             offererId: BUYER,
             status: OfferStatus.PENDING,
             expiresAt: new Date(Date.now() + 86_400_000),
+            contingencies: [Contingency.INSPECTION],
             connection: { sellerId: SELLER },
             property: { id: 'prop_1', status: PropertyStatus.AVAILABLE },
         });

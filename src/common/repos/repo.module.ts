@@ -3,6 +3,7 @@ import { PropertyRepo } from './property.repo';
 import { ConnectionRepo } from './connection.repo';
 import { MessageRepo } from './message.repo';
 import { MessageAttachmentRepo } from './message-attachment.repo';
+import { DealMilestoneRepo } from './deal-milestone.repo';
 import { ViewingRepo } from './viewing.repo';
 import { OfferRepo } from './offer.repo';
 import { TransactionRepo } from './transaction.repo';
@@ -66,6 +67,7 @@ const repos = [
     ServiceMetricRepo,
     ContactActivityRepo,
     MessageAttachmentRepo,
+    DealMilestoneRepo,
 ];
 
 @Global()

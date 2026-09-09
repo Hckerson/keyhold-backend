@@ -8,14 +8,23 @@ import {
 import { Prisma } from 'generated/prisma/client';
 import { toNumber } from '@common/money';
 import { OfferRepo } from '@common/repos/offer.repo';
+import { DealMilestoneRepo } from '@common/repos/deal-milestone.repo';
+import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
-import { OfferStatus, PropertyStatus, UserRole } from '@generated/prisma/enums';
+import {
+    Contingency,
+    MilestoneKind,
+    MilestoneStatus,
+    OfferStatus,
+    PropertyStatus,
+    UserRole,
+} from '@generated/prisma/enums';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { NotificationType } from '@generated/prisma/enums';
-import { CreateOfferDto, RespondOfferDto } from './dto';
+import { CreateOfferDto, RespondOfferDto, UpdateMilestoneDto } from './dto';
 import {
     LIVE_OFFER_STATUSES,
     MAX_OFFER_EXPIRY_DAYS,
@@ -33,9 +42,11 @@ export class OffersService {
 
     constructor(
         private offerRepo: OfferRepo,
+        private milestoneRepo: DealMilestoneRepo,
+        private cloudinaryService: CloudinaryService,
         private connectionRepo: ConnectionRepo,
         private propertyRepo: PropertyRepo,
-        private emailService: SendGridEmailService,
+        private emailService: EmailService,
         private smsService: TwilioService,
         private notificationsService: NotificationsService,
     ) {}
@@ -80,6 +91,11 @@ export class OffersService {
                 offererId: userId,
                 offeredPrice: createDto.offeredPrice,
                 offeredTerms: createDto.offeredTerms,
+                moveInDate: createDto.moveInDate
+                    ? new Date(createDto.moveInDate)
+                    : null,
+                earnestMoney: createDto.earnestMoney ?? null,
+                contingencies: createDto.contingencies ?? [],
                 expiresAt,
                 status: OfferStatus.PENDING,
             },
@@ -275,10 +291,130 @@ export class OffersService {
         }
     }
 
+    private async assertOfferParty(offerId: string, userId: string) {
+        const offer = await this.offerRepo.findUnique({
+            where: { id: offerId },
+            select: {
+                status: true,
+                connection: { select: { sellerId: true, buyerId: true } },
+            },
+        });
+        if (!offer) throw new NotFoundException('Offer not found');
+
+        assertConnectionParty(offer.connection, userId);
+        return offer;
+    }
+
+    async getMilestones(offerId: string, userId: string) {
+        await this.assertOfferParty(offerId, userId);
+
+        return this.milestoneRepo.findMany({
+            where: { offerId },
+            orderBy: { kind: 'asc' },
+        });
+    }
+
+    async updateMilestone(
+        offerId: string,
+        kind: MilestoneKind,
+        userId: string,
+        updateDto: UpdateMilestoneDto,
+    ) {
+        const offer = await this.assertOfferParty(offerId, userId);
+
+        if (offer.status !== OfferStatus.ACCEPTED) {
+            throw new BadRequestException(
+                'Milestones open once the offer is accepted',
+            );
+        }
+
+        const completing = updateDto.status === MilestoneStatus.COMPLETED;
+
+        return this.milestoneRepo.update({
+            where: { offerId_kind: { offerId, kind } },
+            data: {
+                status: updateDto.status,
+                dueAt: updateDto.dueAt ? new Date(updateDto.dueAt) : undefined,
+                appraisedValue: updateDto.appraisedValue,
+                note: updateDto.note,
+                completedAt: completing ? new Date() : undefined,
+            },
+        });
+    }
+
+    async attachMilestoneDocument(
+        offerId: string,
+        kind: MilestoneKind,
+        userId: string,
+        file: Express.Multer.File | undefined,
+    ) {
+        if (!file) throw new BadRequestException('No file provided');
+        await this.assertOfferParty(offerId, userId);
+
+        const upload = await this.cloudinaryService.uploadDocument(
+            file.buffer,
+            file.originalname,
+        );
+
+        try {
+            return await this.milestoneRepo.update({
+                where: { offerId_kind: { offerId, kind } },
+                data: {
+                    documentUrl: upload.url,
+                    documentPublicId: upload.publicId,
+                    documentName: file.originalname,
+                },
+            });
+        } catch (error: unknown) {
+            await this.cloudinaryService.deleteImage(upload.publicId);
+            throw error;
+        }
+    }
+
+    private async seedMilestones(offerId: string) {
+        const offer = await this.offerRepo.findUnique({
+            where: { id: offerId },
+            select: { contingencies: true },
+        });
+        if (!offer) return;
+
+        const waived = (kind: Contingency) =>
+            offer.contingencies.includes(kind)
+                ? MilestoneStatus.PENDING
+                : MilestoneStatus.WAIVED;
+
+        await this.milestoneRepo.createMany({
+            skipDuplicates: true,
+            data: [
+                {
+                    offerId,
+                    kind: MilestoneKind.INSPECTION,
+                    status: waived(Contingency.INSPECTION),
+                },
+                {
+                    offerId,
+                    kind: MilestoneKind.APPRAISAL,
+                    status: waived(Contingency.APPRAISAL),
+                },
+                {
+                    offerId,
+                    kind: MilestoneKind.FINANCING,
+                    status: waived(Contingency.FINANCING),
+                },
+                {
+                    offerId,
+                    kind: MilestoneKind.CLOSING,
+                    status: MilestoneStatus.PENDING,
+                },
+            ],
+        });
+    }
+
     private async lockAcceptedDeal(
         propertyId: string,
         acceptedOfferId: string,
     ) {
+        await this.seedMilestones(acceptedOfferId);
         await this.offerRepo.updateMany({
             where: {
                 propertyId,
