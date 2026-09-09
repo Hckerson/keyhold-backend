@@ -4,6 +4,11 @@
     "description": "Keyhold — peer-to-peer property marketplace API",
     "author": "",
     "private": true,
+    "packageManager": "pnpm@10.17.0",
+    "engines": {
+        "node": "22.x",
+        "pnpm": "10.x"
+    },
     "license": "UNLICENSED",
     "scripts": {
         "postinstall": "prisma generate",
