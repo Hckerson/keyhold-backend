@@ -7,7 +7,7 @@ import {
 import { Prisma } from 'generated/prisma/client';
 import { ContactActivityRepo } from '@common/repos/contact-activity.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import {
@@ -53,7 +53,7 @@ export class ContactService {
     constructor(
         private contactActivityRepo: ContactActivityRepo,
         private connectionRepo: ConnectionRepo,
-        private emailService: SendGridEmailService,
+        private emailService: EmailService,
         private twilioService: TwilioService,
         private notificationsService: NotificationsService,
     ) {}

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ViewingRepo } from '@common/repos/viewing.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { ViewingStatus } from '@generated/prisma/enums';
 import { NotificationsService } from '@modules/notifications/notifications.service';
@@ -26,7 +26,7 @@ export class ViewingsService {
     constructor(
         private viewingRepo: ViewingRepo,
         private connectionRepo: ConnectionRepo,
-        private emailService: SendGridEmailService,
+        private emailService: EmailService,
         private smsService: TwilioService,
         private notificationsService: NotificationsService,
     ) {}

@@ -1,6 +1,7 @@
-import * as sgMail from '@sendgrid/mail';
+import { createTransport, type Transporter } from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { SMTP_SECURE_PORT } from '@common/enums';
 
 interface EmailOptions {
     to: string | string[];
@@ -37,43 +38,57 @@ const toParagraphs = (body: string) =>
         .join('');
 
 @Injectable()
-export class SendGridEmailService {
-    private readonly logger = new Logger(SendGridEmailService.name);
-    private readonly enabled: boolean;
+export class EmailService {
+    private readonly logger = new Logger(EmailService.name);
+    private readonly transporter: Transporter | null;
 
     constructor(private configService: ConfigService) {
-        const apiKey = this.configService.get<string>(
-            'externalServices.sendgrid.apiKey',
+        const host = this.configService.get<string>(
+            'externalServices.smtp.host',
         );
-        this.enabled = Boolean(apiKey);
-        if (apiKey) {
-            sgMail.setApiKey(apiKey);
-        } else {
+        const user = this.configService.get<string>(
+            'externalServices.smtp.user',
+        );
+        const password = this.configService.get<string>(
+            'externalServices.smtp.password',
+        );
+        const port =
+            this.configService.get<number>('externalServices.smtp.port') ??
+            SMTP_SECURE_PORT;
+
+        if (!host || !user || !password) {
+            this.transporter = null;
             this.logger.warn(
-                'SENDGRID_API_KEY not configured — outbound email is disabled',
+                'SMTP credentials not configured — outbound email is disabled',
             );
+            return;
         }
+
+        this.transporter = createTransport({
+            host,
+            port,
+            secure: port === SMTP_SECURE_PORT,
+            auth: { user, pass: password },
+        });
     }
 
     async sendEmail(options: EmailOptions): Promise<EmailResponse> {
-        if (!this.enabled) {
+        if (!this.transporter) {
             this.logger.warn(
-                `Email suppressed (SendGrid disabled): "${options.subject}"`,
+                `Email suppressed (SMTP disabled): "${options.subject}"`,
             );
             return { success: false };
         }
 
         try {
             const fromEmail = this.configService.get<string>(
-                'externalServices.sendgrid.fromEmail',
+                'externalServices.smtp.fromEmail',
             );
 
             if (!fromEmail) {
-                throw new BadRequestException(
-                    'SendGrid from email is not configured',
-                );
+                throw new BadRequestException('Sender email is not configured');
             }
-            await sgMail.send({
+            await this.transporter.sendMail({
                 to: options.to,
                 from: fromEmail,
                 replyTo: options.replyTo,
@@ -82,8 +97,8 @@ export class SendGridEmailService {
                 attachments: options.attachments?.map((att) => ({
                     filename: att.filename,
                     content: att.content,
-                    type: att.type,
-                    disposition: 'attachment',
+                    contentType: att.type,
+                    encoding: 'base64',
                 })),
             });
             return { success: true };

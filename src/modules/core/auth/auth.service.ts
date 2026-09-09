@@ -11,7 +11,7 @@ import { metricBuilder } from 'src/lib/metric-builder';
 import { UsersService } from '@core/users/users.service';
 import { UserRepo } from '@common/repos/user.repo';
 import { EmailVerificationRepo } from '@common/repos/email-verification.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { SettingsService } from '@modules/settings/settings.service';
 import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import type { AuthResponse, JwtPayload } from './types/auth.types';
@@ -54,7 +54,7 @@ export class AuthService {
         private readonly usersService: UsersService,
         private readonly userRepo: UserRepo,
         private readonly verificationTokenRepo: EmailVerificationRepo,
-        private readonly emailService: SendGridEmailService,
+        private readonly emailService: EmailService,
         private readonly settingsService: SettingsService,
         private readonly suspensionsService: SuspensionsService,
     ) {}

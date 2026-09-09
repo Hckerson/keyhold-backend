@@ -250,7 +250,7 @@ export interface MetricDataShape extends Record<string, unknown> {
     [key: string]: unknown;
 }
 
-export interface SendGridEmailMessage {
+export interface EmailMessage {
     to: string | string[];
     from: string;
     subject: string;

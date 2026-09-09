@@ -9,7 +9,7 @@ import { Prisma } from 'generated/prisma/client';
 import { ConnectionRepo } from '@common/repos/connection.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { UserRepo } from '@common/repos/user.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { ConnectionStatus, PropertyStatus } from '@generated/prisma/enums';
 import { ConnectionNotificationContext } from '@common/interfaces/responses';
@@ -77,7 +77,7 @@ export class ConnectionsService {
         private connectionRepo: ConnectionRepo,
         private propertyRepo: PropertyRepo,
         private userRepo: UserRepo,
-        private emailService: SendGridEmailService,
+        private emailService: EmailService,
         private smsService: TwilioService,
         private notificationsService: NotificationsService,
     ) {}

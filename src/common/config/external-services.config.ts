@@ -5,9 +5,12 @@ export const externalServicesConfig = registerAs('externalServices', () => ({
         apiKey: process.env.STRIPE_API_KEY,
         webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
     },
-    sendgrid: {
-        apiKey: process.env.SENDGRID_API_KEY,
-        fromEmail: process.env.SENDGRID_FROM_EMAIL,
+    smtp: {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined,
+        user: process.env.SMTP_USER,
+        password: process.env.SMTP_PASSWORD,
+        fromEmail: process.env.EMAIL_FROM,
     },
     cloudinary: {
         cloudName: process.env.CLOUDINARY_CLOUD_NAME,

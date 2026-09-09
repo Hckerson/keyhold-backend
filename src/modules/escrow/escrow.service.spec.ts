@@ -8,7 +8,7 @@ import { EscrowRepo } from '@common/repos/escrow.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { StripeService } from '@common/services/payment/stripe.service';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { PDFService } from '@common/services/document/pdf.service';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import { SettingsService } from '@modules/settings/settings.service';
@@ -128,7 +128,7 @@ describe('EscrowService.release', () => {
                 { provide: PropertyRepo, useValue: propertyRepo },
                 { provide: PDFService, useValue: pdfService },
                 { provide: CloudinaryService, useValue: cloudinaryService },
-                { provide: SendGridEmailService, useValue: emailService },
+                { provide: EmailService, useValue: emailService },
                 {
                     provide: StripeService,
                     useValue: { refundPayment: jest.fn() },
@@ -335,7 +335,7 @@ describe('EscrowService.release', () => {
         it('9.6 settles even when the notification email fails', async () => {
             givenHold(anEscrow());
             emailService.sendTransactionCompletedEmail.mockRejectedValue(
-                new Error('sendgrid down'),
+                new Error('smtp down'),
             );
 
             await expect(

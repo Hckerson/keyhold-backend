@@ -11,7 +11,7 @@ import { EscrowRepo } from '@common/repos/escrow.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { PropertyRepo } from '@common/repos/property.repo';
 import { StripeService } from '@common/services/payment/stripe.service';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { PDFService } from '@common/services/document/pdf.service';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import {
@@ -58,7 +58,7 @@ export class EscrowService {
         private transactionRepo: TransactionRepo,
         private propertyRepo: PropertyRepo,
         private stripeService: StripeService,
-        private emailService: SendGridEmailService,
+        private emailService: EmailService,
         private pdfService: PDFService,
         private cloudinaryService: CloudinaryService,
         private settingsService: SettingsService,

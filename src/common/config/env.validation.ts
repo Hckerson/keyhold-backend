@@ -5,6 +5,7 @@ import {
     DEFAULT_PORT,
     E164_PATTERN,
     NodeEnv,
+    SMTP_SECURE_PORT,
 } from '@common/enums';
 
 interface CredentialGroup {
@@ -22,9 +23,9 @@ const CREDENTIAL_GROUPS: CredentialGroup[] = [
         requiredInProduction: true,
     },
     {
-        service: 'SendGrid',
-        keys: ['SENDGRID_API_KEY'],
-        companions: ['SENDGRID_FROM_EMAIL'],
+        service: 'SMTP',
+        keys: ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD'],
+        companions: ['EMAIL_FROM'],
         requiredInProduction: true,
     },
     {
@@ -76,8 +77,14 @@ const envSchema = z
         ),
         STRIPE_API_KEY: optionalSecret,
         STRIPE_WEBHOOK_SECRET: optionalSecret,
-        SENDGRID_API_KEY: optionalSecret,
-        SENDGRID_FROM_EMAIL: z.preprocess(blankAsAbsent, z.email().optional()),
+        SMTP_HOST: optionalSecret,
+        SMTP_PORT: z.preprocess(
+            blankAsAbsent,
+            z.coerce.number().int().positive().default(SMTP_SECURE_PORT),
+        ),
+        SMTP_USER: optionalSecret,
+        SMTP_PASSWORD: optionalSecret,
+        EMAIL_FROM: z.preprocess(blankAsAbsent, z.email().optional()),
         CLOUDINARY_CLOUD_NAME: optionalSecret,
         CLOUDINARY_API_KEY: optionalSecret,
         CLOUDINARY_API_SECRET: optionalSecret,

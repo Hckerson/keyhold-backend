@@ -6,7 +6,7 @@ import {
 import { Test } from '@nestjs/testing';
 import { ContactActivityRepo } from '@common/repos/contact-activity.repo';
 import { ConnectionRepo } from '@common/repos/connection.repo';
-import { SendGridEmailService } from '@common/services/email/sendgrid.service';
+import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { NotificationsService } from '@modules/notifications/notifications.service';
 import { ConnectionStatus, ContactStatus } from '@generated/prisma/enums';
@@ -91,7 +91,7 @@ describe('ContactService', () => {
                     useValue: contactActivityRepo,
                 },
                 { provide: ConnectionRepo, useValue: connectionRepo },
-                { provide: SendGridEmailService, useValue: emailService },
+                { provide: EmailService, useValue: emailService },
                 { provide: TwilioService, useValue: twilioService },
                 {
                     provide: NotificationsService,
