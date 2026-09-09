@@ -1,7 +1,7 @@
 {
     "name": "keyhold-api",
     "description": "Keyhold — peer-to-peer property marketplace API",
-    "repository": "https://github.com/Hckerson/real-estate-backend",
+    "repository": "https://github.com/Hckerson/keyhold-backend",
     "stack": "heroku-24",
     "buildpacks": [
         {
