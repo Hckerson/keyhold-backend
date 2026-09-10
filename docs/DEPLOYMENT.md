@@ -35,13 +35,19 @@ heroku config:set --app keyhold-api \
   PNPM_SKIP_PRUNING=true \
   JWT_PRIVATE_KEY="$(cat jwt-private.b64)" \
   JWT_PUBLIC_KEY="$(cat jwt-public.b64)" \
-  FRONTEND_URL="https://keyhold.studio" \
+  FRONTEND_URL="https://keyhold.me" \
   SMTP_HOST=smtp.resend.com SMTP_PORT=465 SMTP_USER=resend \
-  SMTP_PASSWORD="re_..." EMAIL_FROM="noreply@keyhold.studio" \
+  SMTP_PASSWORD="re_..." EMAIL_FROM="noreply@keyhold.me" \
   STRIPE_API_KEY="sk_live_..." STRIPE_WEBHOOK_SECRET="whsec_..." \
   CLOUDINARY_CLOUD_NAME="..." CLOUDINARY_API_KEY="..." CLOUDINARY_API_SECRET="..." \
   SENTRY_DSN="https://...ingest.sentry.io/..."
 ```
+
+TLS is handled by Heroku ACM, which issues and renews Let's Encrypt certificates
+automatically and is free on paid dynos. Do not run `heroku certs:add` with the
+SSL certificate bundled in the Namecheap student offer — uploading a certificate
+**disables ACM for the app**, trading automatic renewal for one that expires in
+twelve months and has to be re-issued and re-uploaded by hand.
 
 `PNPM_SKIP_PRUNING=true` is not optional. Heroku prunes devDependencies at the
 end of the build, `prisma` is a devDependency, and the release phase runs after
