@@ -840,16 +840,17 @@ model User {
   // Scalars
   id String @id @default(uuid())
 
-  fullName     String
-  email        String            @unique
-  passwordHash String
-  phoneNumber  String?
-  avatar       String?
-  bio          String?
-  year         Int
-  role         UserRole
-  status       UserAccountStatus @default(ACTIVE)
-  tier         UserTier          @default(STANDARD)
+  fullName       String
+  email          String            @unique
+  passwordHash   String
+  phoneNumber    String?
+  avatar         String?
+  avatarPublicId String?
+  bio            String?
+  year           Int
+  role           UserRole
+  status         UserAccountStatus @default(ACTIVE)
+  tier           UserTier          @default(STANDARD)
 
   // Seller profile
   jobTitle      String?
@@ -935,10 +936,12 @@ model UserSuspension {
 
 model VerificationToken {
   // Scalars
-  id     String             @id @default(uuid())
-  token  String             @unique
-  type   VerificationType
-  status VerificationStatus @default(PENDING)
+  id       String             @id @default(uuid())
+  token    String             @unique
+  code     String?
+  attempts Int                @default(0)
+  type     VerificationType
+  status   VerificationStatus @default(PENDING)
 
   // Foreign Keys
   userId String
