@@ -79,6 +79,10 @@ export const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).+$/;
 export const LOGIN_MAX_ATTEMPTS = 8;
 export const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 export const SETTING_OPEN_SIGNUPS = 'openSignups';
+
+export const EMAIL_CODE_LENGTH = 6;
+export const EMAIL_CODE_TTL_MS = 15 * 60 * 1000;
+export const EMAIL_CODE_MAX_ATTEMPTS = 5;
 export const SETTING_MAINTENANCE = 'maintenanceMode';
 export const SETTING_BASE_CURRENCY = 'baseCurrency';
 

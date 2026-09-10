@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -17,6 +17,9 @@ import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import type { AuthResponse, JwtPayload } from './types/auth.types';
 import {
     DEFAULT_FRONTEND_URL,
+    EMAIL_CODE_LENGTH,
+    EMAIL_CODE_MAX_ATTEMPTS,
+    EMAIL_CODE_TTL_MS,
     LOGIN_MAX_ATTEMPTS,
     LOGIN_WINDOW_MS,
     SETTING_MAINTENANCE,
@@ -34,6 +37,9 @@ const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
 const GENERIC_RESET_MESSAGE =
     'If the email exists, reset instructions were sent.';
+
+const GENERIC_VERIFICATION_MESSAGE =
+    'If the account still needs verifying, a new code was sent.';
 
 import {
     ForbiddenException,
@@ -79,6 +85,8 @@ export class AuthService {
         });
 
         const user = await this.usersService.create(data);
+        await this.issueEmailCode(user.id, user.email, user.fullName);
+
         const accessToken = this.generateToken({
             id: user.id,
             email: user.email,
@@ -90,6 +98,109 @@ export class AuthService {
             accessToken,
             expiresAt: this.expiryOf(accessToken),
         };
+    }
+
+    private async issueEmailCode(
+        userId: string,
+        email: string,
+        fullName: string,
+    ): Promise<void> {
+        await this.verificationTokenRepo.updateMany({
+            where: {
+                userId,
+                type: VerificationType.EMAIL,
+                status: VerificationStatus.PENDING,
+            },
+            data: { status: VerificationStatus.REJECTED },
+        });
+
+        const code = randomInt(0, 10 ** EMAIL_CODE_LENGTH)
+            .toString()
+            .padStart(EMAIL_CODE_LENGTH, '0');
+
+        await this.verificationTokenRepo.create({
+            data: {
+                token: randomBytes(32).toString('base64url'),
+                code,
+                userId,
+                type: VerificationType.EMAIL,
+                expiresAt: new Date(Date.now() + EMAIL_CODE_TTL_MS),
+            },
+        });
+
+        try {
+            await this.emailService.sendEmailVerificationEmail(
+                email,
+                fullName,
+                code,
+            );
+        } catch (error: unknown) {
+            this.logger.error(
+                `Failed to send verification email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }
+
+    async verifyEmail(
+        userId: string,
+        code: string,
+    ): Promise<{ verified: true }> {
+        const record = await this.verificationTokenRepo.findFirst({
+            where: {
+                userId,
+                type: VerificationType.EMAIL,
+                status: VerificationStatus.PENDING,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        if (!record || record.expiresAt <= new Date()) {
+            throw new UnauthorizedException(
+                'That code has expired. Request a new one.',
+            );
+        }
+
+        if (record.attempts >= EMAIL_CODE_MAX_ATTEMPTS) {
+            await this.verificationTokenRepo.update({
+                where: { id: record.id },
+                data: { status: VerificationStatus.REJECTED },
+            });
+            throw new UnauthorizedException(
+                'Too many attempts. Request a new code.',
+            );
+        }
+
+        if (record.code !== code) {
+            await this.verificationTokenRepo.update({
+                where: { id: record.id },
+                data: { attempts: record.attempts + 1 },
+            });
+            throw new UnauthorizedException('That code is not correct.');
+        }
+
+        await this.verificationTokenRepo.update({
+            where: { id: record.id },
+            data: {
+                status: VerificationStatus.VERIFIED,
+                verifiedAt: new Date(),
+            },
+        });
+        await this.userRepo.update({
+            where: { id: userId },
+            data: { emailVerified: true },
+        });
+
+        return { verified: true };
+    }
+
+    async resendEmailCode(userId: string): Promise<{ message: string }> {
+        const user = await this.usersService.findOne(userId);
+
+        if (user && !user.emailVerified) {
+            await this.issueEmailCode(userId, user.email, user.fullName);
+        }
+
+        return { message: GENERIC_VERIFICATION_MESSAGE };
     }
 
     async login(dto: LoginDto): Promise<AuthResponse> {

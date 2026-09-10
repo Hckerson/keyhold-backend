@@ -197,6 +197,24 @@ export class EmailService {
         });
     }
 
+    async sendEmailVerificationEmail(
+        email: string,
+        fullName: string,
+        code: string,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: email,
+            subject: 'Confirm your email address',
+            html: `
+    <h2>Confirm your email</h2>
+    <p>Hello ${escapeHtml(fullName)},</p>
+    <p>Your verification code is below. It expires in fifteen minutes.</p>
+    <p style="font-size:24px;letter-spacing:4px;font-weight:600">${escapeHtml(code)}</p>
+    <p>If you did not create an account, you can safely ignore this email.</p>
+  `,
+        });
+    }
+
     async sendPasswordResetEmail(
         email: string,
         fullName: string,

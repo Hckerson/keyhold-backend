@@ -10,7 +10,8 @@ import {
 } from '@common/config/session-cookie';
 import { JwtAuthGuard } from './guards';
 import { AuthService } from './auth.service';
-import type { AuthResponse } from './types/auth.types';
+import { CurrentUser } from './decorators/current-user.decorator';
+import type { AuthResponse, AuthUser } from './types/auth.types';
 
 import {
     Post,
@@ -28,6 +29,7 @@ import {
     OnboardingDto,
     ResetPasswordDto,
     ForgotPasswordDto,
+    VerifyEmailDto,
 } from './dto';
 import {
     ApiTags,
@@ -108,6 +110,31 @@ export class AuthController {
     @ApiOperation({ summary: 'Reset password' })
     async resetPassword(@Body() dto: ResetPasswordDto) {
         return this.authService.resetPassword(dto);
+    }
+
+    // ─── Email Verification ──────────────────────────────────────────────────
+
+    @Throttle(authThrottle)
+    @Post('verify-email')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Confirm an email address with its code' })
+    async verifyEmail(
+        @CurrentUser() user: AuthUser,
+        @Body() dto: VerifyEmailDto,
+    ) {
+        return this.authService.verifyEmail(user.id, dto.code);
+    }
+
+    @Throttle(authThrottle)
+    @Post('resend-verification')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Send a fresh email verification code' })
+    async resendVerification(@CurrentUser() user: AuthUser) {
+        return this.authService.resendEmailCode(user.id);
     }
 
     // ─── Onboarding ──────────────────────────────────────────────────────────
