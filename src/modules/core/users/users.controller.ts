@@ -22,7 +22,13 @@ import {
     Param,
     Delete,
     UseGuards,
+    UseInterceptors,
+    UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { IMAGE_MIME_TYPES, uploadOptions } from '@common/config/upload.config';
+
+const AVATAR_FIELD = 'file';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -61,6 +67,19 @@ export class UsersController {
         @Body() updateProfileDto: UpdateProfileDto,
     ) {
         return this.usersService.updateProfile(user.id, updateProfileDto);
+    }
+
+    @Post('me/avatar')
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(
+        FileInterceptor(AVATAR_FIELD, uploadOptions(1, IMAGE_MIME_TYPES)),
+    )
+    @ApiOperation({ summary: 'Upload the current user profile photo' })
+    uploadAvatar(
+        @CurrentUser() user: AuthUser,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        return this.usersService.uploadAvatar(user.id, file);
     }
 
     @Get('tiers/distribution')

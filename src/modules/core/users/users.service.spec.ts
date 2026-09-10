@@ -2,6 +2,7 @@ import { ConflictException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
+import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 import { UserRole } from '@generated/prisma/enums';
 import { UsersService } from './users.service';
 
@@ -22,6 +23,13 @@ describe('UsersService', () => {
                 {
                     provide: TransactionRepo,
                     useValue: { groupBy: jest.fn().mockResolvedValue([]) },
+                },
+                {
+                    provide: CloudinaryService,
+                    useValue: {
+                        uploadAvatar: jest.fn(),
+                        deleteImage: jest.fn(),
+                    },
                 },
             ],
         }).compile();

@@ -1,5 +1,6 @@
 import { CreateUserDto, UpdateProfileDto, UpdateUserDto, UserDto } from './dto';
 import {
+    BadRequestException,
     ConflictException,
     Injectable,
     NotFoundException,
@@ -11,6 +12,7 @@ import { toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { PasswordUtil } from '@core/auth/utils/password.util';
+import { CloudinaryService } from '@common/services/storage/cloudinary.service';
 
 interface UserCreateData {
     email: string;
@@ -38,7 +40,43 @@ export class UsersService {
     constructor(
         private userRepo: UserRepo,
         private transactionRepo: TransactionRepo,
+        private cloudinaryService: CloudinaryService,
     ) {}
+
+    async uploadAvatar(
+        id: string,
+        file: Express.Multer.File | undefined,
+    ): Promise<UserDto> {
+        if (!file) throw new BadRequestException('No file provided');
+
+        const previous = await this.userRepo.findUnique({
+            where: { id },
+            select: { avatarPublicId: true },
+        });
+
+        const upload = await this.cloudinaryService.uploadAvatar(
+            file.buffer,
+            file.originalname,
+        );
+
+        try {
+            const updated = await this.update(id, {
+                avatar: upload.url,
+                avatarPublicId: upload.publicId,
+            });
+
+            if (previous?.avatarPublicId) {
+                await this.cloudinaryService.deleteImage(
+                    previous.avatarPublicId,
+                );
+            }
+
+            return updated;
+        } catch (error: unknown) {
+            await this.cloudinaryService.deleteImage(upload.publicId);
+            throw error;
+        }
+    }
 
     async create(data: UserCreateData): Promise<UserDto> {
         const existing = await this.userRepo.findUnique({

@@ -14,6 +14,7 @@ import {
 
 const PROPERTY_FOLDER = 'properties';
 const DOCUMENT_FOLDER = 'documents';
+const AVATAR_FOLDER = 'avatars';
 const PUBLIC_ID_SUFFIX_BYTES = 8;
 const PUBLIC_ID_STEM_LENGTH = 64;
 const FALLBACK_STEM = 'file';
@@ -120,6 +121,13 @@ export class CloudinaryService {
         filename: string,
     ): Promise<UploadResponse> {
         return this.upload(fileBuffer, filename, PROPERTY_FOLDER);
+    }
+
+    async uploadAvatar(
+        fileBuffer: Buffer,
+        filename: string,
+    ): Promise<UploadResponse> {
+        return this.upload(fileBuffer, filename, AVATAR_FOLDER);
     }
 
     async uploadDocument(
