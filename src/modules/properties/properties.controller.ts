@@ -88,6 +88,12 @@ export class PropertiesController {
         return this.propertiesService.findOne(id, user);
     }
 
+    @Get(':id/nearby')
+    @ApiOperation({ summary: 'Schools, transit, parks and restaurants nearby' })
+    async nearby(@Param('id') id: string) {
+        return this.propertiesService.nearby(id);
+    }
+
     @Post(':id/view')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Record a property detail view' })

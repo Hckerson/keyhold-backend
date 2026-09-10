@@ -1,5 +1,6 @@
 import {
     Injectable,
+    Logger,
     BadRequestException,
     NotFoundException,
     ForbiddenException,
@@ -38,6 +39,13 @@ import {
     PUBLIC_PROPERTY_STATUSES,
 } from '@common/enums';
 import type { AuthUser } from '@core/auth/types/auth.types';
+import {
+    OVERPASS_ENDPOINT,
+    OVERPASS_TIMEOUT_MS,
+    overpassQuery,
+    parseOverpass,
+    type NearbyPlace,
+} from './nearby';
 
 const LIST_INCLUDE = {
     images: { orderBy: { order: 'asc' } },
@@ -95,8 +103,17 @@ const SELLER_SETTABLE_STATUSES: PropertyStatus[] = [
     PropertyStatus.PENDING,
 ];
 
+const NEARBY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class PropertiesService {
+    private readonly logger = new Logger(PropertiesService.name);
+
+    private readonly nearbyCache = new Map<
+        string,
+        { places: NearbyPlace[]; expiresAt: number }
+    >();
+
     constructor(
         private propertyRepo: PropertyRepo,
         private cloudinaryService: CloudinaryService,
@@ -308,6 +325,57 @@ export class PropertiesService {
         }
 
         return property;
+    }
+
+    async nearby(id: string): Promise<NearbyPlace[]> {
+        const property = await this.propertyRepo.findUnique({
+            where: { id },
+            select: { latitude: true, longitude: true, status: true },
+        });
+        if (!property || !PUBLIC_PROPERTY_STATUSES.includes(property.status)) {
+            throw new NotFoundException(`Property with ID ${id} not found`);
+        }
+
+        const { latitude, longitude } = property;
+        if (latitude === null || longitude === null) return [];
+
+        const key = `${latitude.toFixed(3)},${longitude.toFixed(3)}`;
+        const hit = this.nearbyCache.get(key);
+        if (hit && hit.expiresAt > Date.now()) return hit.places;
+
+        const places = await this.fetchNearby(latitude, longitude);
+        this.nearbyCache.set(key, {
+            places,
+            expiresAt: Date.now() + NEARBY_CACHE_TTL_MS,
+        });
+
+        return places;
+    }
+
+    private async fetchNearby(
+        latitude: number,
+        longitude: number,
+    ): Promise<NearbyPlace[]> {
+        try {
+            const response = await fetch(OVERPASS_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: overpassQuery(latitude, longitude),
+                signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
+            });
+
+            if (!response.ok) {
+                this.logger.warn(`Overpass replied ${response.status}`);
+                return [];
+            }
+
+            return parseOverpass(await response.json());
+        } catch (error: unknown) {
+            this.logger.warn(
+                `Nearby lookup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+            return [];
+        }
     }
 
     async recordView(id: string) {
