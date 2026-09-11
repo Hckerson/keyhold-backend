@@ -6,6 +6,7 @@ import {
     E164_PATTERN,
     NodeEnv,
     SMTP_SECURE_PORT,
+    TOKEN_KEY_BYTES,
 } from '@common/enums';
 
 interface CredentialGroup {
@@ -44,6 +45,28 @@ const CREDENTIAL_GROUPS: CredentialGroup[] = [
         companions: [],
         requiredInProduction: false,
     },
+    {
+        service: 'Google sign-in',
+        keys: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
+        companions: ['API_PUBLIC_URL'],
+        requiredInProduction: false,
+    },
+    {
+        service: 'Facebook sign-in',
+        keys: ['FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET'],
+        companions: ['API_PUBLIC_URL'],
+        requiredInProduction: false,
+    },
+    {
+        service: 'Google Calendar',
+        keys: ['TOKEN_ENCRYPTION_KEY'],
+        companions: [
+            'GOOGLE_CLIENT_ID',
+            'GOOGLE_CLIENT_SECRET',
+            'API_PUBLIC_URL',
+        ],
+        requiredInProduction: false,
+    },
 ];
 
 const blankAsAbsent = (value: unknown): unknown =>
@@ -52,6 +75,17 @@ const blankAsAbsent = (value: unknown): unknown =>
 const optionalSecret = z.preprocess(
     blankAsAbsent,
     z.string().min(1).optional(),
+);
+
+const optionalEncryptionKey = z.preprocess(
+    blankAsAbsent,
+    z
+        .string()
+        .refine(
+            (value) => Buffer.from(value, 'base64').length === TOKEN_KEY_BYTES,
+            `TOKEN_ENCRYPTION_KEY must be ${TOKEN_KEY_BYTES} bytes, base64-encoded`,
+        )
+        .optional(),
 );
 
 const envSchema = z
@@ -103,6 +137,12 @@ const envSchema = z
             blankAsAbsent,
             z.url().optional(),
         ),
+        API_PUBLIC_URL: z.preprocess(blankAsAbsent, z.url().optional()),
+        GOOGLE_CLIENT_ID: optionalSecret,
+        GOOGLE_CLIENT_SECRET: optionalSecret,
+        FACEBOOK_APP_ID: optionalSecret,
+        FACEBOOK_APP_SECRET: optionalSecret,
+        TOKEN_ENCRYPTION_KEY: optionalEncryptionKey,
     })
     .superRefine((env, ctx) => {
         const isProduction = env.NODE_ENV === NodeEnv.PRODUCTION;

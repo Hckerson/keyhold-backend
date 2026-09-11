@@ -23,4 +23,18 @@ export const externalServicesConfig = registerAs('externalServices', () => ({
         fromNumber: process.env.TWILIO_FROM_NUMBER,
         statusCallbackUrl: process.env.TWILIO_STATUS_CALLBACK_URL,
     },
+    oauth: {
+        apiPublicUrl: process.env.API_PUBLIC_URL,
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        },
+        facebook: {
+            appId: process.env.FACEBOOK_APP_ID,
+            appSecret: process.env.FACEBOOK_APP_SECRET,
+        },
+    },
+    calendar: {
+        tokenKey: process.env.TOKEN_ENCRYPTION_KEY,
+    },
 }));

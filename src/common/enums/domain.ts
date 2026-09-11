@@ -86,6 +86,9 @@ export const EMAIL_CODE_MAX_ATTEMPTS = 5;
 export const SETTING_MAINTENANCE = 'maintenanceMode';
 export const SETTING_BASE_CURRENCY = 'baseCurrency';
 
+export const TOKEN_KEY_BYTES = 32;
+export const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
 export enum DisputeOutcome {
     RELEASE = 'RELEASE',
     REFUND = 'REFUND',
