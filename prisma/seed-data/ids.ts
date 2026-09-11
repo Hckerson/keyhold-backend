@@ -2,6 +2,8 @@ import { Day, Month } from '../../generated/prisma/client';
 
 export const SEED_PREFIX = 'seed-';
 
+export const SEED_MAIL_DOMAIN = 'keyhol.me';
+
 export const seedId = (domain: string, ...parts: (string | number)[]): string =>
     `${SEED_PREFIX}${domain}-${parts.join('-')}`;
 

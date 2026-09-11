@@ -1,10 +1,11 @@
+import { SEED_MAIL_DOMAIN } from './ids';
 import type { AgentSeed } from './types';
 
 export const AGENT_SEEDS: readonly AgentSeed[] = [
     {
         key: 'sarah',
         fullName: 'Sarah Johnson',
-        email: 'sarah@luxuryre.com',
+        email: `sarah@${SEED_MAIL_DOMAIN}`,
         jobTitle: 'Luxury Specialist',
         agencyName: 'Luxury RE Private Office',
         licenseNumber: 'DRE #01884210',
@@ -17,7 +18,7 @@ export const AGENT_SEEDS: readonly AgentSeed[] = [
     {
         key: 'marcus',
         fullName: 'Marcus Reyes',
-        email: 'marcus@luxuryre.com',
+        email: `marcus@${SEED_MAIL_DOMAIN}`,
         jobTitle: 'Estates Director',
         agencyName: 'Luxury RE Private Office',
         licenseNumber: 'DRE #02010774',
@@ -30,7 +31,7 @@ export const AGENT_SEEDS: readonly AgentSeed[] = [
     {
         key: 'elena',
         fullName: 'Elena Whitfield',
-        email: 'elena@luxuryre.com',
+        email: `elena@${SEED_MAIL_DOMAIN}`,
         jobTitle: 'Architectural Sales',
         agencyName: 'Luxury RE Coastal',
         licenseNumber: 'DRE #01997332',
@@ -43,7 +44,7 @@ export const AGENT_SEEDS: readonly AgentSeed[] = [
     {
         key: 'david',
         fullName: 'David Okonkwo',
-        email: 'david@luxuryre.com',
+        email: `david@${SEED_MAIL_DOMAIN}`,
         jobTitle: 'Off-Market Advisor',
         agencyName: 'Luxury RE Private Office',
         licenseNumber: 'DRE #02114508',

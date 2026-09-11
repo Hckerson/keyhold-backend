@@ -1,4 +1,5 @@
 import { SettingCategory } from '../../generated/prisma/client';
+import { SEED_MAIL_DOMAIN } from './ids';
 
 export const PLATFORM_SETTINGS: readonly {
     key: string;
@@ -12,7 +13,7 @@ export const PLATFORM_SETTINGS: readonly {
     },
     {
         key: 'supportEmail',
-        value: 'support@horizongrove.local',
+        value: `support@${SEED_MAIL_DOMAIN}`,
         category: SettingCategory.PLATFORM,
     },
     {
