@@ -130,7 +130,8 @@
             "^@common/(.*)$": "<rootDir>/common/$1",
             "^@prisma-db/(.*)$": "<rootDir>/common/database/$1",
             "^@generated/(.*)$": "<rootDir>/../generated/$1",
-            "^generated/(.*)$": "<rootDir>/../generated/$1"
+            "^generated/(.*)$": "<rootDir>/../generated/$1",
+            "^src/(.*)$": "<rootDir>/$1"
         },
         "transform": {
             "^.+\\.(t|j)s$": "ts-jest"
