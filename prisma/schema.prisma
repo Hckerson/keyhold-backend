@@ -53,6 +53,11 @@ enum UserAccountStatus {
   DELETED
 }
 
+enum AuthProvider {
+  GOOGLE
+  FACEBOOK
+}
+
 // ============================================================================
 // ENUMS - REAL ESTATE DOMAIN
 // ============================================================================
@@ -271,6 +276,42 @@ model AuditLog {
   @@index([entityType])
   @@index([entityId])
   @@index([createdAt])
+}
+
+model AuthIdentity {
+  // Scalars
+  id             String       @id @default(uuid())
+  provider       AuthProvider
+  providerUserId String
+  email          String?
+
+  // Foreign Keys
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+model CalendarConnection {
+  // Scalars
+  id           String  @id @default(uuid())
+  refreshToken String
+  googleEmail  String?
+  calendarId   String  @default("primary")
+
+  // Foreign Keys
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 }
 
 model Connection {
@@ -905,6 +946,8 @@ model User {
   conciergePractices      ConciergePractice[]      @relation("AgentConciergePractices")
   savedSearches           SavedSearch[]            @relation("BuyerSavedSearches")
   contactActivities       ContactActivity[]        @relation("ActorContactActivities")
+  authIdentities          AuthIdentity[]
+  calendarConnection      CalendarConnection?
 
   // Constraints
   @@index([email])
@@ -980,6 +1023,9 @@ model Viewing {
   proposedByid  String
   proposedBy    User       @relation("SellerViewings", fields: [proposedByid], references: [id], onDelete: Cascade)
   confirmedById String?
+
+  // Calendar
+  googleEventId String?
 
   // Timestamps
   confirmedTime DateTime?
