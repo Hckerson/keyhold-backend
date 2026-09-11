@@ -20,10 +20,15 @@ repository.
 ## First deploy
 
 ```sh
-heroku create keyhold-api --stack heroku-24
+heroku create keyhold-api --region eu --stack heroku-24
 heroku addons:create heroku-postgresql:essential-0 --app keyhold-api
 heroku ps:type web=basic --app keyhold-api
 ```
+
+`--region eu` is permanent — Heroku cannot move an app between regions, only
+rebuild it. It matches Resend (`eu-west-1`) and the web app's functions (`dub1`),
+so no server-side request leaves Europe. The reasoning is recorded in
+`docs/adr/0019-production-runs-in-europe.md` in the frontend repository.
 
 `DATABASE_URL` is set by the addon. Everything else you set yourself:
 
@@ -35,9 +40,9 @@ heroku config:set --app keyhold-api \
   PNPM_SKIP_PRUNING=true \
   JWT_PRIVATE_KEY="$(cat jwt-private.b64)" \
   JWT_PUBLIC_KEY="$(cat jwt-public.b64)" \
-  FRONTEND_URL="https://keyhold.me" \
+  FRONTEND_URL="https://keyhol.me" \
   SMTP_HOST=smtp.resend.com SMTP_PORT=465 SMTP_USER=resend \
-  SMTP_PASSWORD="re_..." EMAIL_FROM="noreply@keyhold.me" \
+  SMTP_PASSWORD="re_..." EMAIL_FROM="noreply@keyhol.me" \
   STRIPE_API_KEY="sk_live_..." STRIPE_WEBHOOK_SECRET="whsec_..." \
   CLOUDINARY_CLOUD_NAME="..." CLOUDINARY_API_KEY="..." CLOUDINARY_API_SECRET="..." \
   SENTRY_DSN="https://...ingest.sentry.io/..."
