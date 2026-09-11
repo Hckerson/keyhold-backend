@@ -30,6 +30,8 @@ import { ConciergePracticeCoverageRepo } from './concierge-practice-coverage.rep
 import { SavedSearchRepo } from './saved-search.repo';
 import { ServiceMetricRepo } from './service-metric.repo';
 import { ContactActivityRepo } from './contact-activity.repo';
+import { AuthIdentityRepo } from './auth-identity.repo';
+import { CalendarConnectionRepo } from './calendar-connection.repo';
 import { Global, Module } from '@nestjs/common';
 
 const repos = [
@@ -68,6 +70,8 @@ const repos = [
     ContactActivityRepo,
     MessageAttachmentRepo,
     DealMilestoneRepo,
+    AuthIdentityRepo,
+    CalendarConnectionRepo,
 ];
 
 @Global()
