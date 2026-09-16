@@ -11,6 +11,8 @@ import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '@core/users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { OAuthService } from './oauth/oauth.service';
+import { OAuthController } from './oauth/oauth.controller';
 import { ServicesModule } from '@common/services/services.module';
 import { SettingsModule } from '@modules/settings/settings.module';
 import { SuspensionsModule } from '@modules/suspensions/suspensions.module';
@@ -37,8 +39,8 @@ import { SuspensionsModule } from '@modules/suspensions/suspensions.module';
             },
         }),
     ],
-    providers: [AuthService, JwtStrategy],
-    controllers: [AuthController],
+    providers: [AuthService, JwtStrategy, OAuthService],
+    controllers: [AuthController, OAuthController],
     exports: [AuthService],
 })
 export class AuthModule {}

@@ -20,6 +20,7 @@ interface UserCreateData {
     phoneNumber?: string;
     role?: string;
     passwordHash?: string;
+    emailVerified?: boolean;
 }
 
 interface Settlement {

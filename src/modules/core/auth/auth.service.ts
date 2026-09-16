@@ -2,6 +2,7 @@ import { randomBytes, randomInt } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
+    UserAccountStatus,
     UserRole,
     VerificationStatus,
     VerificationType,
@@ -205,7 +206,24 @@ export class AuthService {
 
     async login(dto: LoginDto): Promise<AuthResponse> {
         this.assertNotLocked(dto.email);
-        const user = await this.authenticateUser(dto.email, dto.password);
+        return this.startSession(
+            await this.authenticateUser(dto.email, dto.password),
+        );
+    }
+
+    async sessionForUser(userId: string): Promise<AuthResponse> {
+        const user = await this.userRepo.findUnique({ where: { id: userId } });
+        if (!user) throw new UnauthorizedException('Invalid credentials');
+        return this.startSession(user);
+    }
+
+    private async startSession(user: {
+        id: string;
+        email: string;
+        fullName: string;
+        role: UserRole;
+        status: UserAccountStatus;
+    }): Promise<AuthResponse> {
         await this.suspensionsService.ensureActive(user.id, user.status);
         await this.assertNotInMaintenance(user.role);
         const accessToken = this.generateToken({
