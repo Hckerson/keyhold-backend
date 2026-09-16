@@ -11,6 +11,7 @@ import { EmailService } from '@common/services/email/email.service';
 import { TwilioService } from '@common/services/notification/twilio.service';
 import { ViewingStatus } from '@generated/prisma/enums';
 import { NotificationsService } from '@modules/notifications/notifications.service';
+import { CalendarService } from '@modules/calendar/calendar.service';
 import { NotificationType } from '@generated/prisma/enums';
 import { CreateViewingDto } from './dto';
 import { OPEN_LISTING_STATUSES } from '@common/enums';
@@ -29,6 +30,7 @@ export class ViewingsService {
         private emailService: EmailService,
         private smsService: TwilioService,
         private notificationsService: NotificationsService,
+        private calendarService: CalendarService,
     ) {}
 
     async requestViewing(userId: string, createDto: CreateViewingDto) {
@@ -173,6 +175,8 @@ export class ViewingsService {
             }),
         ]);
 
+        void this.calendarService.pushViewing(confirmed.id);
+
         return confirmed;
     }
 
@@ -247,10 +251,16 @@ export class ViewingsService {
             throw new ForbiddenException('You are not part of this viewing');
         }
 
-        return this.viewingRepo.update({
+        const updated = await this.viewingRepo.update({
             where: { id: viewingId },
             data: { status },
         });
+
+        if (status === ViewingStatus.CANCELLED) {
+            void this.calendarService.removeViewing(viewingId);
+        }
+
+        return updated;
     }
 
     async reschedule(
@@ -274,7 +284,7 @@ export class ViewingsService {
 
         this.assertFutureTimes(proposedTimes);
 
-        return this.viewingRepo.update({
+        const rescheduled = await this.viewingRepo.update({
             where: { id: viewingId },
             data: {
                 proposedTimes,
@@ -283,6 +293,10 @@ export class ViewingsService {
                 status: ViewingStatus.PENDING,
             },
         });
+
+        void this.calendarService.removeViewing(viewingId);
+
+        return rescheduled;
     }
 
     private async notifyProposedTimes(viewing: {

@@ -17,6 +17,7 @@ import { ConnectionsModule } from '@modules/connections/connections.module';
 import { MessagesModule } from '@modules/messages/messages.module';
 import { ContactModule } from '@modules/contact/contact.module';
 import { ViewingsModule } from '@modules/viewings/viewings.module';
+import { CalendarModule } from '@modules/calendar/calendar.module';
 import { OffersModule } from '@modules/offers/offers.module';
 import { TransactionsModule } from '@modules/transactions/transactions.module';
 import { ReviewsModule } from '@modules/reviews/reviews.module';
@@ -64,6 +65,7 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
         MessagesModule,
         ContactModule,
         ViewingsModule,
+        CalendarModule,
         OffersModule,
         TransactionsModule,
         ReviewsModule,
