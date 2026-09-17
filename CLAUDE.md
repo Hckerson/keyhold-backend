@@ -121,18 +121,16 @@ Formatting and linting are automated. They are not chores you run by hand.
 
 - **Commit** — Husky's `pre-commit` hook runs `pnpm lint-staged` and nothing else: `eslint --fix` then `prettier --write`, over staged files only. It is fast by design.
 - **Push** — Husky's `pre-push` hook runs `pnpm type-check`, then `pnpm lint`, and blocks on failure. This is the real gate.
-- **Build** — `pnpm build` must succeed. That one is on you.
 
 `pnpm format` and `pnpm lint` stay available for a manual full-repo sweep, but no workflow requires you to run them.
 
 ## Pre-merge checklist
 
-1. Type check, lint, and build all clean.
-2. No `any` in services, no `console.log`, no dead code or stubs.
-3. No comments in code. No inline type/lint rule suppressions (`// @ts-ignore`, `// eslint-disable`, `as any`, etc.).
-4. No hardcoded config, secrets, or magic values (all in env, enums, or constants).
-5. Reused existing repos, guards, filters, and the global interceptor. Nothing reinvented.
-6. Followed the layer contracts. Repos stayed thin. Matched the `users` module pattern exactly.
+1. No `any` in services, no `console.log`, no dead code or stubs.
+2. No comments in code. No inline type/lint rule suppressions (`// @ts-ignore`, `// eslint-disable`, `as any`, etc.).
+3. No hardcoded config, secrets, or magic values (all in env, enums, or constants).
+4. Reused existing repos, guards, filters, and the global interceptor. Nothing reinvented.
+5. Followed the layer contracts. Repos stayed thin. Matched the `users` module pattern exactly.
 
 **Do not merge if any check fails.**
 
