@@ -31,6 +31,10 @@
             "description": "Keeps the prisma CLI in the slug so the release phase can run migrate deploy.",
             "value": "true"
         },
+        "PGSSLMODE": {
+            "description": "Heroku Postgres refuses unencrypted connections and DATABASE_URL carries no sslmode, so node-postgres reads this instead. no-verify encrypts without checking the certificate chain, which Heroku's certificates cannot satisfy.",
+            "value": "no-verify"
+        },
         "JWT_PRIVATE_KEY": {
             "description": "Base64-encoded RS256 private PEM. Generate the pair with `pnpm keys:generate`."
         },
@@ -44,6 +48,10 @@
         },
         "FRONTEND_URL": {
             "description": "Public origin of the Next.js app. Sets the CORS allow-list."
+        },
+        "COOKIE_DOMAIN": {
+            "description": "Parent domain for the session cookie. The API sets it on api.keyhol.me and proxy.ts reads it on keyhol.me; without a shared parent domain every portal redirects to /login after a successful sign-in.",
+            "value": "keyhol.me"
         },
         "STRIPE_API_KEY": {
             "description": "Stripe secret key."

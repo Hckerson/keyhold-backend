@@ -38,9 +38,11 @@ pnpm keys:generate
 heroku config:set --app keyhold-api \
   NODE_ENV=production \
   PNPM_SKIP_PRUNING=true \
+  PGSSLMODE=no-verify \
   JWT_PRIVATE_KEY="$(cat jwt-private.b64)" \
   JWT_PUBLIC_KEY="$(cat jwt-public.b64)" \
   FRONTEND_URL="https://keyhol.me" \
+  COOKIE_DOMAIN=keyhol.me \
   SMTP_HOST=smtp.resend.com SMTP_PORT=465 SMTP_USER=resend \
   SMTP_PASSWORD="re_..." EMAIL_FROM="noreply@keyhol.me" \
   STRIPE_API_KEY="sk_live_..." STRIPE_WEBHOOK_SECRET="whsec_..." \
@@ -57,6 +59,25 @@ twelve months and has to be re-issued and re-uploaded by hand.
 `PNPM_SKIP_PRUNING=true` is not optional. Heroku prunes devDependencies at the
 end of the build, `prisma` is a devDependency, and the release phase runs after
 the prune — without it every deploy fails at `prisma migrate deploy`.
+
+`PGSSLMODE=no-verify` is not optional either. Heroku Postgres rejects unencrypted
+connections, and the `DATABASE_URL` it manages carries no `sslmode`, so without
+this the API boots cleanly but every query fails with `no pg_hba.conf entry … no
+encryption` — `/api/health` returns 503 while the dashboard shows a healthy
+deploy. A green release phase is no evidence either way: Prisma's migration
+engine negotiates TLS on its own, so migrations succeed while the runtime driver
+cannot connect. node-postgres reads `PGSSLMODE` only when the URL has no
+`sslmode`, so the setting survives Heroku rotating the credentials and leaves local
+development, which has no TLS, untouched. `no-verify` encrypts without validating
+the certificate chain, which Heroku's certificates cannot satisfy.
+
+`COOKIE_DOMAIN=keyhol.me` is what makes sign-in stick. The API sets the session
+cookie, but `proxy.ts` — which guards `/dashboard`, `/agent` and `/admin` — reads it
+on the web app's host. A cookie with no `Domain` belongs to `api.keyhol.me` alone,
+so without this a sign-in succeeds and the next page load bounces back to
+`/login`. It only works because both hosts share `keyhol.me`: the `herokuapp.com`
+and `vercel.app` URLs are separate sites to the browser, so authentication can
+never be tested on them. Leave it unset locally.
 
 `NODE_ENV=production` makes `env.validation.ts` reject a boot that is missing
 Stripe, SMTP or Cloudinary credentials. That check is the reason a half-configured
