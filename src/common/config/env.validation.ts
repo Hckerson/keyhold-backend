@@ -4,6 +4,7 @@ import {
     DEFAULT_JWT_EXPIRATION,
     DEFAULT_PORT,
     E164_PATTERN,
+    HOSTNAME_PATTERN,
     NodeEnv,
     SMTP_SECURE_PORT,
     TOKEN_KEY_BYTES,
@@ -108,6 +109,16 @@ const envSchema = z
         FRONTEND_URL: z.preprocess(
             blankAsAbsent,
             z.url().default(DEFAULT_FRONTEND_URL),
+        ),
+        COOKIE_DOMAIN: z.preprocess(
+            blankAsAbsent,
+            z
+                .string()
+                .regex(
+                    HOSTNAME_PATTERN,
+                    'must be a bare hostname such as keyhol.me, with no scheme, port or path',
+                )
+                .optional(),
         ),
         STRIPE_API_KEY: optionalSecret,
         STRIPE_WEBHOOK_SECRET: optionalSecret,
