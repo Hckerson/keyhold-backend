@@ -246,6 +246,7 @@ enum AuditActionType {
   LOGIN_SUCCEEDED
   LOGIN_FAILED
   PERMISSION_DENIED
+  SETTINGS_UPDATED
 }
 
 // ============================================================================

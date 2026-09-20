@@ -146,6 +146,10 @@ export class AuditLogInterceptor implements NestInterceptor {
             }
         }
 
+        if (normalizedPath.includes('/settings')) {
+            return AuditActionType.SETTINGS_UPDATED;
+        }
+
         return null;
     }
 
@@ -194,6 +198,9 @@ export class AuditLogInterceptor implements NestInterceptor {
         }
         if (normalizedPath.includes('/suspensions')) {
             return 'SUSPENSION';
+        }
+        if (normalizedPath.includes('/settings')) {
+            return 'SETTING';
         }
 
         // Extract from first path segment if not matched
