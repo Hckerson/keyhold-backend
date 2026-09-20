@@ -104,6 +104,7 @@ const SELLER_SETTABLE_STATUSES: PropertyStatus[] = [
 ];
 
 const NEARBY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const NEARBY_FAILED_CACHE_TTL_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class PropertiesService {
@@ -344,18 +345,24 @@ export class PropertiesService {
         if (hit && hit.expiresAt > Date.now()) return hit.places;
 
         const places = await this.fetchNearby(latitude, longitude);
+        const lookupFailed = places === null;
+
         this.nearbyCache.set(key, {
-            places,
-            expiresAt: Date.now() + NEARBY_CACHE_TTL_MS,
+            places: places ?? [],
+            expiresAt:
+                Date.now() +
+                (lookupFailed
+                    ? NEARBY_FAILED_CACHE_TTL_MS
+                    : NEARBY_CACHE_TTL_MS),
         });
 
-        return places;
+        return places ?? [];
     }
 
     private async fetchNearby(
         latitude: number,
         longitude: number,
-    ): Promise<NearbyPlace[]> {
+    ): Promise<NearbyPlace[] | null> {
         try {
             const response = await fetch(OVERPASS_ENDPOINT, {
                 method: 'POST',
@@ -366,7 +373,7 @@ export class PropertiesService {
 
             if (!response.ok) {
                 this.logger.warn(`Overpass replied ${response.status}`);
-                return [];
+                return null;
             }
 
             return parseOverpass(await response.json());
@@ -374,7 +381,7 @@ export class PropertiesService {
             this.logger.warn(
                 `Nearby lookup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
-            return [];
+            return null;
         }
     }
 
