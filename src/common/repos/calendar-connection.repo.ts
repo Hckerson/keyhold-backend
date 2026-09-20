@@ -31,6 +31,14 @@ export class CalendarConnectionRepo {
         }
     }
 
+    async updateMany(params: Prisma.CalendarConnectionUpdateManyArgs) {
+        try {
+            return await this.prisma.calendarConnection.updateMany(params);
+        } catch (error) {
+            throw new RepoError('Failed to update calendar connections', error);
+        }
+    }
+
     async deleteMany(params: Prisma.CalendarConnectionDeleteManyArgs) {
         try {
             return await this.prisma.calendarConnection.deleteMany(params);
