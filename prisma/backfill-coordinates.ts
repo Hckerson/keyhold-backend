@@ -11,7 +11,12 @@ const report = (message: string) => process.stdout.write(`${message}\n`);
 
 const keyOf = (id: string) => id.slice(`${SEED_PREFIX}prop-`.length);
 
+const SYNTHETIC_NOTICE =
+    'These coordinates are approximations around a locality centre, not geocoded addresses. Do not run this against a database real buyers will see.';
+
 const main = async () => {
+    report(SYNTHETIC_NOTICE);
+
     const pending = await prisma.property.findMany({
         where: {
             id: { startsWith: `${SEED_PREFIX}prop-` },
@@ -40,7 +45,7 @@ const main = async () => {
         written += 1;
     }
 
-    report(`Placed ${written} properties.`);
+    report(`Placed ${written} properties approximately.`);
 
     if (unplaced.size > 0) {
         report(

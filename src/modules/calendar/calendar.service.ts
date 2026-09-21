@@ -35,6 +35,8 @@ export interface CalendarStatus {
     available: boolean;
     connected: boolean;
     email: string | null;
+    lastSyncedAt: string | null;
+    lastFailedAt: string | null;
 }
 
 export interface CalendarCallback {
@@ -67,12 +69,24 @@ export class CalendarService {
     async status(userId: string): Promise<CalendarStatus> {
         const connection = await this.connectionRepo.findUnique({
             where: { userId },
-            select: { googleEmail: true },
+            select: {
+                googleEmail: true,
+                lastSyncAt: true,
+                lastSyncError: true,
+                lastSyncErrorAt: true,
+            },
         });
+
+        const failed = connection?.lastSyncError
+            ? (connection.lastSyncErrorAt ?? null)
+            : null;
+
         return {
             available: this.available,
             connected: connection !== null,
             email: connection?.googleEmail ?? null,
+            lastSyncedAt: connection?.lastSyncAt?.toISOString() ?? null,
+            lastFailedAt: failed?.toISOString() ?? null,
         };
     }
 
@@ -157,6 +171,8 @@ export class CalendarService {
     }
 
     async pushViewing(viewingId: string): Promise<void> {
+        let sellerId: string | null = null;
+
         try {
             const viewing = await this.viewingRepo.findUnique({
                 where: { id: viewingId },
@@ -170,7 +186,9 @@ export class CalendarService {
             });
             if (!viewing?.confirmedTime) return;
 
-            const session = await this.sessionFor(viewing.connection.sellerId);
+            sellerId = viewing.connection.sellerId;
+
+            const session = await this.sessionFor(sellerId);
             if (!session) return;
 
             const start = viewing.confirmedTime;
@@ -196,14 +214,19 @@ export class CalendarService {
                     data: { googleEventId: eventId },
                 });
             }
+
+            await this.recordSync(sellerId, null);
         } catch (error) {
             this.logger.warn(
                 `Calendar push failed for viewing ${viewingId}: ${messageOf(error)}`,
             );
+            await this.recordSync(sellerId, messageOf(error));
         }
     }
 
     async removeViewing(viewingId: string): Promise<void> {
+        let sellerId: string | null = null;
+
         try {
             const viewing = await this.viewingRepo.findUnique({
                 where: { id: viewingId },
@@ -211,7 +234,9 @@ export class CalendarService {
             });
             if (!viewing?.googleEventId) return;
 
-            const session = await this.sessionFor(viewing.connection.sellerId);
+            sellerId = viewing.connection.sellerId;
+
+            const session = await this.sessionFor(sellerId);
             if (session) {
                 await this.api.remove(
                     session.accessToken,
@@ -224,9 +249,38 @@ export class CalendarService {
                 where: { id: viewingId },
                 data: { googleEventId: null },
             });
+
+            await this.recordSync(sellerId, null);
         } catch (error) {
             this.logger.warn(
                 `Calendar removal failed for viewing ${viewingId}: ${messageOf(error)}`,
+            );
+            await this.recordSync(sellerId, messageOf(error));
+        }
+    }
+
+    private async recordSync(
+        userId: string | null,
+        failure: string | null,
+    ): Promise<void> {
+        if (!userId) return;
+
+        const now = new Date();
+
+        try {
+            await this.connectionRepo.updateMany({
+                where: { userId },
+                data: failure
+                    ? { lastSyncError: failure, lastSyncErrorAt: now }
+                    : {
+                          lastSyncError: null,
+                          lastSyncErrorAt: null,
+                          lastSyncAt: now,
+                      },
+            });
+        } catch (error) {
+            this.logger.warn(
+                `Could not record the calendar sync outcome for ${userId}: ${messageOf(error)}`,
             );
         }
     }

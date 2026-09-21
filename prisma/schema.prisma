@@ -246,6 +246,7 @@ enum AuditActionType {
   LOGIN_SUCCEEDED
   LOGIN_FAILED
   PERMISSION_DENIED
+  SETTINGS_UPDATED
 }
 
 // ============================================================================
@@ -300,10 +301,13 @@ model AuthIdentity {
 
 model CalendarConnection {
   // Scalars
-  id           String  @id @default(uuid())
-  refreshToken String
-  googleEmail  String?
-  calendarId   String  @default("primary")
+  id              String    @id @default(uuid())
+  refreshToken    String
+  googleEmail     String?
+  calendarId      String    @default("primary")
+  lastSyncAt      DateTime?
+  lastSyncError   String?
+  lastSyncErrorAt DateTime?
 
   // Foreign Keys
   userId String @unique
