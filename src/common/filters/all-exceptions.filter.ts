@@ -11,13 +11,11 @@ import { Request, Response } from 'express';
 import { AuditActionType } from 'generated/prisma/client';
 import { AuditLogService } from '@common/services/audit-log.service';
 import { SentryExceptionCaptured } from '@sentry/nestjs';
+import { isRecord } from '@common/is-record';
 
 const GENERIC_MESSAGE = 'An unexpected error occurred';
 const AUTH_ENTITY = 'AUTH';
 const LOGIN_PATH = '/auth/login';
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null;
 
 const messageFrom = (exception: HttpException): string | string[] => {
     const response = exception.getResponse();
@@ -78,7 +76,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         if (status === HttpStatus.UNAUTHORIZED && path.includes(LOGIN_PATH)) {
             await this.logSecurityEvent(
-                'LOGIN_FAILED' as AuditActionType,
+                AuditActionType.LOGIN_FAILED,
                 AUTH_ENTITY,
                 this.attemptedEmail(request) ?? 'unknown',
                 null,
@@ -90,7 +88,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         if (status === HttpStatus.FORBIDDEN) {
             await this.logSecurityEvent(
-                'PERMISSION_DENIED' as AuditActionType,
+                AuditActionType.PERMISSION_DENIED,
                 AUTH_ENTITY,
                 path,
                 request.user?.id ?? null,

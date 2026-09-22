@@ -4,14 +4,15 @@ import {
     ExecutionContext,
     CallHandler,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { Prisma } from 'generated/prisma/client';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-export interface ApiResponse<T> {
+export interface ApiResponse {
     statusCode: number;
     message: string;
-    data: T;
+    data: unknown;
     timestamp: string;
 }
 
@@ -24,7 +25,6 @@ const normalizeDecimals = (value: unknown, seen = new WeakSet()): unknown => {
 
     if (value instanceof Date || Buffer.isBuffer(value)) return value;
 
-    // Guard against cycles rather than overflowing the stack on a bad payload.
     if (seen.has(value)) return value;
     seen.add(value);
 
@@ -33,32 +33,29 @@ const normalizeDecimals = (value: unknown, seen = new WeakSet()): unknown => {
     }
 
     const output: Record<string, unknown> = {};
-    for (const [key, entry] of Object.entries(
-        value as Record<string, unknown>,
-    )) {
+    for (const [key, entry] of Object.entries(value)) {
         output[key] = normalizeDecimals(entry, seen);
     }
     return output;
 };
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<
-    T,
-    ApiResponse<T>
+export class ResponseInterceptor implements NestInterceptor<
+    unknown,
+    ApiResponse
 > {
     intercept(
         context: ExecutionContext,
         next: CallHandler,
-    ): Observable<ApiResponse<T>> {
-        const response = context.switchToHttp().getResponse();
-        const statusCode =
-            (response as Record<string, unknown>).statusCode || 200;
+    ): Observable<ApiResponse> {
+        const response = context.switchToHttp().getResponse<Response>();
+        const statusCode = response.statusCode || 200;
 
         return next.handle().pipe(
-            map((data) => ({
-                statusCode: typeof statusCode === 'number' ? statusCode : 200,
+            map((data: unknown) => ({
+                statusCode,
                 message: 'Success',
-                data: normalizeDecimals(data) as T,
+                data: normalizeDecimals(data),
                 timestamp: new Date().toISOString(),
             })),
         );
