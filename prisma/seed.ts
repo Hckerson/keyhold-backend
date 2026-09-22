@@ -6,6 +6,7 @@ import { PrismaClient } from '../generated/prisma/client';
 import { AGENT_SEEDS } from './seed-data/agents';
 import { seedCatalog } from './seed-steps/catalog';
 import { seedDeals } from './seed-steps/deals';
+import { placeProperties } from './seed-steps/geocode';
 import { ADMIN_EMAIL, BUYER_EMAIL, seedPeople } from './seed-steps/people';
 import { seedPlatform } from './seed-steps/platform';
 import { resetSeed } from './seed-steps/reset';
@@ -80,6 +81,11 @@ const main = async () => {
 
     report(
         `Seeded ${summary.users} users, ${summary.properties} properties, ${summary.saves} saves, ${summary.connections} connections and ${summary.transactions} transactions.`,
+    );
+
+    const placement = await placeProperties(prisma);
+    report(
+        `Geocoded ${placement.placed} properties to an exact address; ${placement.unplaced} stayed unplaced and are not drawn on any map.`,
     );
     report(
         `Sign in with ${ADMIN_EMAIL}, ${BUYER_EMAIL} or ${AGENT_SEEDS[0].email} using ${DEMO_PASSWORD}.`,
