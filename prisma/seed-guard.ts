@@ -2,10 +2,22 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '::1', '0.0.0.0'];
 
 const ACK = 'SEED_REMOTE_DATABASE';
 
+const PRODUCTION = 'production';
+
 export const assertSeedTarget = (raw: string | undefined): string => {
     if (!raw) {
         throw new Error(
             'DATABASE_URL is not set. The seed refuses to guess a target.',
+        );
+    }
+
+    if (process.env['NODE_ENV'] === PRODUCTION) {
+        throw new Error(
+            [
+                'Refusing to seed a production environment, with or without SEED_ACK.',
+                'The seed catalogue lists invented properties at real house addresses;',
+                'it is demo data and must never be shown to real visitors.',
+            ].join('\n'),
         );
     }
 

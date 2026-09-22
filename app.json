@@ -19,9 +19,6 @@
             "plan": "heroku-postgresql:essential-0"
         }
     ],
-    "scripts": {
-        "postdeploy": "pnpm db:seed"
-    },
     "env": {
         "NODE_ENV": {
             "description": "Enables the production credential checks in env.validation.ts.",

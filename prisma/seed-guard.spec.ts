@@ -4,8 +4,11 @@ const LOCAL = 'postgres://postgres:postgres@localhost:51214/template1';
 const REMOTE = 'postgres://user:pass@pooled.db.prisma.io:5432/postgres';
 
 describe('the seed target guard', () => {
+    const environment = process.env['NODE_ENV'];
+
     afterEach(() => {
         delete process.env['SEED_ACK'];
+        process.env['NODE_ENV'] = environment;
     });
 
     it('allows a database on this machine', () => {
@@ -31,6 +34,17 @@ describe('the seed target guard', () => {
 
         process.env['SEED_ACK'] = 'yes';
         expect(() => assertSeedTarget(REMOTE)).toThrow(/Refusing to seed/);
+    });
+
+    it('refuses a production environment even on a local database', () => {
+        process.env['NODE_ENV'] = 'production';
+        expect(() => assertSeedTarget(LOCAL)).toThrow(/production/);
+    });
+
+    it('refuses a production environment even with the remote override set', () => {
+        process.env['NODE_ENV'] = 'production';
+        process.env['SEED_ACK'] = 'SEED_REMOTE_DATABASE';
+        expect(() => assertSeedTarget(REMOTE)).toThrow(/production/);
     });
 
     it('refuses to guess when no database is configured', () => {
