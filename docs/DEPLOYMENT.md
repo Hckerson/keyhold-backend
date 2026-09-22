@@ -32,6 +32,11 @@ so no server-side request leaves Europe. The reasoning is recorded in
 
 `DATABASE_URL` is set by the addon. Everything else you set yourself:
 
+`pnpm keys:generate` prints a fresh pair to the terminal and writes nothing to
+disk. Paste the `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` values from its backend
+block below; the public key it prints under the frontend block is the same value
+the web app needs.
+
 ```sh
 pnpm keys:generate
 
@@ -39,8 +44,8 @@ heroku config:set --app keyhold-api \
   NODE_ENV=production \
   PNPM_SKIP_PRUNING=true \
   PGSSLMODE=no-verify \
-  JWT_PRIVATE_KEY="$(cat jwt-private.b64)" \
-  JWT_PUBLIC_KEY="$(cat jwt-public.b64)" \
+  JWT_PRIVATE_KEY="<from keys:generate>" \
+  JWT_PUBLIC_KEY="<from keys:generate>" \
   FRONTEND_URL="https://keyhol.me" \
   COOKIE_DOMAIN=keyhol.me \
   SMTP_HOST=smtp.resend.com SMTP_PORT=465 SMTP_USER=resend \
@@ -100,14 +105,16 @@ not work on this machine — it shells out to `pg_dump`, which is not installed.
 
 ## Seeding
 
-`app.json` runs `pnpm db:seed` as a `postdeploy` script, which only fires for
-review apps and Heroku Button installs, never on a normal `git push`. The seed
-owns only `seed-` prefixed rows; run it by hand on the production database only
-when you mean to.
+Production is never seeded. The seed catalogue places invented listings — prices,
+descriptions, agents — at real house addresses so that the map has true pins, and
+a fabricated for-sale listing on a stranger's actual home must not reach a real
+visitor. `prisma/seed-guard.ts` enforces this: with `NODE_ENV=production` the seed
+and `db:backfill-coordinates` both refuse to run, and `SEED_ACK` does not override
+it. `app.json` carries no `postdeploy` seed for the same reason, so review apps
+and Heroku Button installs start empty.
 
-```sh
-heroku run pnpm db:seed --app keyhold-api
-```
+Seed a local database (`pnpm db:dev`) or a hosted development one with
+`SEED_ACK=SEED_REMOTE_DATABASE`. Production listings come from real sellers.
 
 Never run `db:reseed` or `db:purge` against production.
 
