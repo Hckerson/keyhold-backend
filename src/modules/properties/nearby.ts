@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const POI_KINDS = ['school', 'transit', 'park', 'restaurant'] as const;
 
 export type PoiKind = (typeof POI_KINDS)[number];
@@ -31,69 +33,64 @@ export const overpassQuery = (latitude: number, longitude: number): string => {
     return `[out:json][timeout:${Math.round(OVERPASS_TIMEOUT_MS / 1000)}];(${clauses});out center tags ${NEARBY_LIMIT};`;
 };
 
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-    typeof value === 'object' && value !== null
-        ? (value as Record<string, unknown>)
-        : null;
+const coordinatesSchema = z.object({ lat: z.number(), lon: z.number() });
 
-const asString = (value: unknown): string | null =>
-    typeof value === 'string' ? value : null;
+const elementSchema = z.object({
+    type: z.string().optional(),
+    id: z.number(),
+    lat: z.number().optional(),
+    lon: z.number().optional(),
+    center: coordinatesSchema.optional(),
+    tags: z.object({
+        name: z.string().min(1),
+        amenity: z.string().optional(),
+        railway: z.string().optional(),
+        leisure: z.string().optional(),
+    }),
+});
 
-const asNumber = (value: unknown): number | null =>
-    typeof value === 'number' && Number.isFinite(value) ? value : null;
+const responseSchema = z.object({ elements: z.array(z.unknown()) });
 
-const kindOf = (tags: Record<string, unknown>): PoiKind | null => {
-    if (asString(tags['amenity']) === 'school') return 'school';
-    if (asString(tags['railway']) === 'station') return 'transit';
-    if (asString(tags['leisure']) === 'park') return 'park';
-    if (asString(tags['amenity']) === 'restaurant') return 'restaurant';
+type OverpassElement = z.infer<typeof elementSchema>;
+
+const kindOf = (tags: OverpassElement['tags']): PoiKind | null => {
+    if (tags.amenity === 'school') return 'school';
+    if (tags.railway === 'station') return 'transit';
+    if (tags.leisure === 'park') return 'park';
+    if (tags.amenity === 'restaurant') return 'restaurant';
     return null;
 };
 
 const positionOf = (
-    element: Record<string, unknown>,
+    element: OverpassElement,
 ): { latitude: number; longitude: number } | null => {
-    const direct = {
-        latitude: asNumber(element['lat']),
-        longitude: asNumber(element['lon']),
-    };
-    if (direct.latitude !== null && direct.longitude !== null) {
-        return { latitude: direct.latitude, longitude: direct.longitude };
+    if (element.lat !== undefined && element.lon !== undefined) {
+        return { latitude: element.lat, longitude: element.lon };
     }
 
-    const centre = asRecord(element['center']);
-    if (!centre) return null;
-
-    const latitude = asNumber(centre['lat']);
-    const longitude = asNumber(centre['lon']);
-    return latitude !== null && longitude !== null
-        ? { latitude, longitude }
+    return element.center
+        ? { latitude: element.center.lat, longitude: element.center.lon }
         : null;
 };
 
 export const parseOverpass = (payload: unknown): NearbyPlace[] => {
-    const root = asRecord(payload);
-    const elements = root?.['elements'];
-    if (!Array.isArray(elements)) return [];
+    const response = responseSchema.safeParse(payload);
+    if (!response.success) return [];
 
-    return elements.flatMap((raw) => {
-        const element = asRecord(raw);
-        if (!element) return [];
+    return response.data.elements.flatMap((raw) => {
+        const parsed = elementSchema.safeParse(raw);
+        if (!parsed.success) return [];
 
-        const tags = asRecord(element['tags']);
-        const name = tags ? asString(tags['name']) : null;
-        if (!tags || !name) return [];
-
-        const kind = kindOf(tags);
+        const element = parsed.data;
+        const kind = kindOf(element.tags);
         const position = positionOf(element);
-        const id = asNumber(element['id']);
-        if (!kind || !position || id === null) return [];
+        if (!kind || !position) return [];
 
         return [
             {
-                id: `${asString(element['type']) ?? 'node'}-${id}`,
+                id: `${element.type ?? 'node'}-${element.id}`,
                 kind,
-                name,
+                name: element.tags.name,
                 ...position,
             },
         ];
