@@ -80,6 +80,10 @@ const ORDER_BY: Record<PropertySort, Prisma.PropertyOrderByWithRelationInput> =
         [PropertySort.BEDROOMS_DESC]: { bedrooms: 'desc' },
         [PropertySort.SQFT_DESC]: { sqFt: 'desc' },
         [PropertySort.POPULAR]: { viewsCount: 'desc' },
+        [PropertySort.RECENTLY_SOLD]: {
+            soldAt: { sort: 'desc', nulls: 'last' },
+        },
+        [PropertySort.FEATURED]: { createdAt: 'desc' },
     };
 
 const DEFAULT_LIMIT = 20;
@@ -238,6 +242,7 @@ export class PropertiesService {
                 filters.minSqFt !== undefined
                     ? { gte: filters.minSqFt }
                     : undefined,
+            featuredUntil: filters.featured ? { gt: new Date() } : undefined,
             AND: and.length ? and : undefined,
         };
     }
@@ -250,14 +255,17 @@ export class PropertiesService {
         const limit = filters.limit ?? DEFAULT_LIMIT;
         const where = this.buildWhere(filters, privileged);
 
+        const skip = (page - 1) * limit;
         const [items, total] = await Promise.all([
-            this.propertyRepo.findMany({
-                where,
-                include: LIST_INCLUDE,
-                orderBy: ORDER_BY[filters.sort ?? PropertySort.NEWEST],
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
+            filters.sort === PropertySort.FEATURED
+                ? this.findFeaturedFirst(where, skip, limit)
+                : this.propertyRepo.findMany({
+                      where,
+                      include: LIST_INCLUDE,
+                      orderBy: ORDER_BY[filters.sort ?? PropertySort.NEWEST],
+                      skip,
+                      take: limit,
+                  }),
             this.propertyRepo.count({ where }),
         ]);
 
@@ -268,6 +276,53 @@ export class PropertiesService {
             limit,
             pageCount: Math.max(1, Math.ceil(total / limit)),
         };
+    }
+
+    private async findFeaturedFirst(
+        where: Prisma.PropertyWhereInput,
+        skip: number,
+        take: number,
+    ) {
+        const now = new Date();
+        const promotedWhere = {
+            AND: [where, { featuredUntil: { gt: now } }],
+        };
+        const promotedTotal = await this.propertyRepo.count({
+            where: promotedWhere,
+        });
+
+        const promoted =
+            skip < promotedTotal
+                ? await this.propertyRepo.findMany({
+                      where: promotedWhere,
+                      include: LIST_INCLUDE,
+                      orderBy: ORDER_BY[PropertySort.POPULAR],
+                      skip,
+                      take,
+                  })
+                : [];
+
+        if (promoted.length === take) return promoted;
+
+        const rest = await this.propertyRepo.findMany({
+            where: {
+                AND: [
+                    where,
+                    {
+                        OR: [
+                            { featuredUntil: null },
+                            { featuredUntil: { lte: now } },
+                        ],
+                    },
+                ],
+            },
+            include: LIST_INCLUDE,
+            orderBy: ORDER_BY[PropertySort.NEWEST],
+            skip: Math.max(0, skip - promotedTotal),
+            take: take - promoted.length,
+        });
+
+        return [...promoted, ...rest];
     }
 
     async facets(dto: FacetsPropertyDto) {
@@ -305,6 +360,17 @@ export class PropertiesService {
             (typeof groups)[number],
             Record<string, number>
         >;
+    }
+
+    async localities() {
+        const groups = await this.propertyRepo.countByLocality({
+            status: PropertyStatus.AVAILABLE,
+        });
+        return groups.map(({ locality, region, _count }) => ({
+            locality,
+            region,
+            count: _count._all,
+        }));
     }
 
     async findOne(id: string, viewer?: AuthUser) {
@@ -710,7 +776,7 @@ export class PropertiesService {
 
         return this.propertyRepo.update({
             where: { id },
-            data: { status: PropertyStatus.SOLD },
+            data: { status: PropertyStatus.SOLD, soldAt: new Date() },
         });
     }
 }

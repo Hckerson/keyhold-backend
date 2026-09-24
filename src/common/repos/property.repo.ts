@@ -110,4 +110,20 @@ export class PropertyRepo {
             throw new RepoError('Failed to count properties', error);
         }
     }
+
+    async countByLocality(where: Prisma.PropertyWhereInput) {
+        try {
+            return await this.prisma.tx.property.groupBy({
+                by: ['locality', 'region'],
+                where,
+                _count: { _all: true },
+                orderBy: { _count: { locality: 'desc' } },
+            });
+        } catch (error) {
+            throw new RepoError(
+                'Failed to count properties by locality',
+                error,
+            );
+        }
+    }
 }

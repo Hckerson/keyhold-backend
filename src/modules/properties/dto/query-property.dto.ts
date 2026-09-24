@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
     IsArray,
+    IsBoolean,
     IsEnum,
     IsInt,
     IsNumber,
@@ -20,6 +21,8 @@ export enum PropertySort {
     BEDROOMS_DESC = 'bedrooms-desc',
     SQFT_DESC = 'sqft-desc',
     POPULAR = 'popular',
+    RECENTLY_SOLD = 'recently-sold',
+    FEATURED = 'featured',
 }
 
 export const COUNT_TOKEN_PATTERN = /^\d+(plus)?$/;
@@ -126,6 +129,14 @@ export class QueryPropertyDto {
     @Min(-180)
     @Max(180)
     east?: number;
+
+    @ApiPropertyOptional({
+        description: 'Only listings whose promotion is still running',
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === 'true' || value === true)
+    @IsBoolean()
+    featured?: boolean;
 
     @ApiPropertyOptional({ enum: PropertySort })
     @IsEnum(PropertySort)
