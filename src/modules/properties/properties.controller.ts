@@ -68,6 +68,12 @@ export class PropertiesController {
         return this.propertiesService.facets(dto);
     }
 
+    @Get('localities')
+    @ApiOperation({ summary: 'Count available properties per locality' })
+    async localities() {
+        return this.propertiesService.localities();
+    }
+
     @Get('seller/:sellerId')
     @UseGuards(OptionalJwtAuthGuard)
     @ApiOperation({ summary: 'Get all properties by a seller' })
