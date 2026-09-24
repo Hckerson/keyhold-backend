@@ -738,6 +738,7 @@ model Property {
   walkScore     Int?
   viewsCount    Int       @default(0)
   featuredUntil DateTime?
+  soldAt        DateTime?
   amenities     String[] // JSON array
   features      String[] // JSON array
 

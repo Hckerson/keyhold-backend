@@ -229,17 +229,18 @@ export class EscrowService {
                 );
             }
 
+            const completedAt = new Date();
             await this.transactionRepo.update({
                 where: { id: transaction.id },
                 data: {
                     status: TransactionStatus.COMPLETED,
-                    completedAt: new Date(),
+                    completedAt,
                     agreementDocUrl,
                 },
             });
             await this.propertyRepo.update({
                 where: { id: transaction.propertyId },
-                data: { status: PropertyStatus.SOLD },
+                data: { status: PropertyStatus.SOLD, soldAt: completedAt },
             });
 
             return this.escrowRepo.findUnique({

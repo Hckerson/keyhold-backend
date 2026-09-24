@@ -49,6 +49,11 @@ export const seedCatalog = async (
 ): Promise<SeededProperty[]> => {
     let saveOffset = 0;
 
+    const soldAtFor = (seed: PropertySeed) =>
+        seed.status === PropertyStatus.SOLD && seed.soldMonthsAgo
+            ? daysAgo(now, seed.soldMonthsAgo * DAYS_PER_MONTH)
+            : null;
+
     const properties = PROPERTY_SEEDS.map((seed) => {
         const sellerId = sellerIdByKey.get(seed.agentKey);
         if (!sellerId) {
@@ -99,10 +104,8 @@ export const seedCatalog = async (
             status: seed.status,
             sellerId,
             createdAt,
-            updatedAt:
-                seed.status === PropertyStatus.SOLD && seed.soldMonthsAgo
-                    ? daysAgo(now, seed.soldMonthsAgo * DAYS_PER_MONTH)
-                    : createdAt,
+            soldAt: soldAtFor(seed),
+            updatedAt: soldAtFor(seed) ?? createdAt,
         })),
     });
 
