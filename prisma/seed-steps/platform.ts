@@ -135,6 +135,7 @@ export const seedPlatform = async (
             category: setting.category,
             updatedById: adminId,
         })),
+        skipDuplicates: true,
     });
 
     const preferenceUsers = [
