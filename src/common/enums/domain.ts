@@ -95,3 +95,10 @@ export enum DisputeOutcome {
     RELEASE = 'RELEASE',
     REFUND = 'REFUND',
 }
+export const NEWSLETTER_SOURCES = ['footer'] as const;
+export const NEWSLETTER_CONFIRM_PATH = '/newsletter/confirm';
+export const NEWSLETTER_UNSUBSCRIBE_PATH = '/newsletter/unsubscribe';
+export const NEWSLETTER_CONSENT_MAX_LENGTH = 500;
+export const NEWSLETTER_TOKEN_MAX_LENGTH = 128;
+export const NEWSLETTER_CONFIRM_TTL_MS = 72 * 60 * 60 * 1000;
+export const EMAIL_MAX_LENGTH = 254;
