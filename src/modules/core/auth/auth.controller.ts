@@ -30,7 +30,9 @@ import {
     ResetPasswordDto,
     ForgotPasswordDto,
     VerifyEmailDto,
+    AuthResponseDto,
 } from './dto';
+import { ApiEnvelope } from '@common/decorators/api-envelope.decorator';
 import {
     ApiTags,
     ApiResponse,
@@ -61,11 +63,7 @@ export class AuthController {
 
     @Post('register')
     @ApiOperation({ summary: 'Register a new user' })
-    @ApiResponse({
-        status: 201,
-        description:
-            'User successfully registered. Returns user + accessToken.',
-    })
+    @ApiEnvelope(AuthResponseDto, { status: 201 })
     @ApiResponse({ status: 409, description: 'User already exists' })
     async register(
         @Body() dto: RegisterDto,
@@ -81,7 +79,7 @@ export class AuthController {
     @Post('login')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login and get JWT token' })
-    @ApiResponse({ status: 200, description: 'Login successful' })
+    @ApiEnvelope(AuthResponseDto)
     @ApiResponse({ status: 401, description: 'Invalid credentials' })
     async login(
         @Body() dto: LoginDto,

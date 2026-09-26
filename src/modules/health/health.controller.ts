@@ -1,7 +1,10 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
-import { HealthService, type HealthReport } from './health.service';
+import { DatabaseStatus } from '@common/enums/health';
+import { ApiEnvelope } from '@common/decorators/api-envelope.decorator';
+import { HealthResponseDto } from './dto';
+import { HealthService } from './health.service';
 
 @ApiTags('health')
 @Controller('health')
@@ -11,9 +14,10 @@ export class HealthController {
 
     @Get()
     @ApiOperation({ summary: 'Liveness probe for uptime monitoring' })
-    async check(): Promise<HealthReport> {
+    @ApiEnvelope(HealthResponseDto)
+    async check(): Promise<HealthResponseDto> {
         const report = await this.healthService.check();
-        if (report.database === 'down')
+        if (report.database === DatabaseStatus.DOWN)
             throw new ServiceUnavailableException(report);
         return report;
     }

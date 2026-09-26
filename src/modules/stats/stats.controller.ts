@@ -13,13 +13,24 @@ import { UserRole } from '@generated/prisma/enums';
 import { JwtAuthGuard, RolesGuard } from '@modules/core/auth/guards';
 import { Roles } from '@modules/core/auth/decorators/roles.decorator';
 import { CurrentUser } from '@modules/core/auth/decorators/current-user.decorator';
+import { ApiEnvelope } from '@common/decorators/api-envelope.decorator';
+import { UserGrowthService } from './user-growth.service';
+import {
+    SeriesQueryDto,
+    TotalQueryDto,
+    PeriodSeriesResponseDto,
+    PeriodTotalResponseDto,
+} from './dto';
 
 @ApiTags('stats')
 @Controller('stats')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class StatsController {
-    constructor(private readonly statsService: StatsService) {}
+    constructor(
+        private readonly statsService: StatsService,
+        private readonly userGrowthService: UserGrowthService,
+    ) {}
 
     @Get('seller')
     @ApiOperation({ summary: 'Portfolio stats for the current seller' })
@@ -41,6 +52,29 @@ export class StatsController {
     @ApiOperation({ summary: 'User account status breakdown' })
     async users() {
         return this.statsService.fetchUserStats();
+    }
+
+    @Get('users/total')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(RolesGuard)
+    @ApiOperation({
+        summary: 'Users created in one day, month or year (Admin only)',
+    })
+    @ApiEnvelope(PeriodTotalResponseDto)
+    usersTotal(@Query() query: TotalQueryDto) {
+        return this.userGrowthService.usersTotal(query);
+    }
+
+    @Get('users/series')
+    @Roles(UserRole.ADMIN)
+    @UseGuards(RolesGuard)
+    @ApiOperation({
+        summary:
+            'Users created per day, month or year up to the current one (Admin only)',
+    })
+    @ApiEnvelope(PeriodSeriesResponseDto)
+    usersSeries(@Query() query: SeriesQueryDto) {
+        return this.userGrowthService.usersSeries(query);
     }
 
     @Get('regions')

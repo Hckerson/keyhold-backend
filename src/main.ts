@@ -10,7 +10,8 @@ import {
     GLOBAL_PREFIX,
     SWAGGER_PATH,
 } from '@common/enums';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SwaggerModule } from '@nestjs/swagger';
+import { swaggerConfig } from './openapi';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
@@ -41,13 +42,6 @@ async function bootstrap() {
     );
 
     app.useGlobalInterceptors(new ResponseInterceptor());
-
-    const swaggerConfig = new DocumentBuilder()
-        .setTitle('API')
-        .setDescription('Backend REST API documentation')
-        .setVersion('1.0')
-        .addBearerAuth()
-        .build();
 
     const logger = new Logger('Bootstrap');
 
