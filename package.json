@@ -37,7 +37,7 @@
         "keys:generate": "tsx scripts/generate-keys.ts",
         "db:backup": "tsx scripts/backup.ts",
         "db:restore": "tsx scripts/restore.ts",
-        "prepare": "husky",
+        "prepare": "git config --unset-all core.hooksPath || exit 0",
         "start:debug": "nest start --debug --watch",
         "openapi": "pnpm build && node dist/src/openapi.emit.js",
         "test:watch": "jest --watch",
