@@ -58,6 +58,7 @@ export const ZERO_DECIMAL_CURRENCIES = [
 ];
 export const DEFAULT_FRONTEND_URL = 'http://localhost:3000';
 export const DEFAULT_PORT = 5000;
+export const DEFAULT_TRUST_PROXY_HOPS = 0;
 export const GLOBAL_PREFIX = 'api';
 export const SWAGGER_PATH = `${GLOBAL_PREFIX}/docs`;
 export const DEFAULT_JWT_EXPIRATION = '24h';

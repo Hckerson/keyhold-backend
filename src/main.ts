@@ -2,11 +2,13 @@ import './instrument';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
     DEFAULT_FRONTEND_URL,
     DEFAULT_PORT,
+    DEFAULT_TRUST_PROXY_HOPS,
     GLOBAL_PREFIX,
     SWAGGER_PATH,
 } from '@common/enums';
@@ -14,7 +16,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule, { rawBody: true });
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+        rawBody: true,
+    });
 
     app.setGlobalPrefix(GLOBAL_PREFIX);
 
@@ -26,6 +30,11 @@ async function bootstrap() {
     );
 
     const config = app.get(ConfigService);
+
+    app.set(
+        'trust proxy',
+        config.get<number>('TRUST_PROXY_HOPS') ?? DEFAULT_TRUST_PROXY_HOPS,
+    );
 
     app.enableCors({
         origin: config.get<string>('FRONTEND_URL') ?? DEFAULT_FRONTEND_URL,
