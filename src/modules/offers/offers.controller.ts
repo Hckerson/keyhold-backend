@@ -12,8 +12,12 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OffersService } from './offers.service';
-import { CreateOfferDto, RespondOfferDto, UpdateMilestoneDto } from './dto';
-import { MilestoneKind } from '@generated/prisma/enums';
+import {
+    CreateOfferDto,
+    MilestoneParamsDto,
+    RespondOfferDto,
+    UpdateMilestoneDto,
+} from './dto';
 import {
     DOCUMENT_MIME_TYPES,
     uploadOptions,
@@ -96,8 +100,7 @@ export class OffersController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Set a milestone date, status or value' })
     async updateMilestone(
-        @Param('id') id: string,
-        @Param('kind') kind: MilestoneKind,
+        @Param() { id, kind }: MilestoneParamsDto,
         @CurrentUser() user: AuthUser,
         @Body() updateDto: UpdateMilestoneDto,
     ) {
@@ -112,8 +115,7 @@ export class OffersController {
     )
     @ApiOperation({ summary: 'Attach a report or document to a milestone' })
     async attachMilestoneDocument(
-        @Param('id') id: string,
-        @Param('kind') kind: MilestoneKind,
+        @Param() { id, kind }: MilestoneParamsDto,
         @CurrentUser() user: AuthUser,
         @UploadedFile() file: Express.Multer.File,
     ) {

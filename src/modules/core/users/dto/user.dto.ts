@@ -20,10 +20,10 @@ export class UserDto {
     @ApiProperty()
     avatar?: string;
 
-    @ApiProperty()
+    @ApiProperty({ enum: UserRole })
     role: UserRole;
 
-    @ApiProperty()
+    @ApiProperty({ enum: UserAccountStatus })
     status: UserAccountStatus;
 
     @ApiProperty({ required: false })

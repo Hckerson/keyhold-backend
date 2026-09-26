@@ -8,13 +8,9 @@ import type { Response } from 'express';
 import { Prisma } from 'generated/prisma/client';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { ApiEnvelopeDto } from '@common/dto';
 
-export interface ApiResponse {
-    statusCode: number;
-    message: string;
-    data: unknown;
-    timestamp: string;
-}
+export type ApiResponse = ApiEnvelopeDto & { data: unknown };
 
 const normalizeDecimals = (value: unknown, seen = new WeakSet()): unknown => {
     if (value === null || typeof value !== 'object') return value;

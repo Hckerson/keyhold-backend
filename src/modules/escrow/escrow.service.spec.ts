@@ -291,7 +291,7 @@ describe('EscrowService.release', () => {
 
             expect(propertyRepo.update).toHaveBeenCalledWith({
                 where: { id: 'prop_1' },
-                data: { status: PropertyStatus.SOLD },
+                data: { status: PropertyStatus.SOLD, soldAt: expect.any(Date) },
             });
         });
 
