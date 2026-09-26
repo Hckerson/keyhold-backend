@@ -4,6 +4,7 @@ import {
     ForbiddenException,
     BadRequestException,
 } from '@nestjs/common';
+import Stripe from 'stripe';
 import { Prisma } from 'generated/prisma/client';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { OfferRepo } from '@common/repos/offer.repo';
@@ -11,7 +12,10 @@ import { ConnectionRepo } from '@common/repos/connection.repo';
 import { UserRepo } from '@common/repos/user.repo';
 import { sumDecimal, toNumber } from '@common/money';
 import { PropertyRepo } from '@common/repos/property.repo';
-import { StripeService } from '@common/services/payment/stripe.service';
+import {
+    StripeService,
+    smallestUnit,
+} from '@common/services/payment/stripe.service';
 import {
     OfferStatus,
     PropertyStatus,
@@ -21,7 +25,6 @@ import { EscrowService } from '@modules/escrow/escrow.service';
 import { SettingsService } from '@modules/settings/settings.service';
 import { CreateTransactionDto, QueryTransactionDto } from './dto';
 import {
-    CENTS_PER_UNIT,
     DEFAULT_CURRENCY,
     LIVE_TRANSACTION_STATUSES,
     SETTING_BASE_CURRENCY,
@@ -44,6 +47,46 @@ const ADMIN_INCLUDE = {
     escrowHold: true,
     dispute: { select: { id: true, title: true, status: true } },
 } satisfies Prisma.TransactionInclude;
+
+const CHECKOUT_INCLUDE = {
+    buyer: { select: { id: true, fullName: true, email: true } },
+    seller: { select: { id: true, fullName: true, email: true } },
+    property: { select: { id: true, title: true } },
+} satisfies Prisma.TransactionInclude;
+
+type CheckoutTransaction = Prisma.TransactionGetPayload<{
+    include: typeof CHECKOUT_INCLUDE;
+}>;
+
+const PAYABLE_INTENT_STATUSES: Stripe.PaymentIntent.Status[] = [
+    'requires_payment_method',
+    'requires_confirmation',
+    'requires_action',
+];
+
+const SETTLING_INTENT_STATUSES: Stripe.PaymentIntent.Status[] = [
+    'processing',
+    'requires_capture',
+    'succeeded',
+];
+
+const checkoutMetadata = (transaction: CheckoutTransaction) => ({
+    transactionId: transaction.id,
+    propertyId: transaction.propertyId,
+    buyerId: transaction.buyerId,
+});
+
+const checkoutResponse = (
+    transaction: CheckoutTransaction,
+    paymentIntent: Stripe.PaymentIntent,
+) => ({
+    transaction,
+    paymentIntent: {
+        id: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        amount: paymentIntent.amount,
+    },
+});
 
 @Injectable()
 export class TransactionsService {
@@ -105,24 +148,25 @@ export class TransactionsService {
             );
         }
 
+        const finalPrice = toNumber(offer.responsePrice ?? offer.offeredPrice);
+
         const live = await this.transactionRepo.findFirst({
             where: {
                 propertyId: offer.property.id,
                 status: { in: [...LIVE_TRANSACTION_STATUSES] },
             },
+            include: CHECKOUT_INCLUDE,
         });
         if (live) {
-            throw new BadRequestException(
-                'A transaction is already in progress for this listing',
-            );
+            if (!this.isOwnOpenCheckout(live, userId, offer.connection.id)) {
+                throw new BadRequestException(
+                    'A transaction is already in progress for this listing',
+                );
+            }
+            return this.resumeCheckout(live, finalPrice);
         }
 
-        const finalPrice = toNumber(offer.responsePrice ?? offer.offeredPrice);
-
-        const currency = (
-            (await this.settingsService.findValue(SETTING_BASE_CURRENCY)) ??
-            DEFAULT_CURRENCY
-        ).toLowerCase();
+        const currency = await this.baseCurrency();
 
         const transaction = await this.transactionRepo.create({
             data: {
@@ -134,25 +178,13 @@ export class TransactionsService {
                 terms: createDto.terms,
                 status: TransactionStatus.PENDING,
             },
-            include: {
-                buyer: {
-                    select: { id: true, fullName: true, email: true },
-                },
-                seller: {
-                    select: { id: true, fullName: true, email: true },
-                },
-                property: { select: { id: true, title: true } },
-            },
+            include: CHECKOUT_INCLUDE,
         });
 
         const paymentIntent = await this.stripeService.createPaymentIntent(
             finalPrice,
             currency,
-            {
-                transactionId: transaction.id,
-                propertyId: transaction.propertyId,
-                buyerId: transaction.buyerId,
-            },
+            checkoutMetadata(transaction),
             transaction.id,
         );
 
@@ -161,14 +193,94 @@ export class TransactionsService {
             data: { stripePaymentIntentId: paymentIntent.id },
         });
 
-        return {
+        return checkoutResponse(transaction, paymentIntent);
+    }
+
+    private isOwnOpenCheckout(
+        live: CheckoutTransaction,
+        userId: string,
+        connectionId: string,
+    ): boolean {
+        return (
+            live.buyerId === userId &&
+            live.connectionId === connectionId &&
+            live.status === TransactionStatus.PENDING
+        );
+    }
+
+    private async resumeCheckout(
+        transaction: CheckoutTransaction,
+        finalPrice: number,
+    ) {
+        const currency = await this.baseCurrency();
+
+        if (!transaction.stripePaymentIntentId) {
+            return this.reissueIntent(
+                transaction,
+                finalPrice,
+                currency,
+                `${transaction.id}:resume`,
+            );
+        }
+
+        const current = await this.stripeService.getPaymentIntent(
+            transaction.stripePaymentIntentId,
+        );
+
+        if (SETTLING_INTENT_STATUSES.includes(current.status)) {
+            throw new BadRequestException(
+                'Your payment is already being processed for this listing',
+            );
+        }
+
+        const payable = PAYABLE_INTENT_STATUSES.includes(current.status);
+        const chargesAgreedPrice =
+            current.currency === currency &&
+            current.amount === smallestUnit(finalPrice, currency);
+
+        if (payable && chargesAgreedPrice) {
+            return checkoutResponse(transaction, current);
+        }
+
+        if (payable) {
+            await this.stripeService.cancelPaymentIntent(current.id);
+        }
+
+        return this.reissueIntent(
             transaction,
-            paymentIntent: {
-                id: paymentIntent.id,
-                clientSecret: paymentIntent.client_secret,
-                amount: paymentIntent.amount,
-            },
-        };
+            finalPrice,
+            currency,
+            `${transaction.id}:${current.id}`,
+        );
+    }
+
+    private async reissueIntent(
+        transaction: CheckoutTransaction,
+        finalPrice: number,
+        currency: string,
+        idempotencyKey: string,
+    ) {
+        const replacement = await this.stripeService.createPaymentIntent(
+            finalPrice,
+            currency,
+            checkoutMetadata(transaction),
+            idempotencyKey,
+        );
+
+        const reissued = await this.transactionRepo.update({
+            where: { id: transaction.id },
+            data: { stripePaymentIntentId: replacement.id, finalPrice },
+            include: CHECKOUT_INCLUDE,
+        });
+
+        return checkoutResponse(reissued, replacement);
+    }
+
+    private async baseCurrency(): Promise<string> {
+        return (
+            (await this.settingsService.findValue(SETTING_BASE_CURRENCY)) ??
+            DEFAULT_CURRENCY
+        ).toLowerCase();
     }
 
     async confirmPayment(
@@ -246,10 +358,11 @@ export class TransactionsService {
             throw new BadRequestException('Payment could not be confirmed');
         }
 
-        const expectedCents = Math.round(
-            toNumber(transaction.finalPrice) * CENTS_PER_UNIT,
+        const expectedAmount = smallestUnit(
+            toNumber(transaction.finalPrice),
+            paymentIntent.paymentIntent.currency,
         );
-        if (paymentIntent.paymentIntent.amount !== expectedCents) {
+        if (paymentIntent.paymentIntent.amount !== expectedAmount) {
             throw new BadRequestException(
                 'Payment amount does not match the agreed price',
             );
