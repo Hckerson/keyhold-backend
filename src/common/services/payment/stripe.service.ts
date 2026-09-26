@@ -19,7 +19,7 @@ interface PaymentIntentResponse {
     paymentIntent: Stripe.PaymentIntent;
 }
 
-const smallestUnit = (amount: number, currency: string): number =>
+export const smallestUnit = (amount: number, currency: string): number =>
     ZERO_DECIMAL_CURRENCIES.includes(currency.toLowerCase())
         ? Math.round(amount)
         : Math.round(amount * CENTS_PER_UNIT);
@@ -146,6 +146,18 @@ export class StripeService {
         } catch (error: unknown) {
             throw new BadRequestException(
                 `Failed to retrieve payment intent: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }
+
+    async cancelPaymentIntent(
+        paymentIntentId: string,
+    ): Promise<Stripe.PaymentIntent> {
+        try {
+            return await this.stripe.paymentIntents.cancel(paymentIntentId);
+        } catch (error: unknown) {
+            throw new BadRequestException(
+                `Failed to cancel payment intent: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
         }
     }

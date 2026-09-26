@@ -1271,3 +1271,28 @@ model IdempotencyRecord {
   // Constraints
   @@index([createdAt])
 }
+
+enum NewsletterStatus {
+  PENDING
+  CONFIRMED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id                   String           @id @default(uuid())
+  email                String           @unique
+  status               NewsletterStatus @default(PENDING)
+  confirmTokenHash     String?          @unique
+  confirmExpiresAt     DateTime?
+  unsubscribeTokenHash String           @unique
+  consentText          String
+  source               String
+  consentedAt          DateTime
+  confirmedAt          DateTime?
+  unsubscribedAt       DateTime?
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+}

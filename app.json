@@ -43,6 +43,10 @@
             "value": "24h",
             "required": false
         },
+        "TRUST_PROXY_HOPS": {
+            "description": "Proxies in front of the dyno. Heroku's router is exactly one, so rate limits key on the visitor's IP rather than the router's.",
+            "value": "1"
+        },
         "FRONTEND_URL": {
             "description": "Public origin of the Next.js app. Sets the CORS allow-list."
         },

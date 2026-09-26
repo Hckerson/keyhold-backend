@@ -37,7 +37,12 @@
         "keys:generate": "tsx scripts/generate-keys.ts",
         "db:backup": "tsx scripts/backup.ts",
         "db:restore": "tsx scripts/restore.ts",
-        "prepare": "husky"
+        "prepare": "git config --unset-all core.hooksPath || exit 0",
+        "start:debug": "nest start --debug --watch",
+        "openapi": "pnpm build && node dist/src/openapi.emit.js",
+        "test:watch": "jest --watch",
+        "test:cov": "jest --coverage",
+        "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
     },
     "lint-staged": {
         "*.ts": [
@@ -110,6 +115,7 @@
         "supertest": "^7.0.0",
         "ts-jest": "^29.2.5",
         "ts-loader": "^9.5.2",
+        "ts-node": "^10.9.2",
         "tsconfig-paths": "^4.2.0",
         "tsx": "^4.23.12",
         "typescript": "^5.7.3",

@@ -32,6 +32,7 @@ import { ServiceMetricRepo } from './service-metric.repo';
 import { ContactActivityRepo } from './contact-activity.repo';
 import { AuthIdentityRepo } from './auth-identity.repo';
 import { CalendarConnectionRepo } from './calendar-connection.repo';
+import { NewsletterSubscriberRepo } from './newsletter-subscriber.repo';
 import { Global, Module } from '@nestjs/common';
 
 const repos = [
@@ -72,6 +73,7 @@ const repos = [
     DealMilestoneRepo,
     AuthIdentityRepo,
     CalendarConnectionRepo,
+    NewsletterSubscriberRepo,
 ];
 
 @Global()

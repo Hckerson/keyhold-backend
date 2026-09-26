@@ -104,8 +104,16 @@ const PUBLIC_STATUSES: PropertyStatus[] = [
 const SELLER_SETTABLE_STATUSES: PropertyStatus[] = [
     PropertyStatus.DRAFT,
     PropertyStatus.AVAILABLE,
-    PropertyStatus.PENDING,
 ];
+
+const SELLER_LOCKED_STATUSES: Partial<Record<PropertyStatus, string>> = {
+    [PropertyStatus.SOLD]:
+        'A sold listing can only be reopened by an administrator',
+    [PropertyStatus.PENDING]:
+        'A listing under offer keeps its status until the deal settles or falls through',
+    [PropertyStatus.EXPIRED]:
+        'A rejected listing must be approved by an administrator before it can return',
+};
 
 const NEARBY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const NEARBY_FAILED_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -499,6 +507,15 @@ export class PropertiesService {
             throw new BadRequestException(
                 'That status can only be set by an administrator',
             );
+        }
+
+        const locked = SELLER_LOCKED_STATUSES[property.status];
+        if (
+            locked &&
+            updateDto.status !== undefined &&
+            updateDto.status !== property.status
+        ) {
+            throw new BadRequestException(locked);
         }
 
         return this.propertyRepo.update({

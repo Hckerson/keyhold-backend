@@ -3,6 +3,7 @@ import {
     DEFAULT_FRONTEND_URL,
     DEFAULT_JWT_EXPIRATION,
     DEFAULT_PORT,
+    DEFAULT_TRUST_PROXY_HOPS,
     E164_PATTERN,
     HOSTNAME_PATTERN,
     NodeEnv,
@@ -105,6 +106,10 @@ const envSchema = z
         PORT: z.preprocess(
             blankAsAbsent,
             z.coerce.number().int().positive().default(DEFAULT_PORT),
+        ),
+        TRUST_PROXY_HOPS: z.preprocess(
+            blankAsAbsent,
+            z.coerce.number().int().min(0).default(DEFAULT_TRUST_PROXY_HOPS),
         ),
         FRONTEND_URL: z.preprocess(
             blankAsAbsent,

@@ -215,6 +215,25 @@ export class EmailService {
         });
     }
 
+    async sendNewsletterConfirmation(params: {
+        to: string;
+        confirmUrl: string;
+        unsubscribeUrl: string;
+    }): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: params.to,
+            subject: 'Confirm your newsletter subscription',
+            html: `
+        <h2>Confirm your subscription</h2>
+        <p>Someone, hopefully you, asked to receive our off-market notes at this address: occasional short notes on homes and neighbourhoods. Nothing is sent until you confirm.</p>
+        <p><a href="${escapeHtml(params.confirmUrl)}">Confirm my subscription</a> — this link expires in three days.</p>
+        <p>If you did not ask for this, ignore this email and you will hear nothing further.</p>
+        <hr />
+        <p>You can leave the list at any time: <a href="${escapeHtml(params.unsubscribeUrl)}">unsubscribe</a>.</p>
+      `,
+        });
+    }
+
     async sendPasswordResetEmail(
         email: string,
         fullName: string,

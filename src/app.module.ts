@@ -35,6 +35,7 @@ import { ConciergeModule } from '@modules/concierge/concierge.module';
 import { SavedSearchesModule } from '@modules/saved-searches/saved-searches.module';
 import { ServiceHealthModule } from '@modules/service-health/service-health.module';
 import { HealthModule } from '@modules/health/health.module';
+import { NewsletterModule } from '@modules/newsletter/newsletter.module';
 import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import {
@@ -83,6 +84,7 @@ import { ServiceMetricInterceptor } from '@common/interceptors/service-metric.in
         SavedSearchesModule,
         ServiceHealthModule,
         HealthModule,
+        NewsletterModule,
     ],
     controllers: [AppController],
     providers: [

@@ -5,7 +5,9 @@ import {
     UpdateUserDto,
     UpdateProfileDto,
     SetUserTierDto,
+    UserDto,
 } from './dto';
+import { ApiEnvelope } from '@common/decorators/api-envelope.decorator';
 import { RolesGuard } from '@core/auth/guards/roles.guard';
 import { Roles } from '@core/auth/decorators/roles.decorator';
 import { CurrentUser } from '@core/auth/decorators/current-user.decorator';
@@ -40,6 +42,7 @@ export class UsersController {
     @Roles(UserRole.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiOperation({ summary: 'Create a new user (Admin only)' })
+    @ApiEnvelope(UserDto, { status: 201 })
     create(@Body() createUserDto: CreateUserDto) {
         return this.usersService.createFromAdmin(createUserDto);
     }
@@ -48,6 +51,7 @@ export class UsersController {
     @Roles(UserRole.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiOperation({ summary: 'Get all users (Admin only)' })
+    @ApiEnvelope(UserDto, { isArray: true })
     findAll() {
         return this.usersService.findAll();
     }
@@ -55,6 +59,7 @@ export class UsersController {
     @Get('me')
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get current user profile' })
+    @ApiEnvelope(UserDto)
     getMe(@CurrentUser() user: AuthUser) {
         return this.usersService.findOne(user.id);
     }
@@ -101,6 +106,7 @@ export class UsersController {
     @Roles(UserRole.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiOperation({ summary: 'Update user (Admin only)' })
+    @ApiEnvelope(UserDto)
     update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
         return this.usersService.updateFromAdmin(id, updateUserDto);
     }
@@ -117,6 +123,7 @@ export class UsersController {
     @Roles(UserRole.ADMIN)
     @UseGuards(JwtAuthGuard, RolesGuard)
     @ApiOperation({ summary: 'Delete user (Admin only)' })
+    @ApiEnvelope(UserDto)
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);
     }
