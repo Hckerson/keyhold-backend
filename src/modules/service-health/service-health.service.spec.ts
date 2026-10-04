@@ -103,6 +103,35 @@ describe('ServiceHealthService.findAll', () => {
         expect(row.uptime).toBe(75);
     });
 
+    const withFailures = (total: number, failed: number) =>
+        Array.from({ length: total }, (_, index) =>
+            metric(100, index < failed),
+        );
+
+    it('marks a service below the uptime target as degraded even when its error rate is small', async () => {
+        metrics.findMany.mockResolvedValue(withFailures(1000, 23));
+
+        const row = await apiRow();
+
+        expect(row.uptime).toBe(97.7);
+        expect(row.state).toBe('degraded');
+    });
+
+    it('keeps a service that meets the uptime target operational', async () => {
+        metrics.findMany.mockResolvedValue(withFailures(1000, 1));
+
+        const row = await apiRow();
+
+        expect(row.uptime).toBe(99.9);
+        expect(row.state).toBe('operational');
+    });
+
+    it('reserves down for a service failing half its requests', async () => {
+        metrics.findMany.mockResolvedValue(withFailures(10, 5));
+
+        expect((await apiRow()).state).toBe('down');
+    });
+
     it('reports the credential state alongside the measured services', async () => {
         integrations = [
             {
