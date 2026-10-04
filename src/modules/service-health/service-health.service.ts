@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ServiceComponent } from '@generated/prisma/enums';
 import { ServiceMetricRepo } from '@common/repos/service-metric.repo';
+import { IntegrationStatusService } from '@common/services/integration-status.service';
 
 const DEFAULT_WINDOW_HOURS = 24;
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -75,7 +76,10 @@ const stateFor = (
 
 @Injectable()
 export class ServiceHealthService {
-    constructor(private serviceMetricRepo: ServiceMetricRepo) {}
+    constructor(
+        private serviceMetricRepo: ServiceMetricRepo,
+        private integrationStatusService: IntegrationStatusService,
+    ) {}
 
     async findAll(windowHours = DEFAULT_WINDOW_HOURS) {
         const since = new Date(Date.now() - windowHours * MS_PER_HOUR);
@@ -129,6 +133,7 @@ export class ServiceHealthService {
             since,
             averageUptime,
             services,
+            integrations: this.integrationStatusService.findAll(),
         };
     }
 }

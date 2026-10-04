@@ -44,6 +44,21 @@ export class StripeService {
         }
     }
 
+    get configured(): boolean {
+        return this.client !== null;
+    }
+
+    get webhooksConfigured(): boolean {
+        return (
+            this.configured &&
+            Boolean(
+                this.configService.get<string>(
+                    'externalServices.stripe.webhookSecret',
+                ),
+            )
+        );
+    }
+
     private get stripe(): Stripe {
         if (!this.client) {
             throw new ServiceUnavailableException(

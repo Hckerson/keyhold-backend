@@ -72,6 +72,10 @@ export class EmailService {
         });
     }
 
+    get configured(): boolean {
+        return this.transporter !== null;
+    }
+
     async sendEmail(options: EmailOptions): Promise<EmailResponse> {
         if (!this.transporter) {
             this.logger.warn(
