@@ -26,6 +26,13 @@ const ACCOUNT_INCLUDE = {
     },
 } satisfies Prisma.UserSuspensionInclude;
 
+const hasExpired = (
+    suspension: { createdAt: Date; duration: number | null },
+    now: number,
+) =>
+    suspension.duration !== null &&
+    suspension.createdAt.getTime() + suspension.duration * MS_PER_DAY <= now;
+
 @Injectable()
 export class SuspensionsService {
     constructor(
@@ -132,6 +139,19 @@ export class SuspensionsService {
         return lifted;
     }
 
+    async liftExpired() {
+        const timed = await this.suspensionRepo.findMany({
+            where: { liftedAt: null, duration: { not: null } },
+        });
+        const now = Date.now();
+
+        await Promise.all(
+            timed
+                .filter((suspension) => hasExpired(suspension, now))
+                .map((suspension) => this.lift(suspension.id)),
+        );
+    }
+
     async ensureActive(userId: string, status: UserAccountStatus) {
         if (status !== UserAccountStatus.SUSPENDED) return;
 
@@ -148,11 +168,7 @@ export class SuspensionsService {
             return;
         }
 
-        if (
-            active.duration &&
-            active.createdAt.getTime() + active.duration * MS_PER_DAY <=
-                Date.now()
-        ) {
+        if (hasExpired(active, Date.now())) {
             await this.lift(active.id);
             return;
         }

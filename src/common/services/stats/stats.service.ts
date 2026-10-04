@@ -5,6 +5,7 @@ import type { TimeFilterValue } from '@common/enums/filter';
 import { sumDecimal, toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { PrismaService } from '@common/database/prisma.service';
+import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import {
     OfferStatus,
     PropertyStatus,
@@ -82,6 +83,7 @@ export class StatsService {
     constructor(
         private userRepo: UserRepo,
         private prisma: PrismaService,
+        private suspensionsService: SuspensionsService,
     ) {}
 
     private getStartDate(filter: TimeFilterValue, month: boolean = true) {
@@ -141,6 +143,7 @@ export class StatsService {
     }
 
     async fetchUserStats() {
+        await this.suspensionsService.liftExpired();
         const [total, active, pending, suspended] = await Promise.all([
             this.userRepo.count(),
             this.userRepo.count({
