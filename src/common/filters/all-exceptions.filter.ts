@@ -46,6 +46,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
         if (exception instanceof HttpException) {
             const status = exception.getStatus();
+            if (status >= HttpStatus.INTERNAL_SERVER_ERROR)
+                this.logFailure(request, exception.cause ?? exception);
             void this.recordRefusal(status, request);
             response.status(status).json({
                 statusCode: status,
@@ -57,10 +59,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             return;
         }
 
-        this.logger.error(
-            `Unhandled exception on ${request.method} ${request.url} [${request.requestId ?? 'no-request-id'}]`,
-            exception instanceof Error ? exception.stack : String(exception),
-        );
+        this.logFailure(request, exception);
 
         response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
             statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -69,6 +68,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
             path: request.url,
             timestamp,
         });
+    }
+
+    private logFailure(request: Request, error: unknown) {
+        this.logger.error(
+            `Unhandled exception on ${request.method} ${request.url} [${request.requestId ?? 'no-request-id'}]`,
+            error instanceof Error ? error.stack : String(error),
+        );
     }
 
     private async recordRefusal(status: number, request: Request) {
