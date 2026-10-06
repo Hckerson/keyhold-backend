@@ -7,7 +7,7 @@ import {
 } from '../../generated/prisma/client';
 import { AGENT_SEEDS } from '../seed-data/agents';
 import { CLIENT_PORTRAITS, pick } from '../seed-data/images';
-import { daysAgo, periodOf, seedId } from '../seed-data/ids';
+import { daysAgo, seedId } from '../seed-data/ids';
 
 export const BUYER_COUNT = 560;
 
@@ -76,7 +76,6 @@ export const seedPeople = async (
         kycVerified: true,
         lastActive: now,
         createdAt: adminCreatedAt,
-        ...periodOf(adminCreatedAt),
     };
 
     const sellerIdByKey = new Map<string, string>();
@@ -105,7 +104,6 @@ export const seedPeople = async (
             kycVerified: index < 3,
             lastActive: daysAgo(now, index),
             createdAt,
-            ...periodOf(createdAt),
         } satisfies Prisma.UserCreateManyInput;
     });
 
@@ -154,7 +152,6 @@ export const seedPeople = async (
             kycRejected: index % 53 === 0,
             lastActive: daysAgo(now, index % 45),
             createdAt: buyer.createdAt,
-            ...periodOf(buyer.createdAt),
         } satisfies Prisma.UserCreateManyInput;
     });
 

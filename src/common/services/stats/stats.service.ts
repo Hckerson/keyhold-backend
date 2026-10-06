@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
-import { TimeFilter } from '@common/enums/filter';
+import { SERIES_LENGTH, TimeFilter } from '@common/enums/filter';
 import type { TimeFilterValue } from '@common/enums/filter';
+import { countByKey, periodSeries } from 'src/lib/period';
 import { sumDecimal, toNumber } from '@common/money';
 import { UserRepo } from '@common/repos/user.repo';
 import { PrismaService } from '@common/database/prisma.service';
@@ -23,6 +24,7 @@ interface Settled {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MONTH_KEY_LENGTH = 7;
+const MONTHS_PER_YEAR = 12;
 
 const bucketBy = <T>(
     rows: T[],
@@ -86,12 +88,12 @@ export class StatsService {
         private suspensionsService: SuspensionsService,
     ) {}
 
-    private getStartDate(filter: TimeFilterValue, month: boolean = true) {
+    private getStartDate(filter: TimeFilterValue) {
         const now = new Date();
 
         return filter === TimeFilter.DAY
             ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7)
-            : filter === TimeFilter.MONTH && month
+            : filter === TimeFilter.MONTH
               ? new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
               : filter === TimeFilter.YEAR
                 ? new Date(now.getFullYear() - 5, now.getMonth(), now.getDate())
@@ -102,35 +104,32 @@ export class StatsService {
                   );
     }
 
-    async fetchDashboardStats(filter: TimeFilterValue, month: boolean = true) {
-        const startDate = this.getStartDate(filter, month);
-        const actualFilter: TimeFilterValue = month
-            ? TimeFilter.MONTH
-            : TimeFilter.DAY;
+    async fetchDashboardStats(filter: TimeFilterValue) {
+        const period =
+            filter === TimeFilter.DAY ? TimeFilter.DAY : TimeFilter.MONTH;
+        const length =
+            filter === TimeFilter.YEAR
+                ? SERIES_LENGTH[TimeFilter.YEAR] * MONTHS_PER_YEAR
+                : SERIES_LENGTH[period];
+        const { start, end, keys } = periodSeries(period, length, new Date());
 
-        const [userCount, userStats] = await Promise.all([
+        const [userCount, rows] = await Promise.all([
             this.userRepo.count(),
-            this.userRepo.groupBy({
-                by: [actualFilter],
-                where: {
-                    createdAt: {
-                        gte: startDate,
-                    },
-                },
-                _count: {
-                    _all: true,
-                },
+            this.userRepo.findMany({
+                where: { createdAt: { gte: start, lt: end } },
+                select: { createdAt: true },
             }),
         ]);
 
-        const userData = userStats.map((stat) => ({
-            name: actualFilter === TimeFilter.DAY ? stat.day : stat.month,
-            value:
-                typeof stat._count === 'object' ? (stat._count._all ?? 0) : 0,
-        }));
+        const userData = [
+            ...countByKey(
+                period,
+                keys,
+                rows.map((row) => row.createdAt),
+            ),
+        ].map(([name, value]) => ({ name, value }));
 
-        const dataKey =
-            actualFilter === TimeFilter.DAY ? 'dailyData' : 'monthlyData';
+        const dataKey = period === TimeFilter.DAY ? 'dailyData' : 'monthlyData';
 
         return {
             user: {

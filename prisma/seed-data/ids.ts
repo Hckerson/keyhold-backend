@@ -1,5 +1,3 @@
-import { Day, Month } from '../../generated/prisma/client';
-
 export const SEED_PREFIX = 'seed-';
 
 export const SEED_MAIL_DOMAIN = 'keyhol.me';
@@ -21,36 +19,3 @@ export const daysAhead = (now: Date, days: number): Date =>
 
 export const minutesAgo = (now: Date, minutes: number): Date =>
     new Date(now.getTime() - minutes * MS_PER_MINUTE);
-
-const MONTHS: readonly Month[] = [
-    Month.JAN,
-    Month.FEB,
-    Month.MAR,
-    Month.APR,
-    Month.MAY,
-    Month.JUN,
-    Month.JUL,
-    Month.AUG,
-    Month.SEP,
-    Month.OCT,
-    Month.NOV,
-    Month.DEC,
-];
-
-const DAYS: readonly Day[] = [
-    Day.SUN,
-    Day.MON,
-    Day.TUE,
-    Day.WED,
-    Day.THU,
-    Day.FRI,
-    Day.SAT,
-];
-
-export const periodOf = (
-    date: Date,
-): { year: number; month: Month; day: Day } => ({
-    year: date.getFullYear(),
-    month: MONTHS[date.getMonth()],
-    day: DAYS[date.getDay()],
-});

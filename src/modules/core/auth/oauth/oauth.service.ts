@@ -18,7 +18,6 @@ import type { OAuthProfile } from '@common/services/oauth/oauth.types';
 import { UsersService } from '@core/users/users.service';
 import { PasswordUtil } from '@core/auth/utils/password.util';
 import { SettingsService } from '@modules/settings/settings.service';
-import { metricBuilder } from 'src/lib/metric-builder';
 import { AuthService } from '../auth.service';
 import type { AuthResponse } from '../types/auth.types';
 
@@ -166,15 +165,13 @@ export class OAuthService {
             await this.settingsService.findValue(SETTING_OPEN_SIGNUPS);
         if (signups === 'false') throw new OAuthError('closed');
 
-        const created = await this.usersService.create(
-            metricBuilder({
-                email: profile.email,
-                fullName: profile.fullName,
-                role: role ?? UserRole.BUYER,
-                passwordHash: await PasswordUtil.hash(randomToken()),
-                emailVerified: true,
-            }),
-        );
+        const created = await this.usersService.create({
+            email: profile.email,
+            fullName: profile.fullName,
+            role: role ?? UserRole.BUYER,
+            passwordHash: await PasswordUtil.hash(randomToken()),
+            emailVerified: true,
+        });
         await this.link(created.id, profile);
         return created.id;
     }
