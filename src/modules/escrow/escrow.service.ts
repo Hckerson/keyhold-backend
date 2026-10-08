@@ -30,6 +30,7 @@ const DEFAULT_INSPECTION_DAYS = 3;
 const ESCROW_HOLD_SETTING = 'escrowHoldDays';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const UNKNOWN_ADDRESS = 'Address not specified';
+const SETTLEMENT_PARTIES = ['buyer', 'seller'] as const;
 
 const TRANSACTION_INCLUDE = {
     transaction: {
@@ -197,7 +198,7 @@ export class EscrowService {
             );
         }
 
-        const agreementPDF = this.pdfService.generatePurchaseAgreement({
+        const agreementPDF = await this.pdfService.generatePurchaseAgreement({
             buyerName: transaction.buyer.fullName,
             buyerEmail: transaction.buyer.email,
             sellerName: transaction.seller.fullName,
@@ -360,32 +361,33 @@ export class EscrowService {
     }
 
     private async notifySettlement(transaction: {
+        id: string;
         buyer: { email: string };
         seller: { email: string };
         property: { title: string };
         finalPrice: Prisma.Decimal;
     }) {
-        try {
-            await this.emailService.sendTransactionCompletedEmail(
-                transaction.buyer.email,
-                transaction.property.title,
-                toNumber(transaction.finalPrice),
-            );
+        const { title } = transaction.property;
+        const finalPrice = toNumber(transaction.finalPrice);
 
-            await this.emailService.sendEmail({
-                to: transaction.seller.email,
-                subject: `Sale Completed: ${transaction.property.title}`,
-                html: `
-          <h2>Congratulations on the Sale!</h2>
-          <p>Your property <strong>${transaction.property.title}</strong> has been sold.</p>
-          <p><strong>Final Price: $${transaction.finalPrice.toLocaleString()}</strong></p>
-          <p>The buyer should rate you based on their experience. Thank you for using our platform.</p>
-        `,
-            });
-        } catch (error) {
+        const outcomes = await Promise.allSettled([
+            this.emailService.sendTransactionCompletedEmail(
+                transaction.buyer.email,
+                title,
+                finalPrice,
+            ),
+            this.emailService.sendSaleCompletedEmail(
+                transaction.seller.email,
+                title,
+                finalPrice,
+            ),
+        ]);
+
+        outcomes.forEach((outcome, index) => {
+            if (outcome.status === 'fulfilled') return;
             this.logger.error(
-                `Failed to send settlement emails: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                `Failed to send the ${SETTLEMENT_PARTIES[index]} settlement email for transaction ${transaction.id}: ${outcome.reason instanceof Error ? outcome.reason.message : 'Unknown error'}`,
             );
-        }
+        });
     }
 }
