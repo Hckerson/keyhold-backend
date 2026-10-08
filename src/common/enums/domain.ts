@@ -63,6 +63,15 @@ export const GLOBAL_PREFIX = 'api';
 export const SWAGGER_PATH = `${GLOBAL_PREFIX}/docs`;
 export const DEFAULT_JWT_EXPIRATION = '24h';
 export const SMTP_SECURE_PORT = 465;
+export const RESERVED_MAIL_DOMAINS: readonly string[] = [
+    'example.com',
+    'example.net',
+    'example.org',
+    'example',
+    'invalid',
+    'localhost',
+    'test',
+];
 export const DEFAULT_SENTRY_TRACES_SAMPLE_RATE = 0.1;
 export const E164_PATTERN = /^\+[1-9]\d{7,14}$/;
 export const HOSTNAME_PATTERN = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;

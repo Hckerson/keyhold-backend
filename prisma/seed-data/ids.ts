@@ -1,6 +1,8 @@
 export const SEED_PREFIX = 'seed-';
 
-export const SEED_MAIL_DOMAIN = 'keyhol.me';
+export const SEED_MAIL_DOMAIN = 'example.com';
+
+export const PLATFORM_MAIL_DOMAIN = 'keyhol.me';
 
 export const seedId = (domain: string, ...parts: (string | number)[]): string =>
     `${SEED_PREFIX}${domain}-${parts.join('-')}`;
