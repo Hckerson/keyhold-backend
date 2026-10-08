@@ -27,13 +27,8 @@ interface PropertyReportData {
 
 @Injectable()
 export class PDFService {
-    generatePurchaseAgreement(data: PurchaseAgreementData): Buffer {
-        try {
-            const doc = new PDFDocument();
-            const buffers: Buffer[] = [];
-
-            doc.on('data', (chunk: Buffer) => buffers.push(chunk));
-
+    generatePurchaseAgreement(data: PurchaseAgreementData): Promise<Buffer> {
+        return this.render((doc) => {
             doc.fontSize(20).font('Helvetica-Bold').text('PURCHASE AGREEMENT', {
                 align: 'center',
             });
@@ -84,76 +79,79 @@ export class PDFService {
                     'This is a legally binding agreement. Both parties agree to the terms outlined above.',
                     { align: 'center' },
                 );
-
-            doc.end();
-
-            return Buffer.concat(buffers);
-        } catch (error: unknown) {
-            throw new BadRequestException(
-                `Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-        }
+        });
     }
 
-    generatePropertyReport(propertyData: PropertyReportData): Buffer {
-        try {
-            const doc = new PDFDocument();
-            const buffers: Buffer[] = [];
-
-            doc.on('data', (chunk: Buffer) => buffers.push(chunk));
-
+    generatePropertyReport(data: PropertyReportData): Promise<Buffer> {
+        return this.render((doc) => {
             doc.fontSize(18).font('Helvetica-Bold').text('PROPERTY REPORT', {
                 align: 'center',
             });
             doc.moveDown();
 
-            doc.fontSize(14).font('Helvetica-Bold').text(propertyData.title);
-            doc.fontSize(10).font('Helvetica').text(propertyData.address);
+            doc.fontSize(14).font('Helvetica-Bold').text(data.title);
+            doc.fontSize(10).font('Helvetica').text(data.address);
             doc.moveDown();
 
             doc.fontSize(12)
                 .font('Helvetica-Bold')
-                .text(`$${propertyData.price.toLocaleString()}`);
+                .text(`$${data.price.toLocaleString()}`);
             doc.moveDown();
 
             doc.fontSize(12).font('Helvetica-Bold').text('KEY DETAILS');
             doc.fontSize(10).font('Helvetica');
-            doc.text(`Bedrooms: ${propertyData.bedrooms}`);
-            doc.text(`Bathrooms: ${propertyData.bathrooms}`);
-            if (propertyData.sqFt) {
-                doc.text(`Square Feet: ${propertyData.sqFt.toLocaleString()}`);
+            doc.text(`Bedrooms: ${data.bedrooms}`);
+            doc.text(`Bathrooms: ${data.bathrooms}`);
+            if (data.sqFt) {
+                doc.text(`Square Feet: ${data.sqFt.toLocaleString()}`);
             }
             doc.moveDown();
 
             doc.fontSize(12).font('Helvetica-Bold').text('DESCRIPTION');
             doc.fontSize(10).font('Helvetica');
-            doc.text(propertyData.description, { width: 500 });
+            doc.text(data.description, { width: 500 });
             doc.moveDown();
 
-            if (propertyData.amenities.length > 0) {
+            if (data.amenities.length > 0) {
                 doc.fontSize(12).font('Helvetica-Bold').text('AMENITIES');
                 doc.fontSize(10).font('Helvetica');
-                propertyData.amenities.forEach((amenity: string) => {
+                data.amenities.forEach((amenity: string) => {
                     doc.text(`• ${amenity}`);
                 });
                 doc.moveDown();
             }
 
-            if (propertyData.features.length > 0) {
+            if (data.features.length > 0) {
                 doc.fontSize(12).font('Helvetica-Bold').text('FEATURES');
                 doc.fontSize(10).font('Helvetica');
-                propertyData.features.forEach((feature: string) => {
+                data.features.forEach((feature: string) => {
                     doc.text(`• ${feature}`);
                 });
             }
+        });
+    }
 
-            doc.end();
+    private render(draw: (doc: PDFKit.PDFDocument) => void): Promise<Buffer> {
+        return new Promise((resolve, reject) => {
+            const fail = (error: unknown) =>
+                reject(
+                    new BadRequestException(
+                        `Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    ),
+                );
+            const doc = new PDFDocument();
+            const buffers: Buffer[] = [];
 
-            return Buffer.concat(buffers);
-        } catch (error: unknown) {
-            throw new BadRequestException(
-                `Failed to generate report: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-        }
+            doc.on('data', (chunk: Buffer) => buffers.push(chunk));
+            doc.on('end', () => resolve(Buffer.concat(buffers)));
+            doc.on('error', fail);
+
+            try {
+                draw(doc);
+                doc.end();
+            } catch (error: unknown) {
+                fail(error);
+            }
+        });
     }
 }
