@@ -24,19 +24,21 @@ interface Settled {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MONTH_KEY_LENGTH = 7;
+const DAY_KEY_LENGTH = 10;
 const MONTHS_PER_YEAR = 12;
 
 const bucketBy = <T>(
     rows: T[],
     dateOf: (row: T) => Date | null,
     valueOf: (row: T) => number,
+    keyLength = MONTH_KEY_LENGTH,
 ) => {
     const buckets = new Map<string, number>();
 
     for (const row of rows) {
         const date = dateOf(row);
         if (!date) continue;
-        const key = date.toISOString().slice(0, MONTH_KEY_LENGTH);
+        const key = date.toISOString().slice(0, keyLength);
         buckets.set(key, (buckets.get(key) ?? 0) + valueOf(row));
     }
 
@@ -293,6 +295,8 @@ export class StatsService {
 
     async fetchTrend(filter: TimeFilterValue) {
         const startDate = this.getStartDate(filter);
+        const keyLength =
+            filter === TimeFilter.DAY ? DAY_KEY_LENGTH : MONTH_KEY_LENGTH;
 
         const [sales, signups, listings] = await Promise.all([
             this.prisma.transaction.findMany({
@@ -317,21 +321,25 @@ export class StatsService {
                 sales,
                 (sale) => sale.completedAt,
                 (sale) => toNumber(sale.finalPrice),
+                keyLength,
             ),
             deals: bucketBy(
                 sales,
                 (sale) => sale.completedAt,
                 () => 1,
+                keyLength,
             ),
             users: bucketBy(
                 signups,
                 (row) => row.createdAt,
                 () => 1,
+                keyLength,
             ),
             listings: bucketBy(
                 listings,
                 (row) => row.createdAt,
                 () => 1,
+                keyLength,
             ),
         };
     }
