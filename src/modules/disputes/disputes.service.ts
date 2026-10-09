@@ -20,6 +20,11 @@ import {
 
 const DEFAULT_LIMIT = 20;
 
+const SETTLED_BY: Record<DisputeOutcome, EscrowStatus> = {
+    [DisputeOutcome.RELEASE]: EscrowStatus.RELEASED,
+    [DisputeOutcome.REFUND]: EscrowStatus.REFUNDED,
+};
+
 const DISPUTE_INCLUDE = {
     initiator: { select: { id: true, fullName: true, email: true } },
     evidence: { orderBy: { createdAt: 'asc' } },
@@ -216,28 +221,29 @@ export class DisputesService {
             throw new BadRequestException('This dispute is already closed');
         }
 
-        const holdIds = dispute.transactions
-            .map((transaction) => transaction.escrowHoldId)
-            .filter((holdId): holdId is string => Boolean(holdId));
+        const holds = await this.frozenHolds(
+            dispute.transactions.map((transaction) => transaction.id),
+        );
 
         if (status === DisputeStatus.RESOLVED) {
-            if (!resolveDto.outcome) {
+            const { outcome } = resolveDto;
+            if (!outcome) {
                 throw new BadRequestException(
                     'A release or refund outcome is required',
                 );
             }
 
-            for (const holdId of holdIds) {
-                if (resolveDto.outcome === DisputeOutcome.RELEASE) {
+            for (const hold of holds) {
+                if (outcome === DisputeOutcome.RELEASE) {
                     await this.escrowService.release(
-                        holdId,
+                        hold.id,
                         actorId,
                         UserRole.ADMIN,
                         [EscrowStatus.DISPUTED, EscrowStatus.HELD],
                     );
                 } else {
                     await this.escrowService.refund(
-                        holdId,
+                        hold.id,
                         { reason: resolveDto.resolutionNotes },
                         [EscrowStatus.DISPUTED, EscrowStatus.HELD],
                     );
@@ -246,8 +252,8 @@ export class DisputesService {
         }
 
         if (status === DisputeStatus.DISMISSED) {
-            for (const holdId of holdIds) {
-                await this.escrowService.restoreHeld(holdId);
+            for (const hold of holds) {
+                await this.escrowService.restoreHeld(hold.id);
             }
         }
 
@@ -260,6 +266,14 @@ export class DisputesService {
             },
             include: DISPUTE_INCLUDE,
         });
+    }
+
+    private async frozenHolds(transactionIds: string[]) {
+        const rows = await this.transactionRepo.findMany({
+            where: { id: { in: transactionIds } },
+            select: { escrowHold: { select: { id: true, status: true } } },
+        });
+        return rows.flatMap((row) => (row.escrowHold ? [row.escrowHold] : []));
     }
 
     private isCounterparty(
