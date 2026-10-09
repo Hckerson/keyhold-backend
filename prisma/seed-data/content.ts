@@ -74,35 +74,147 @@ export const DOCUMENT_TYPES: readonly string[] = [
 export const DISPUTE_SEEDS: readonly {
     title: string;
     description: string;
-    resolutionNotes: string;
+    resolved: boolean;
 }[] = [
     {
         title: 'Inspection credit withheld at close',
         description:
             'The agreed repair credit did not appear on the closing statement and the escrow was released before the buyer could review it.',
-        resolutionNotes:
-            'Credit reissued to the buyer from the seller proceeds and the closing statement was amended.',
+        resolved: true,
     },
     {
         title: 'Listing photographs misrepresent the rear elevation',
         description:
             'The gallery shows a rebuilt rear elevation that was never permitted, and the buyer discovered the discrepancy after the inspection window closed.',
-        resolutionNotes:
-            'Listing corrected and the buyer was released from the contract without penalty.',
+        resolved: true,
     },
     {
         title: 'Escrow held past the agreed release date',
         description:
             'Funds remained in escrow eleven days beyond the contractual release date with no written explanation from the seller side.',
-        resolutionNotes: '',
+        resolved: false,
     },
     {
         title: 'Undisclosed easement on the lower terrace',
         description:
             'A recorded access easement across the lower terrace was not disclosed in the property statement provided before offer.',
-        resolutionNotes: '',
+        resolved: false,
     },
 ];
+
+export const DISPUTE_RESOLUTIONS: Record<
+    'RELEASED' | 'REFUNDED',
+    readonly string[]
+> = {
+    RELEASED: [
+        'Credit reissued to the buyer from the seller proceeds and the closing statement was amended.',
+        'The seller documented the delay and the buyer accepted a reduced holdback, so the funds were released.',
+    ],
+    REFUNDED: [
+        'Listing corrected and the buyer was released from the contract without penalty.',
+        'The undisclosed easement voids the offer terms, so the deposit was returned to the buyer.',
+    ],
+};
+
+export const MEMBER_FLAG_SEEDS: readonly {
+    reason: string;
+    details: string | null;
+    against: 'agent' | 'buyer';
+}[] = [
+    {
+        reason: 'Asked for a deposit off the platform',
+        details:
+            'After the viewing he messaged me directly and asked me to wire a holding deposit to a personal account so the seller would take the house off the market.',
+        against: 'agent',
+    },
+    {
+        reason: 'Impersonating a listing agent',
+        details:
+            'This profile uses the name and photograph of an agent at another brokerage, who told me she has never heard of the account.',
+        against: 'agent',
+    },
+    {
+        reason: 'Repeated no-shows at viewings',
+        details: null,
+        against: 'buyer',
+    },
+    {
+        reason: 'Pressure to waive the inspection',
+        details:
+            'Told me twice that the sellers would walk unless I waived the inspection, which the sellers later denied.',
+        against: 'agent',
+    },
+    {
+        reason: 'Fake proof of funds',
+        details:
+            'The bank letter attached to the offer names a branch that closed two years ago.',
+        against: 'buyer',
+    },
+    {
+        reason: 'Harassing follow-ups',
+        details:
+            'Calls several times a day after I said I was no longer interested in the property.',
+        against: 'agent',
+    },
+];
+
+export const MESSAGE_FLAG_SEEDS: readonly {
+    content: string;
+    from: 'agent' | 'buyer';
+    reason: string;
+    details: string | null;
+}[] = [
+    {
+        content:
+            'Wire the holding deposit to my personal account today and I will take it off the market for you.',
+        from: 'agent',
+        reason: 'Suspected off-platform payment',
+        details: 'This is not the escrow the platform set up for the deal.',
+    },
+    {
+        content:
+            'Take it or leave it. You are wasting my time, and frankly you cannot afford this neighbourhood anyway.',
+        from: 'agent',
+        reason: 'Abusive language',
+        details: 'I declined the counter politely and this was the reply.',
+    },
+    {
+        content:
+            'Here is the escrow portal for the deposit: secure-escrow-payments.co/hold',
+        from: 'agent',
+        reason: 'Suspicious payment link',
+        details: null,
+    },
+    {
+        content:
+            'If the sellers do not drop the price I will tell every buyer on this street about the foundation.',
+        from: 'buyer',
+        reason: 'Threatening message',
+        details:
+            'The buyer is threatening to spread claims about the property unless the price drops.',
+    },
+    {
+        content:
+            'Text me on my private number instead, the platform reads everything.',
+        from: 'agent',
+        reason: 'Moving the conversation off the platform',
+        details: null,
+    },
+];
+
+export const FLAG_RESOLUTION_NOTES: Record<
+    'RESOLVED' | 'DISMISSED',
+    readonly string[]
+> = {
+    RESOLVED: [
+        'Suspended for thirty days after a second report.',
+        'Warned in writing; the account is on watch.',
+    ],
+    DISMISSED: [
+        'The agent showed the buyer rescheduled each viewing.',
+        "The link points to the platform's escrow partner.",
+    ],
+};
 
 export const EVIDENCE_LABELS: readonly string[] = [
     'Closing statement',

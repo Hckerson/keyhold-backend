@@ -9,6 +9,7 @@ import { seedDeals } from './seed-steps/deals';
 import { placeProperties } from './seed-steps/geocode';
 import { ADMIN_EMAIL, BUYER_EMAIL, seedPeople } from './seed-steps/people';
 import { seedPlatform } from './seed-steps/platform';
+import { seedReports } from './seed-steps/reports';
 import { resetSeed } from './seed-steps/reset';
 import { assertSeedTarget } from './seed-guard';
 
@@ -56,6 +57,13 @@ const main = async () => {
                 properties,
             );
             await seedPlatform(tx, now, adminId, sellerIds, buyers, properties);
+            const reports = await seedReports(
+                tx,
+                now,
+                sellerIds,
+                buyers,
+                threads,
+            );
 
             return {
                 removed,
@@ -67,6 +75,7 @@ const main = async () => {
                 ),
                 connections: threads.length,
                 transactions: transactionCount,
+                reports,
             };
         },
         {
@@ -80,7 +89,7 @@ const main = async () => {
     }
 
     report(
-        `Seeded ${summary.users} users, ${summary.properties} properties, ${summary.saves} saves, ${summary.connections} connections and ${summary.transactions} transactions.`,
+        `Seeded ${summary.users} users, ${summary.properties} properties, ${summary.saves} saves, ${summary.connections} connections, ${summary.transactions} transactions and ${summary.reports} member and message reports.`,
     );
 
     const placement = await placeProperties(prisma);
