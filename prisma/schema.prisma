@@ -426,9 +426,10 @@ model Flag {
   // Scalars
   id      String     @id @default(uuid())
   type    FlagType
-  reason  String
-  details String?
-  status  FlagStatus @default(ACTIVE)
+  reason         String
+  details        String?
+  resolutionNote String?
+  status         FlagStatus @default(ACTIVE)
 
   // Foreign Keys
   targetId  String // Could be userId, propertyId, or messageId depending on type
