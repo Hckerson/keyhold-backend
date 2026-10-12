@@ -8,7 +8,7 @@ export const PLATFORM_SETTINGS: readonly {
 }[] = [
     {
         key: 'platformName',
-        value: 'Horizon Grove',
+        value: 'Keyhold',
         category: SettingCategory.PLATFORM,
     },
     {

@@ -12,7 +12,6 @@ import {
 } from '../../generated/prisma/client';
 import {
     AGENT_INTRO,
-    DISPUTE_RESOLUTIONS,
     DISPUTE_SEEDS,
     EVIDENCE_LABELS,
     MESSAGE_SCRIPT,
@@ -27,6 +26,7 @@ import {
     daysAgo,
     daysAhead,
     minutesAgo,
+    SEED_FILES_ORIGIN,
     seedId,
 } from '../seed-data/ids';
 import type { SeededProperty } from './catalog';
@@ -247,14 +247,18 @@ export const seedDeals = async (
     const rulings = disputed.map((thread, index) => {
         const seed = cycle(DISPUTE_SEEDS, index);
         const createdAt = daysAgo(now, 20 + index * 9);
+        const escrow = rulingOf(thread, seed.resolutions !== null);
         return {
             id: seedId('dispute', index),
             thread,
             seed,
-            index,
             createdAt,
-            escrow: rulingOf(thread, seed.resolved),
-            resolvedAt: seed.resolved ? daysAhead(createdAt, 6) : null,
+            escrow,
+            note:
+                seed.resolutions && escrow !== EscrowStatus.DISPUTED
+                    ? seed.resolutions[escrow]
+                    : null,
+            resolvedAt: seed.resolutions ? daysAhead(createdAt, 6) : null,
         };
     });
 
@@ -263,13 +267,10 @@ export const seedDeals = async (
             id: ruling.id,
             title: ruling.seed.title,
             description: ruling.seed.description,
-            status: ruling.seed.resolved
+            status: ruling.resolvedAt
                 ? DisputeStatus.RESOLVED
                 : DisputeStatus.PENDING_REVIEW,
-            resolutionNotes:
-                ruling.escrow === EscrowStatus.DISPUTED
-                    ? null
-                    : cycle(DISPUTE_RESOLUTIONS[ruling.escrow], ruling.index),
+            resolutionNotes: ruling.note,
             initiatorId: ruling.thread.buyerId,
             resolvedAt: ruling.resolvedAt,
             createdAt: ruling.createdAt,
@@ -286,7 +287,7 @@ export const seedDeals = async (
                         : DisputeEvidenceType.MESSAGE,
                 content:
                     slot === 0
-                        ? 'https://files.horizongrove.local/evidence/closing-statement.pdf'
+                        ? `${SEED_FILES_ORIGIN}/evidence/closing-statement.pdf`
                         : 'Exported message thread covering the release window.',
                 label: cycle(EVIDENCE_LABELS, index + slot),
                 disputeId: seedId('dispute', index),
@@ -352,7 +353,7 @@ export const seedDeals = async (
                 id: seedId('txn', index),
                 finalPrice: thread.property.seed.price,
                 terms: cycle(TRANSACTION_TERMS, index),
-                agreementDocUrl: `https://files.horizongrove.local/agreements/${thread.property.seed.key}.pdf`,
+                agreementDocUrl: `${SEED_FILES_ORIGIN}/agreements/${thread.property.seed.key}.pdf`,
                 status:
                     ruling?.escrow === EscrowStatus.REFUNDED
                         ? TransactionStatus.CANCELLED

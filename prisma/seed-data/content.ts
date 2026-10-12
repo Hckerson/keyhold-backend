@@ -74,47 +74,43 @@ export const DOCUMENT_TYPES: readonly string[] = [
 export const DISPUTE_SEEDS: readonly {
     title: string;
     description: string;
-    resolved: boolean;
+    resolutions: Record<'RELEASED' | 'REFUNDED', string> | null;
 }[] = [
     {
         title: 'Inspection credit withheld at close',
         description:
             'The agreed repair credit did not appear on the closing statement and the escrow was released before the buyer could review it.',
-        resolved: true,
+        resolutions: {
+            RELEASED:
+                'Credit reissued to the buyer from the seller proceeds and the closing statement was amended.',
+            REFUNDED:
+                'The credit could not be reconciled before close, so the deposit was returned to the buyer.',
+        },
     },
     {
         title: 'Listing photographs misrepresent the rear elevation',
         description:
             'The gallery shows a rebuilt rear elevation that was never permitted, and the buyer discovered the discrepancy after the inspection window closed.',
-        resolved: true,
+        resolutions: {
+            RELEASED:
+                'The seller agreed a price reduction for the unpermitted work, so the funds were released.',
+            REFUNDED:
+                'Listing corrected and the buyer was released from the contract without penalty.',
+        },
     },
     {
         title: 'Escrow held past the agreed release date',
         description:
             'Funds remained in escrow eleven days beyond the contractual release date with no written explanation from the seller side.',
-        resolved: false,
+        resolutions: null,
     },
     {
         title: 'Undisclosed easement on the lower terrace',
         description:
             'A recorded access easement across the lower terrace was not disclosed in the property statement provided before offer.',
-        resolved: false,
+        resolutions: null,
     },
 ];
-
-export const DISPUTE_RESOLUTIONS: Record<
-    'RELEASED' | 'REFUNDED',
-    readonly string[]
-> = {
-    RELEASED: [
-        'Credit reissued to the buyer from the seller proceeds and the closing statement was amended.',
-        'The seller documented the delay and the buyer accepted a reduced holdback, so the funds were released.',
-    ],
-    REFUNDED: [
-        'Listing corrected and the buyer was released from the contract without penalty.',
-        'The undisclosed easement voids the offer terms, so the deposit was returned to the buyer.',
-    ],
-};
 
 export const MEMBER_FLAG_SEEDS: readonly {
     reason: string;

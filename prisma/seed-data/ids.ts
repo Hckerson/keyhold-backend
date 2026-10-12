@@ -4,6 +4,8 @@ export const SEED_MAIL_DOMAIN = 'example.com';
 
 export const PLATFORM_MAIL_DOMAIN = 'keyhol.me';
 
+export const SEED_FILES_ORIGIN = `https://files.${PLATFORM_MAIL_DOMAIN}`;
+
 export const seedId = (domain: string, ...parts: (string | number)[]): string =>
     `${SEED_PREFIX}${domain}-${parts.join('-')}`;
 
