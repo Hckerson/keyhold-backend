@@ -234,6 +234,7 @@ export class DisputesService {
             }
 
             for (const hold of holds) {
+                if (hold.status === SETTLED_BY[outcome]) continue;
                 if (outcome === DisputeOutcome.RELEASE) {
                     await this.escrowService.release(
                         hold.id,
