@@ -79,7 +79,7 @@ describe('EscrowService.release', () => {
     let cloudinaryService: { uploadDocument: jest.Mock };
     let emailService: {
         sendTransactionCompletedEmail: jest.Mock;
-        sendEmail: jest.Mock;
+        sendSaleCompletedEmail: jest.Mock;
     };
 
     const givenHold = (escrow: ReturnType<typeof anEscrow> | null) =>
@@ -108,7 +108,7 @@ describe('EscrowService.release', () => {
         pdfService = {
             generatePurchaseAgreement: jest
                 .fn()
-                .mockReturnValue(Buffer.from('agreement')),
+                .mockResolvedValue(Buffer.from('agreement')),
         };
         cloudinaryService = {
             uploadDocument: jest.fn().mockResolvedValue({ url: AGREEMENT_URL }),
@@ -117,7 +117,7 @@ describe('EscrowService.release', () => {
             sendTransactionCompletedEmail: jest
                 .fn()
                 .mockResolvedValue(undefined),
-            sendEmail: jest.fn().mockResolvedValue(undefined),
+            sendSaleCompletedEmail: jest.fn().mockResolvedValue(undefined),
         };
 
         const moduleRef = await Test.createTestingModule({
@@ -342,6 +342,38 @@ describe('EscrowService.release', () => {
                 service.release('esc_1', BUYER, UserRole.BUYER),
             ).resolves.toBeDefined();
             expect(escrowRepo.updateMany).toHaveBeenCalled();
+        });
+
+        it('9.7 still tells the seller when the buyer email fails', async () => {
+            givenHold(anEscrow());
+            emailService.sendTransactionCompletedEmail.mockRejectedValue(
+                new Error('550 invalid recipient'),
+            );
+
+            await service.release('esc_1', BUYER, UserRole.BUYER);
+
+            expect(emailService.sendSaleCompletedEmail).toHaveBeenCalledWith(
+                'marta@example.com',
+                'Cypress Point',
+                1_150_000,
+            );
+        });
+
+        it('9.7 still tells the buyer when the seller email fails', async () => {
+            givenHold(anEscrow());
+            emailService.sendSaleCompletedEmail.mockRejectedValue(
+                new Error('550 invalid recipient'),
+            );
+
+            await service.release('esc_1', BUYER, UserRole.BUYER);
+
+            expect(
+                emailService.sendTransactionCompletedEmail,
+            ).toHaveBeenCalledWith(
+                'ada@example.com',
+                'Cypress Point',
+                1_150_000,
+            );
         });
     });
 });

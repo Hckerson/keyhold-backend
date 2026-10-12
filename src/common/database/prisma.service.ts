@@ -1,18 +1,28 @@
 import { AsyncLocalStorage } from 'async_hooks';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient } from 'generated/prisma/client';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { databasePool } from '@common/config/database.config';
 
 const txStore = new AsyncLocalStorage<Prisma.TransactionClient>();
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
+    private static readonly logger = new Logger(PrismaService.name);
     private readonly root: PrismaClient;
 
     constructor() {
-        const adapter = new PrismaPg({
-            connectionString: process.env.DATABASE_URL,
-        });
+        const reportDroppedConnection = (error: Error) =>
+            PrismaService.logger.warn(
+                `Database connection dropped: ${error.message}`,
+            );
+        const adapter = new PrismaPg(
+            { connectionString: process.env.DATABASE_URL, ...databasePool },
+            {
+                onPoolError: reportDroppedConnection,
+                onConnectionError: reportDroppedConnection,
+            },
+        );
         super({ adapter });
         this.root = this;
     }

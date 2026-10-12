@@ -242,14 +242,6 @@ export interface PropertyImageResponse {
 // UTILITY TYPES
 // ============================================================================
 
-/**
- * Generic shape for metric-builder utility function
- * Ensures type safety when building aggregated metrics
- */
-export interface MetricDataShape extends Record<string, unknown> {
-    [key: string]: unknown;
-}
-
 export interface EmailMessage {
     to: string | string[];
     from: string;

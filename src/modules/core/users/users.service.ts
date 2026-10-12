@@ -13,6 +13,7 @@ import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { PasswordUtil } from '@core/auth/utils/password.util';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
+import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 
 interface UserCreateData {
     email: string;
@@ -42,6 +43,7 @@ export class UsersService {
         private userRepo: UserRepo,
         private transactionRepo: TransactionRepo,
         private cloudinaryService: CloudinaryService,
+        private suspensionsService: SuspensionsService,
     ) {}
 
     async uploadAvatar(
@@ -106,6 +108,7 @@ export class UsersService {
     }
 
     async findAll(): Promise<UserDto[]> {
+        await this.suspensionsService.liftExpired();
         const [users, settlements] = await Promise.all([
             this.userRepo.findMany({}),
             this.settlementsByUser(),

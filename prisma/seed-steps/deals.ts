@@ -26,6 +26,7 @@ import {
     daysAgo,
     daysAhead,
     minutesAgo,
+    SEED_FILES_ORIGIN,
     seedId,
 } from '../seed-data/ids';
 import type { SeededProperty } from './catalog';
@@ -70,7 +71,7 @@ const OFFER_STATUS_CYCLE: readonly OfferStatus[] = [
 
 const DURATION_CYCLE: readonly number[] = [30, 45, 60, 90];
 
-interface Thread {
+export interface SeededThread {
     id: string;
     property: SeededProperty;
     buyerId: string;
@@ -83,12 +84,21 @@ interface Thread {
 const cycle = <T>(pool: readonly T[], index: number): T =>
     pool[index % pool.length];
 
+const isClosedSale = (thread: SeededThread) =>
+    thread.property.seed.status === PropertyStatus.SOLD &&
+    thread.property.seed.soldMonthsAgo !== undefined;
+
+const rulingOf = (thread: SeededThread, resolved: boolean) => {
+    if (!resolved) return EscrowStatus.DISPUTED;
+    return isClosedSale(thread) ? EscrowStatus.RELEASED : EscrowStatus.REFUNDED;
+};
+
 export const seedDeals = async (
     tx: Prisma.TransactionClient,
     now: Date,
     properties: SeededProperty[],
-): Promise<{ threads: Thread[]; transactionCount: number }> => {
-    const threads: Thread[] = [];
+): Promise<{ threads: SeededThread[]; transactionCount: number }> => {
+    const threads: SeededThread[] = [];
 
     properties.forEach((property) => {
         property.savers
@@ -234,25 +244,37 @@ export const seedDeals = async (
 
     const disputed = settling.filter((_, index) => index % 3 === 0);
 
-    await tx.dispute.createMany({
-        data: disputed.map((thread, index) => {
-            const seed = cycle(DISPUTE_SEEDS, index);
-            const resolved = Boolean(seed.resolutionNotes);
-            const createdAt = daysAgo(now, 20 + index * 9);
+    const rulings = disputed.map((thread, index) => {
+        const seed = cycle(DISPUTE_SEEDS, index);
+        const createdAt = daysAgo(now, 20 + index * 9);
+        const escrow = rulingOf(thread, seed.resolutions !== null);
+        return {
+            id: seedId('dispute', index),
+            thread,
+            seed,
+            createdAt,
+            escrow,
+            note:
+                seed.resolutions && escrow !== EscrowStatus.DISPUTED
+                    ? seed.resolutions[escrow]
+                    : null,
+            resolvedAt: seed.resolutions ? daysAhead(createdAt, 6) : null,
+        };
+    });
 
-            return {
-                id: seedId('dispute', index),
-                title: seed.title,
-                description: seed.description,
-                status: resolved
-                    ? DisputeStatus.RESOLVED
-                    : DisputeStatus.PENDING_REVIEW,
-                resolutionNotes: seed.resolutionNotes || null,
-                initiatorId: thread.buyerId,
-                resolvedAt: resolved ? daysAhead(createdAt, 6) : null,
-                createdAt,
-            };
-        }),
+    await tx.dispute.createMany({
+        data: rulings.map((ruling) => ({
+            id: ruling.id,
+            title: ruling.seed.title,
+            description: ruling.seed.description,
+            status: ruling.resolvedAt
+                ? DisputeStatus.RESOLVED
+                : DisputeStatus.PENDING_REVIEW,
+            resolutionNotes: ruling.note,
+            initiatorId: ruling.thread.buyerId,
+            resolvedAt: ruling.resolvedAt,
+            createdAt: ruling.createdAt,
+        })),
     });
 
     await tx.disputeEvidence.createMany({
@@ -265,7 +287,7 @@ export const seedDeals = async (
                         : DisputeEvidenceType.MESSAGE,
                 content:
                     slot === 0
-                        ? 'https://files.horizongrove.local/evidence/closing-statement.pdf'
+                        ? `${SEED_FILES_ORIGIN}/evidence/closing-statement.pdf`
                         : 'Exported message thread covering the release window.',
                 label: cycle(EVIDENCE_LABELS, index + slot),
                 disputeId: seedId('dispute', index),
@@ -274,15 +296,13 @@ export const seedDeals = async (
         ),
     });
 
-    const disputeIdByThread = new Map(
-        disputed.map((thread, index) => [thread.id, seedId('dispute', index)]),
+    const rulingByThread = new Map(
+        rulings.map((ruling) => [ruling.thread.id, ruling]),
     );
 
     await tx.escrow.createMany({
         data: settling.map((thread, index) => {
-            const sold =
-                thread.property.seed.status === PropertyStatus.SOLD &&
-                thread.property.seed.soldMonthsAgo !== undefined;
+            const sold = isClosedSale(thread);
             const closedAt = sold
                 ? daysAgo(
                       now,
@@ -290,18 +310,28 @@ export const seedDeals = async (
                           DAYS_PER_MONTH,
                   )
                 : daysAgo(now, 6 + (index % 14));
-            const inDispute = disputeIdByThread.has(thread.id);
+            const ruling = rulingByThread.get(thread.id);
 
             return {
                 id: seedId('escrow', index),
                 amount: Math.round(thread.property.seed.price * 0.03),
                 inspectionEndDate: daysAhead(closedAt, INSPECTION_WINDOW_DAYS),
-                status: inDispute
-                    ? EscrowStatus.DISPUTED
+                status: ruling
+                    ? ruling.escrow
                     : sold
                       ? EscrowStatus.RELEASED
                       : EscrowStatus.HELD,
-                releasedAt: !inDispute && sold ? closedAt : null,
+                releasedAt: ruling
+                    ? ruling.escrow === EscrowStatus.RELEASED
+                        ? ruling.resolvedAt
+                        : null
+                    : sold
+                      ? closedAt
+                      : null,
+                refundedAt:
+                    ruling?.escrow === EscrowStatus.REFUNDED
+                        ? ruling.resolvedAt
+                        : null,
                 createdAt: daysAgo(now, 40 + index * 5),
             };
         }),
@@ -309,9 +339,8 @@ export const seedDeals = async (
 
     await tx.transaction.createMany({
         data: settling.map((thread, index) => {
-            const sold =
-                thread.property.seed.status === PropertyStatus.SOLD &&
-                thread.property.seed.soldMonthsAgo !== undefined;
+            const sold = isClosedSale(thread);
+            const ruling = rulingByThread.get(thread.id);
             const completedAt = sold
                 ? daysAgo(
                       now,
@@ -324,20 +353,41 @@ export const seedDeals = async (
                 id: seedId('txn', index),
                 finalPrice: thread.property.seed.price,
                 terms: cycle(TRANSACTION_TERMS, index),
-                agreementDocUrl: `https://files.horizongrove.local/agreements/${thread.property.seed.key}.pdf`,
-                status: sold
-                    ? TransactionStatus.COMPLETED
-                    : TransactionStatus.IN_PROGRESS,
+                agreementDocUrl: `${SEED_FILES_ORIGIN}/agreements/${thread.property.seed.key}.pdf`,
+                status:
+                    ruling?.escrow === EscrowStatus.REFUNDED
+                        ? TransactionStatus.CANCELLED
+                        : sold
+                          ? TransactionStatus.COMPLETED
+                          : TransactionStatus.IN_PROGRESS,
                 connectionId: thread.id,
                 buyerId: thread.buyerId,
                 sellerId: thread.sellerId,
                 propertyId: thread.property.id,
                 escrowHoldId: seedId('escrow', index),
-                disputeId: disputeIdByThread.get(thread.id) ?? null,
+                disputeId: ruling?.id ?? null,
                 completedAt,
                 createdAt: daysAgo(now, 60 + index * 5),
             };
         }),
+    });
+
+    const refunded = (thread: SeededThread) =>
+        rulingByThread.get(thread.id)?.escrow === EscrowStatus.REFUNDED;
+    const relisted = settling
+        .filter(refunded)
+        .map((thread) => thread.property.id)
+        .filter(
+            (propertyId) =>
+                !settling.some(
+                    (thread) =>
+                        thread.property.id === propertyId && !refunded(thread),
+                ),
+        );
+
+    await tx.property.updateMany({
+        where: { id: { in: relisted } },
+        data: { status: PropertyStatus.AVAILABLE },
     });
 
     const closed = settling.filter(

@@ -9,6 +9,7 @@ import { TokenCipher } from './crypto/token-cipher';
 import { OAuthStateCodec } from './oauth/oauth-state';
 import { GoogleOAuthClient } from './oauth/google-oauth.client';
 import { FacebookOAuthClient } from './oauth/facebook-oauth.client';
+import { IntegrationStatusService } from './integration-status.service';
 
 @Module({
     imports: [ConfigModule],
@@ -22,6 +23,7 @@ import { FacebookOAuthClient } from './oauth/facebook-oauth.client';
         OAuthStateCodec,
         GoogleOAuthClient,
         FacebookOAuthClient,
+        IntegrationStatusService,
     ],
     exports: [
         StripeService,
@@ -33,6 +35,7 @@ import { FacebookOAuthClient } from './oauth/facebook-oauth.client';
         OAuthStateCodec,
         GoogleOAuthClient,
         FacebookOAuthClient,
+        IntegrationStatusService,
     ],
 })
 export class ServicesModule {}

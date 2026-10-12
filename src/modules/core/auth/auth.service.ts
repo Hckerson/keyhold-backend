@@ -8,7 +8,6 @@ import {
     VerificationType,
 } from 'generated/prisma/enums';
 import { PasswordUtil } from './utils/password.util';
-import { metricBuilder } from 'src/lib/metric-builder';
 import { UsersService } from '@core/users/users.service';
 import { UserRepo } from '@common/repos/user.repo';
 import { EmailVerificationRepo } from '@common/repos/email-verification.repo';
@@ -77,15 +76,13 @@ export class AuthService {
             throw new ForbiddenException('Registration is currently closed');
         }
         const passwordHash = await PasswordUtil.hash(dto.password);
-        const data = metricBuilder({
+        const user = await this.usersService.create({
             passwordHash,
             role: dto.role,
             email: dto.email,
             fullName: dto.fullName,
             phoneNumber: dto.phoneNumber,
         });
-
-        const user = await this.usersService.create(data);
         await this.issueEmailCode(user.id, user.email, user.fullName);
 
         const accessToken = this.generateToken({

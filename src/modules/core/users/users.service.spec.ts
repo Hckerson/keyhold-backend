@@ -3,18 +3,26 @@ import { Test } from '@nestjs/testing';
 import { UserRepo } from '@common/repos/user.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { CloudinaryService } from '@common/services/storage/cloudinary.service';
+import { SuspensionsService } from '@modules/suspensions/suspensions.service';
 import { UserRole } from '@generated/prisma/enums';
 import { UsersService } from './users.service';
 
 describe('UsersService', () => {
     let service: UsersService;
-    let userRepo: { findUnique: jest.Mock; create: jest.Mock };
+    let userRepo: {
+        findUnique: jest.Mock;
+        findMany: jest.Mock;
+        create: jest.Mock;
+    };
+    let liftExpired: jest.Mock;
 
     beforeEach(async () => {
         userRepo = {
             findUnique: jest.fn(),
+            findMany: jest.fn().mockResolvedValue([]),
             create: jest.fn(),
         };
+        liftExpired = jest.fn();
 
         const moduleRef = await Test.createTestingModule({
             providers: [
@@ -23,6 +31,10 @@ describe('UsersService', () => {
                 {
                     provide: TransactionRepo,
                     useValue: { groupBy: jest.fn().mockResolvedValue([]) },
+                },
+                {
+                    provide: SuspensionsService,
+                    useValue: { liftExpired },
                 },
                 {
                     provide: CloudinaryService,
@@ -35,6 +47,14 @@ describe('UsersService', () => {
         }).compile();
 
         service = moduleRef.get(UsersService);
+    });
+
+    it('lifts expired suspensions before listing the directory', async () => {
+        await service.findAll();
+
+        expect(liftExpired.mock.invocationCallOrder[0]).toBeLessThan(
+            userRepo.findMany.mock.invocationCallOrder[0],
+        );
     });
 
     it('refuses a duplicate email on create', async () => {

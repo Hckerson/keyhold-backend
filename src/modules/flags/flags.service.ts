@@ -205,7 +205,7 @@ export class FlagsService {
             where: { id },
             data: {
                 status,
-                details: resolveDto.note ?? flag.details,
+                resolutionNote: resolveDto.note,
                 resolvedAt: new Date(),
             },
             include: CREATOR_SELECT,

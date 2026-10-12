@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ServiceComponent } from '@generated/prisma/enums';
 import { ServiceMetricRepo } from '@common/repos/service-metric.repo';
+import { IntegrationStatusService } from '@common/services/integration-status.service';
 
 const DEFAULT_WINDOW_HOURS = 24;
 const MS_PER_HOUR = 60 * 60 * 1000;
@@ -60,22 +61,26 @@ export interface ServiceHealthRow {
     samples: number;
 }
 
-const DEGRADED_ERROR_RATE = 0.05;
+const UPTIME_SLO = 99.9;
 const DOWN_ERROR_RATE = 0.5;
 
 const stateFor = (
     samples: number,
     errorRate: number,
+    uptime: number,
 ): ServiceHealthRow['state'] => {
     if (samples === 0) return 'unknown';
     if (errorRate >= DOWN_ERROR_RATE) return 'down';
-    if (errorRate >= DEGRADED_ERROR_RATE) return 'degraded';
+    if (uptime < UPTIME_SLO) return 'degraded';
     return 'operational';
 };
 
 @Injectable()
 export class ServiceHealthService {
-    constructor(private serviceMetricRepo: ServiceMetricRepo) {}
+    constructor(
+        private serviceMetricRepo: ServiceMetricRepo,
+        private integrationStatusService: IntegrationStatusService,
+    ) {}
 
     async findAll(windowHours = DEFAULT_WINDOW_HOURS) {
         const since = new Date(Date.now() - windowHours * MS_PER_HOUR);
@@ -94,18 +99,19 @@ export class ServiceHealthService {
             );
             const failures = rows.filter((metric) => metric.failed).length;
             const errorRate = rows.length === 0 ? 0 : failures / rows.length;
+            const uptime =
+                rows.length === 0
+                    ? 0
+                    : round(
+                          ((rows.length - failures) / rows.length) * 100,
+                          PERCENT_PRECISION,
+                      );
 
             return {
                 id: component,
                 label: COMPONENT_LABELS[component],
-                state: stateFor(rows.length, errorRate),
-                uptime:
-                    rows.length === 0
-                        ? 0
-                        : round(
-                              ((rows.length - failures) / rows.length) * 100,
-                              PERCENT_PRECISION,
-                          ),
+                state: stateFor(rows.length, errorRate, uptime),
+                uptime,
                 errorRate: round(errorRate * 100, PERCENT_PRECISION),
                 ...latencyOf(rows.map((metric) => metric.latencyMs)),
                 samples: rows.length,
@@ -129,6 +135,7 @@ export class ServiceHealthService {
             since,
             averageUptime,
             services,
+            integrations: this.integrationStatusService.findAll(),
         };
     }
 }

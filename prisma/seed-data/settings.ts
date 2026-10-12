@@ -1,5 +1,5 @@
 import { SettingCategory } from '../../generated/prisma/client';
-import { SEED_MAIL_DOMAIN } from './ids';
+import { PLATFORM_MAIL_DOMAIN } from './ids';
 
 export const PLATFORM_SETTINGS: readonly {
     key: string;
@@ -8,12 +8,12 @@ export const PLATFORM_SETTINGS: readonly {
 }[] = [
     {
         key: 'platformName',
-        value: 'Horizon Grove',
+        value: 'Keyhold',
         category: SettingCategory.PLATFORM,
     },
     {
         key: 'supportEmail',
-        value: `support@${SEED_MAIL_DOMAIN}`,
+        value: `support@${PLATFORM_MAIL_DOMAIN}`,
         category: SettingCategory.PLATFORM,
     },
     {

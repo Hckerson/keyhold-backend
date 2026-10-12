@@ -2,6 +2,7 @@ import { createTransport, type Transporter } from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { SMTP_SECURE_PORT } from '@common/enums';
+import { isDeliverableAddress } from 'src/lib/deliverable-address';
 
 interface EmailOptions {
     to: string | string[];
@@ -72,10 +73,23 @@ export class EmailService {
         });
     }
 
+    get configured(): boolean {
+        return this.transporter !== null;
+    }
+
     async sendEmail(options: EmailOptions): Promise<EmailResponse> {
         if (!this.transporter) {
             this.logger.warn(
                 `Email suppressed (SMTP disabled): "${options.subject}"`,
+            );
+            return { success: false };
+        }
+
+        const to = [options.to].flat().filter(isDeliverableAddress);
+
+        if (to.length === 0) {
+            this.logger.warn(
+                `Email suppressed (reserved recipient domain): "${options.subject}"`,
             );
             return { success: false };
         }
@@ -89,7 +103,7 @@ export class EmailService {
                 throw new BadRequestException('Sender email is not configured');
             }
             await this.transporter.sendMail({
-                to: options.to,
+                to,
                 from: fromEmail,
                 replyTo: options.replyTo,
                 subject: options.subject,
@@ -169,9 +183,26 @@ export class EmailService {
             subject: `Purchase Completed: ${propertyTitle}`,
             html: `
         <h2>Congratulations!</h2>
-        <p>Your purchase of ${propertyTitle} is complete.</p>
+        <p>Your purchase of ${escapeHtml(propertyTitle)} is complete.</p>
         <p><strong>Final Price: $${finalPrice.toLocaleString()}</strong></p>
         <p>Thank you for using our platform. Please rate the seller.</p>
+      `,
+        });
+    }
+
+    async sendSaleCompletedEmail(
+        sellerEmail: string,
+        propertyTitle: string,
+        finalPrice: number,
+    ): Promise<EmailResponse> {
+        return this.sendEmail({
+            to: sellerEmail,
+            subject: `Sale Completed: ${propertyTitle}`,
+            html: `
+        <h2>Congratulations on the Sale!</h2>
+        <p>Your property <strong>${escapeHtml(propertyTitle)}</strong> has been sold.</p>
+        <p><strong>Final Price: $${finalPrice.toLocaleString()}</strong></p>
+        <p>The buyer should rate you based on their experience. Thank you for using our platform.</p>
       `,
         });
     }

@@ -66,6 +66,10 @@ export class CloudinaryService {
         }
     }
 
+    get configured(): boolean {
+        return this.enabled;
+    }
+
     private upload(
         fileBuffer: Buffer,
         filename: string,

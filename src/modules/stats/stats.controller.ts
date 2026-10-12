@@ -108,10 +108,8 @@ export class StatsController {
     @ApiOperation({ summary: 'Time-series signup counts' })
     @ApiQuery({ name: 'filter', enum: TimeFilter, required: false })
     async dashboard(@Query('filter') filter?: TimeFilterValue) {
-        const resolved = filter ?? TimeFilter.MONTH;
         return this.statsService.fetchDashboardStats(
-            resolved,
-            resolved !== TimeFilter.DAY,
+            filter ?? TimeFilter.MONTH,
         );
     }
 }

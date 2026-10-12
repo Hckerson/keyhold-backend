@@ -48,6 +48,10 @@ export class TwilioService {
         }
     }
 
+    get configured(): boolean {
+        return this.client !== null;
+    }
+
     async sendSMS(toNumber: string, message: string): Promise<SMSResponse> {
         if (!this.client) {
             this.logger.warn(`SMS suppressed (Twilio disabled) to ${toNumber}`);

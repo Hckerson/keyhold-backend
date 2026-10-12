@@ -206,7 +206,7 @@ export const seedPlatform = async (
             return {
                 id: seedId('doc', index),
                 documentType: cycle(DOCUMENT_TYPES, index),
-                documentNumber: `HG-${String(100000 + index * 37)}`,
+                documentNumber: `KH-${String(100000 + index * 37)}`,
                 issuerCountry: 'US',
                 documentImageUrl: pick(DOCUMENT_IMAGES, index),
                 faceImageUrl: null,

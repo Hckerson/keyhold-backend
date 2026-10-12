@@ -1,5 +1,9 @@
 import { Test } from '@nestjs/testing';
 import { ServiceMetricRepo } from '@common/repos/service-metric.repo';
+import {
+    IntegrationStatusService,
+    type IntegrationStatusRow,
+} from '@common/services/integration-status.service';
 import { ServiceComponent } from '@generated/prisma/enums';
 import { ServiceHealthService } from './service-health.service';
 
@@ -12,6 +16,7 @@ const metric = (latencyMs: number, failed = false) => ({
 describe('ServiceHealthService.findAll', () => {
     let service: ServiceHealthService;
     let metrics: { findMany: jest.Mock };
+    let integrations: IntegrationStatusRow[];
 
     const apiRow = async () => {
         const { services } = await service.findAll();
@@ -22,11 +27,16 @@ describe('ServiceHealthService.findAll', () => {
 
     beforeEach(async () => {
         metrics = { findMany: jest.fn().mockResolvedValue([]) };
+        integrations = [];
 
         const moduleRef = await Test.createTestingModule({
             providers: [
                 ServiceHealthService,
                 { provide: ServiceMetricRepo, useValue: metrics },
+                {
+                    provide: IntegrationStatusService,
+                    useValue: { findAll: () => integrations },
+                },
             ],
         }).compile();
 
@@ -91,5 +101,50 @@ describe('ServiceHealthService.findAll', () => {
 
         expect(row.errorRate).toBe(25);
         expect(row.uptime).toBe(75);
+    });
+
+    const withFailures = (total: number, failed: number) =>
+        Array.from({ length: total }, (_, index) =>
+            metric(100, index < failed),
+        );
+
+    it('marks a service below the uptime target as degraded even when its error rate is small', async () => {
+        metrics.findMany.mockResolvedValue(withFailures(1000, 23));
+
+        const row = await apiRow();
+
+        expect(row.uptime).toBe(97.7);
+        expect(row.state).toBe('degraded');
+    });
+
+    it('keeps a service that meets the uptime target operational', async () => {
+        metrics.findMany.mockResolvedValue(withFailures(1000, 1));
+
+        const row = await apiRow();
+
+        expect(row.uptime).toBe(99.9);
+        expect(row.state).toBe('operational');
+    });
+
+    it('reserves down for a service failing half its requests', async () => {
+        metrics.findMany.mockResolvedValue(withFailures(10, 5));
+
+        expect((await apiRow()).state).toBe('down');
+    });
+
+    it('reports the credential state alongside the measured services', async () => {
+        integrations = [
+            {
+                id: 'stripe',
+                label: 'Stripe',
+                capability: 'Card payments and refunds',
+                configured: false,
+                required: true,
+            },
+        ];
+
+        const health = await service.findAll();
+
+        expect(health.integrations).toEqual(integrations);
     });
 });

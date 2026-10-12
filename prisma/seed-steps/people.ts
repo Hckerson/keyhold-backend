@@ -7,13 +7,13 @@ import {
 } from '../../generated/prisma/client';
 import { AGENT_SEEDS } from '../seed-data/agents';
 import { CLIENT_PORTRAITS, pick } from '../seed-data/images';
-import { daysAgo, periodOf, seedId } from '../seed-data/ids';
+import { daysAgo, SEED_MAIL_DOMAIN, seedId } from '../seed-data/ids';
 
 export const BUYER_COUNT = 560;
 
-export const ADMIN_EMAIL = 'admin@example.com';
+export const ADMIN_EMAIL = `admin@${SEED_MAIL_DOMAIN}`;
 
-export const BUYER_EMAIL = 'buyer@example.com';
+export const BUYER_EMAIL = `buyer@${SEED_MAIL_DOMAIN}`;
 
 export interface SeededBuyer {
     id: string;
@@ -76,7 +76,6 @@ export const seedPeople = async (
         kycVerified: true,
         lastActive: now,
         createdAt: adminCreatedAt,
-        ...periodOf(adminCreatedAt),
     };
 
     const sellerIdByKey = new Map<string, string>();
@@ -105,7 +104,6 @@ export const seedPeople = async (
             kycVerified: index < 3,
             lastActive: daysAgo(now, index),
             createdAt,
-            ...periodOf(createdAt),
         } satisfies Prisma.UserCreateManyInput;
     });
 
@@ -122,7 +120,7 @@ export const seedPeople = async (
                 email:
                     index === 0
                         ? BUYER_EMAIL
-                        : `${firstName}.${lastName}.${index}@example.com`.toLowerCase(),
+                        : `${firstName}.${lastName}.${index}@${SEED_MAIL_DOMAIN}`.toLowerCase(),
                 createdAt,
             };
         },
@@ -154,7 +152,6 @@ export const seedPeople = async (
             kycRejected: index % 53 === 0,
             lastActive: daysAgo(now, index % 45),
             createdAt: buyer.createdAt,
-            ...periodOf(buyer.createdAt),
         } satisfies Prisma.UserCreateManyInput;
     });
 

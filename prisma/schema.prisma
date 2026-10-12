@@ -14,32 +14,6 @@ datasource db {
 // ============================================================================
 // ENUMS - USER DOMAIN
 // ============================================================================
-// Used by the metric-builder / stats aggregation pattern to group records by period.
-enum Day {
-  MON
-  TUE
-  WED
-  THU
-  FRI
-  SAT
-  SUN
-}
-
-enum Month {
-  JAN
-  FEB
-  MAR
-  APR
-  MAY
-  JUN
-  JUL
-  AUG
-  SEP
-  OCT
-  NOV
-  DEC
-}
-
 enum UserRole {
   ADMIN
   BUYER
@@ -452,9 +426,10 @@ model Flag {
   // Scalars
   id      String     @id @default(uuid())
   type    FlagType
-  reason  String
-  details String?
-  status  FlagStatus @default(ACTIVE)
+  reason         String
+  details        String?
+  resolutionNote String?
+  status         FlagStatus @default(ACTIVE)
 
   // Foreign Keys
   targetId  String // Could be userId, propertyId, or messageId depending on type
@@ -893,7 +868,6 @@ model User {
   avatar         String?
   avatarPublicId String?
   bio            String?
-  year           Int
   role           UserRole
   status         UserAccountStatus @default(ACTIVE)
   tier           UserTier          @default(STANDARD)
@@ -902,10 +876,6 @@ model User {
   jobTitle      String?
   agencyName    String?
   licenseNumber String?
-
-  // Enums - period columns powering the stats grouping pattern
-  day   Day
-  month Month
 
   // Verification fields
   emailVerified Boolean @default(false)
@@ -960,6 +930,7 @@ model User {
   @@index([role])
   @@index([emailVerified])
   @@index([tier])
+  @@index([createdAt])
 }
 
 model UserSuspension {
