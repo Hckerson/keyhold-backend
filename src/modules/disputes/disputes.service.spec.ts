@@ -4,11 +4,7 @@ import { DisputeEvidenceRepo } from '@common/repos/dispute-evidence.repo';
 import { TransactionRepo } from '@common/repos/transaction.repo';
 import { DisputeOutcome } from '@common/enums';
 import { EscrowService } from '@modules/escrow/escrow.service';
-import {
-    DisputeStatus,
-    EscrowStatus,
-    UserRole,
-} from '@generated/prisma/enums';
+import { DisputeStatus, EscrowStatus, UserRole } from '@generated/prisma/enums';
 import { DisputesService } from './disputes.service';
 
 const NOTES = { resolutionNotes: 'Inspection failed' };
@@ -21,7 +17,11 @@ const hold = (id: string, status: EscrowStatus) => ({
 describe('DisputesService.settle', () => {
     let disputeRepo: { findUnique: jest.Mock; update: jest.Mock };
     let transactionRepo: { findMany: jest.Mock };
-    let escrow: { release: jest.Mock; refund: jest.Mock; restoreHeld: jest.Mock };
+    let escrow: {
+        release: jest.Mock<Promise<void>, [string, ...unknown[]]>;
+        refund: jest.Mock<Promise<void>, [string, ...unknown[]]>;
+        restoreHeld: jest.Mock<Promise<void>, [string]>;
+    };
     let service: DisputesService;
 
     const frozen = (...rows: ReturnType<typeof hold>[]) =>
@@ -145,7 +145,9 @@ describe('DisputesService.settle', () => {
         expect(escrow.release.mock.calls.map(([id]) => id)).toEqual(['esc_2']);
         expect(disputeRepo.update).toHaveBeenCalledWith(
             expect.objectContaining({
-                data: expect.objectContaining({ status: DisputeStatus.RESOLVED }),
+                data: expect.objectContaining({
+                    status: DisputeStatus.RESOLVED,
+                }),
             }),
         );
     });
